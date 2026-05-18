@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/ssr" }
+  ],
+  "functions": {
+    "api/ssr.ts": {
+      "includeFiles": "dist/**"
+    }
+  },
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist/client",
+  "framework": null
+}

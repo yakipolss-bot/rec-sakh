@@ -1,0 +1,115 @@
+@import './styles/design-system.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* shadcn/ui HSL vars mapped to our system */
+    --background: 210 33% 5%;
+    --foreground: 37 23% 87%;
+    --card: 213 24% 11%;
+    --card-foreground: 37 23% 87%;
+    --popover: 213 24% 11%;
+    --popover-foreground: 37 23% 87%;
+    --primary: 170 100% 45%;
+    --primary-foreground: 210 33% 5%;
+    --secondary: 213 24% 16%;
+    --secondary-foreground: 37 23% 87%;
+    --muted: 213 24% 16%;
+    --muted-foreground: 214 14% 58%;
+    --accent: 213 24% 16%;
+    --accent-foreground: 37 23% 87%;
+    --destructive: 16 100% 59%;
+    --destructive-foreground: 37 23% 87%;
+    --border: 213 24% 16%;
+    --input: 213 24% 16%;
+    --ring: 170 100% 45%;
+    --radius: 0px;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color var(--motion-slow), color var(--motion-slow);
+  }
+
+  * {
+    border-color: var(--border-color);
+  }
+
+  ::selection {
+    background-color: var(--accent-ocean);
+    color: var(--bg-primary);
+  }
+}
+
+@layer components {
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--bg-surface);
+    border-radius: 0;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+}
+
+/* Article Prose (sakh-prose) */
+.sakh-prose {
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  line-height: 1.8;
+  font-size: 1.0625rem;
+}
+
+.sakh-prose p {
+  margin-bottom: 1.25rem;
+}
+
+.sakh-prose .sakh-quote {
+  border-left: 3px solid var(--accent-ocean);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin: 1.5rem 0;
+}
+
+.sakh-prose .sakh-video-placeholder {
+  background: var(--bg-secondary);
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem 0;
+  border: 1px solid var(--border-color);
+  position: relative;
+}
+
+.sakh-prose .sakh-infographic-placeholder {
+  background: var(--bg-secondary);
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem 0;
+  border: 1px solid var(--border-color);
+  border-style: dashed;
+}

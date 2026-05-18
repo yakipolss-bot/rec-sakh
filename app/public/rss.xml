@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Sakhcom — Новости Сахалина</title>
+    <link>https://sakhcom.ru</link>
+    <description>Новости Сахалина и Курильских островов. Актуальные события, происшествия, экономика, спорт, культура.</description>
+    <language>ru</language>
+    <lastBuildDate>Sat, 16 May 2026 10:30:00 +1100</lastBuildDate>
+    <atom:link href="https://sakhcom.ru/rss.xml" rel="self" type="application/rss+xml"/>
+
+    <item>
+      <title>Штормовое предупреждение объявлено по Сахалинской области</title>
+      <link>https://sakhcom.ru/news/shtormovoe-preduprezhdenie-po-sakhalinskoy-oblasti</link>
+      <description>Ветер усилится до 25 м/с, порывы до 30 м/с. Рекомендуется воздержаться от выхода на улицу.</description>
+      <pubDate>Sat, 16 May 2026 06:30:00 +1100</pubDate>
+      <guid>https://sakhcom.ru/news/shtormovoe-preduprezhdenie-po-sakhalinskoy-oblasti</guid>
+      <category>Происшествия</category>
+      <dc:creator>Иван Петров</dc:creator>
+    </item>
+
+    <item>
+      <title>Новый торговый центр открылся в центре Южно-Сахалинска</title>
+      <link>https://sakhcom.ru/news/novyy-torgovyy-tsentr-v-yuzhno-sakhalinske</link>
+      <description>На улице Ленина открылся ТЦ «Остров» с площадью 15 000 м². Инвестиции в проект составили 2,5 млрд рублей.</description>
+      <pubDate>Sat, 16 May 2026 08:15:00 +1100</pubDate>
+      <guid>https://sakhcom.ru/news/novyy-torgovyy-tsentr-v-yuzhno-sakhalinske</guid>
+      <category>Общество</category>
+      <dc:creator>Анна Кузнецова</dc:creator>
+    </item>
+
+    <item>
+      <title>Паромное сообщение Ванино-Холмск: новое расписание на лето</title>
+      <link>https://sakhcom.ru/news/paromnoe-soobshchenie-vanino-kholmsk-raspisanie</link>
+      <description>С 1 июня вводится дополнительный рейс на паромной переправе. Всего будет три рейса в сутки.</description>
+      <pubDate>Sat, 16 May 2026 09:42:00 +1100</pubDate>
+      <guid>https://sakhcom.ru/news/paromnoe-soobshchenie-vanino-kholmsk-raspisanie</guid>
+      <category>Транспорт</category>
+      <dc:creator>Мария Соколова</dc:creator>
+    </item>
+
+    <item>
+      <title>В сахалинской тайге обнаружены редкие виды птиц</title>
+      <link>https://sakhcom.ru/news/v-sakhalinskoy-tayge-obnaruzheny-redkie-vidy-ptits</link>
+      <description>Орнитологи зафиксировали гнездование дальневосточного аиста — вида из Красной книги.</description>
+      <pubDate>Fri, 15 May 2026 14:20:00 +1100</pubDate>
+      <guid>https://sakhcom.ru/news/v-sakhalinskoy-tayge-obnaruzheny-redkie-vidy-ptits</guid>
+      <category>Природа</category>
+      <dc:creator>Елена Морозова</dc:creator>
+    </item>
+
+    <item>
+      <title>«Сахалин» стартовал в футбольной Лиге Востока с победы</title>
+      <link>https://sakhcom.ru/news/sakhalin-startoval-v-futbolnoy-lige-vostoka</link>
+      <description>В первом матче сезона сахалинская команда обыграла «Читу» со счётом 2:0.</description>
+      <pubDate>Fri, 15 May 2026 19:30:00 +1100</pubDate>
+      <guid>https://sakhcom.ru/news/sakhalin-startoval-v-futbolnoy-lige-vostoka</guid>
+      <category>Спорт</category>
+      <dc:creator>Сергей Новиков</dc:creator>
+    </item>
+  </channel>
+</rss>
