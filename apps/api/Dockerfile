@@ -26,4 +26,4 @@ RUN npx prisma generate
 RUN ls -la dist/ && echo "--- BUILD SUCCESS ---"
 EXPOSE 4000
 ENTRYPOINT ["tini", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
