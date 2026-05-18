@@ -1,6 +1,7 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import Typesense from 'typesense';
+import { PgBossService } from '../queue/pg-boss.service.js';
 
 @Injectable()
 export class SearchIndexService implements OnModuleInit {
@@ -8,7 +9,7 @@ export class SearchIndexService implements OnModuleInit {
   private client: InstanceType<typeof Typesense.Client> | null = null;
   private enabled = false;
 
-  constructor(private prisma: PrismaService) {
+  constructor(private prisma: PrismaService, @Optional() private readonly pgBoss?: PgBossService) {
     if (process.env.TYPESENSE_API_KEY) {
       try {
         this.client = new Typesense.Client({
@@ -138,17 +139,28 @@ export class SearchIndexService implements OnModuleInit {
     }
   }
 
+  // Public: enqueue a full sync or perform immediately when queue unavailable
   async syncAll() {
+    if (this.pgBoss?.isRunning()) {
+      await this.pgBoss.publish('typesense:syncAll', {});
+      this.logger.log('Enqueued typesense:syncAll');
+      return;
+    }
+    return this.performSyncAll();
+  }
+
+  // Actual implementation executed by worker
+  async performSyncAll() {
     if (!this.enabled) {
       await this.checkHealth();
       if (!this.enabled) return;
     }
     const results = await Promise.allSettled([
-      this.syncNews(),
-      this.syncEvents(),
-      this.syncAds(),
-      this.syncJobs(),
-      this.syncDirectory(),
+      this.performSyncNews(),
+      this.performSyncEvents(),
+      this.performSyncAds(),
+      this.performSyncJobs(),
+      this.performSyncDirectory(),
     ]);
     const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
     if (rejected.length > 0) {
@@ -160,6 +172,15 @@ export class SearchIndexService implements OnModuleInit {
   }
 
   async syncNews(ids?: string[]) {
+    if (this.pgBoss?.isRunning()) {
+      await this.pgBoss.publish('typesense:syncNews', { ids });
+      this.logger.log('Enqueued typesense:syncNews');
+      return;
+    }
+    return this.performSyncNews(ids);
+  }
+
+  async performSyncNews(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
     const where: any = { deletedAt: null, status: 'published' };
     if (ids) where.id = { in: ids };
@@ -185,6 +206,15 @@ export class SearchIndexService implements OnModuleInit {
 
   /** H10: Индексация одной статьи в Typesense (вызывается после create/update) */
   async indexNews(article: { id: string; title: string; lead?: string | null; content: string; categoryId?: string | null; city?: string | null; publishedAt?: Date | null; slug: string }): Promise<void> {
+    if (this.pgBoss?.isRunning()) {
+      await this.pgBoss.publish('typesense:indexNews', { article });
+      this.logger.log(`Enqueued typesense:indexNews ${article.id}`);
+      return;
+    }
+    return this.performIndexNews(article);
+  }
+
+  async performIndexNews(article: { id: string; title: string; lead?: string | null; content: string; categoryId?: string | null; city?: string | null; publishedAt?: Date | null; slug: string }) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
     try {
       await this.getClient().collections('news').documents().upsert({
@@ -203,6 +233,15 @@ export class SearchIndexService implements OnModuleInit {
   }
 
   async syncEvents(ids?: string[]) {
+    if (this.pgBoss?.isRunning()) {
+      await this.pgBoss.publish('typesense:syncEvents', { ids });
+      this.logger.log('Enqueued typesense:syncEvents');
+      return;
+    }
+    return this.performSyncEvents(ids);
+  }
+
+  async performSyncEvents(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
     const where: any = { status: 'published' };
     if (ids) where.id = { in: ids };
@@ -217,6 +256,15 @@ export class SearchIndexService implements OnModuleInit {
   }
 
   async syncAds(ids?: string[]) {
+    if (this.pgBoss?.isRunning()) {
+      await this.pgBoss.publish('typesense:syncAds', { ids });
+      this.logger.log('Enqueued typesense:syncAds');
+      return;
+    }
+    return this.performSyncAds(ids);
+  }
+
+  async performSyncAds(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
     const where: any = { deletedAt: null };
     if (ids) where.id = { in: ids };
@@ -233,6 +281,15 @@ export class SearchIndexService implements OnModuleInit {
   }
 
   async syncJobs(ids?: string[]) {
+    if (this.pgBoss?.isRunning()) {
+      await this.pgBoss.publish('typesense:syncJobs', { ids });
+      this.logger.log('Enqueued typesense:syncJobs');
+      return;
+    }
+    return this.performSyncJobs(ids);
+  }
+
+  async performSyncJobs(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
     const where: any = { deletedAt: null };
     if (ids) where.id = { in: ids };
@@ -250,6 +307,15 @@ export class SearchIndexService implements OnModuleInit {
   }
 
   async syncDirectory(ids?: string[]) {
+    if (this.pgBoss?.isRunning()) {
+      await this.pgBoss.publish('typesense:syncDirectory', { ids });
+      this.logger.log('Enqueued typesense:syncDirectory');
+      return;
+    }
+    return this.performSyncDirectory(ids);
+  }
+
+  async performSyncDirectory(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
     const where: any = { status: 'active' };
     if (ids) where.id = { in: ids };

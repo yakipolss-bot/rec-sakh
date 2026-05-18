@@ -3,6 +3,8 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { YooKassaService } from './yookassa.service.js';
@@ -38,6 +40,7 @@ export class BillingService {
     private crypto: CryptoService,
     private balanceService: BalanceService,
     private invoiceService: InvoiceService,
+    @Inject(forwardRef(() => SubscriptionService))
     private subscriptionService: SubscriptionService,
     private promotionPaymentService: PromotionPaymentService,
   ) {

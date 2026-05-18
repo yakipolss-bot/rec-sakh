@@ -206,12 +206,4 @@ export class NotificationsController {
 
   // ====== Telegram webhook ======
 
-  @Post('telegram/webhook')
-  @Public()
-  @ApiExcludeEndpoint()
-  async telegramWebhook(@Body() body: any) {
-    // Этот эндпоинт обрабатывается в TelegramWebhookController
-    // Но оставим и здесь для совместимости
-    return { ok: true };
-  }
 }

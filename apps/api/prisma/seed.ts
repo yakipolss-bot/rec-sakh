@@ -81,10 +81,10 @@ async function main() {
     { name: 'Рыболовство', slug: 'rybolovstvo', sortOrder: 14 },
     { name: 'Энергетика', slug: 'energetika', sortOrder: 15 },
     { name: 'Сельское хозяйство', slug: 'selskoe-khozyaystvo', sortOrder: 16 },
-    { name: 'Недвижимость', slug: 'nedvizhimost', type: 'realty' as const, sortOrder: 1 },
-    { name: 'Квартиры', slug: 'kvartiry', type: 'realty' as const, sortOrder: 2 },
-    { name: 'Дома', slug: 'doma', type: 'realty' as const, sortOrder: 3 },
-    { name: 'Коммерческая', slug: 'kommercheskaya', type: 'realty' as const, sortOrder: 4 },
+    { name: 'Недвижимость', slug: 'nedvizhimost', type: 'ads' as const, sortOrder: 1 },
+    { name: 'Квартиры', slug: 'kvartiry', type: 'ads' as const, sortOrder: 2 },
+    { name: 'Дома', slug: 'doma', type: 'ads' as const, sortOrder: 3 },
+    { name: 'Коммерческая', slug: 'kommercheskaya', type: 'ads' as const, sortOrder: 4 },
     { name: 'Кино', slug: 'kino', type: 'events' as const, sortOrder: 1 },
     { name: 'Театр', slug: 'teatr', type: 'events' as const, sortOrder: 2 },
     { name: 'Концерты', slug: 'kontserty', type: 'events' as const, sortOrder: 3 },
@@ -117,20 +117,17 @@ async function main() {
     { name: 'Sakhcom+ Годовой', description: 'Годовая подписка со скидкой', price: 4990, interval: 'year' as const, features: ['Всё из Расширенного', '2 месяца бесплатно', 'Подарок при оформлении'] },
   ];
 
-  for (const tariff of tariffs) {
-    await prisma.billingTariff.upsert({
-      where: { id: tariff.name },
-      update: {},
-      create: {
-        name: tariff.name,
-        description: tariff.description,
-        price: tariff.price,
-        interval: tariff.interval,
-        features: tariff.features,
-        isActive: true,
-      },
-    });
-  }
+  await prisma.billingTariff.createMany({
+    data: tariffs.map((tariff) => ({
+      name: tariff.name,
+      description: tariff.description,
+      price: tariff.price,
+      interval: tariff.interval,
+      features: tariff.features,
+      isActive: true,
+    })),
+    skipDuplicates: true,
+  });
 
   console.log(`${tariffs.length} tariffs created`);
 

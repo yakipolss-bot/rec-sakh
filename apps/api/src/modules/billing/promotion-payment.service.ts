@@ -3,6 +3,8 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { BalanceService } from './balance.service.js';
@@ -21,6 +23,7 @@ export class PromotionPaymentService {
 
   constructor(
     private prisma: PrismaService,
+    @Inject(forwardRef(() => BillingService))
     private billingService: BillingService,
     private balanceService: BalanceService,
   ) {}

@@ -14,7 +14,8 @@ COPY apps/api/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-RUN npx prisma generate
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 RUN ls -laR dist/
 EXPOSE 4000
 ENTRYPOINT ["tini", "--"]

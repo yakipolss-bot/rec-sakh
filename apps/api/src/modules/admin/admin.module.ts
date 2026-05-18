@@ -25,6 +25,5 @@ import { AdminSchedulerService } from './schedules/admin-scheduler.service.js';
       useClass: AuditInterceptor,
     },
   ],
-  exports: [AuditInterceptor],
 })
 export class AdminModule {}
