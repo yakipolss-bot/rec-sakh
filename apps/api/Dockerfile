@@ -19,4 +19,4 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 RUN ls -laR dist/
 EXPOSE 4000
 ENTRYPOINT ["tini", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
