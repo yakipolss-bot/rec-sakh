@@ -7,6 +7,11 @@ RUN npm ci
 COPY apps/api/ .
 RUN npx prisma generate
 RUN npm run build 2>&1 || (echo "BUILD FAILED" && exit 1)
+RUN echo "=== Checking dist directory ===" && \
+    ls -la dist/ || echo "dist/ does not exist" && \
+    find . -name "*.js" -type f | head -20 || echo "No .js files found" && \
+    pwd && \
+    ls -la
 # Force rebuild
 
 FROM node:22-alpine AS production
