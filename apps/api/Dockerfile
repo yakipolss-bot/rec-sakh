@@ -3,9 +3,8 @@ WORKDIR /app
 COPY apps/api/package*.json ./
 RUN npm ci
 COPY apps/api/ .
-COPY apps/api/prisma ./prisma
 RUN npx prisma generate
-RUN npm run build
+RUN npm run build && ls -la dist/
 
 FROM node:22-alpine AS production
 ENV NODE_ENV=production
@@ -15,7 +14,7 @@ COPY apps/api/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
-RUN npx prisma generate
+RUN npx prisma generate && ls -la dist/
 EXPOSE 4000
 ENTRYPOINT ["tini", "--"]
-CMD ["node", "dist/main"]
+CMD ["node", "dist/main.js"]
