@@ -5,7 +5,7 @@ import Typesense from 'typesense';
 @Injectable()
 export class SearchIndexService implements OnModuleInit {
   private readonly logger = new Logger(SearchIndexService.name);
-  private client: any = null;
+  private client: InstanceType<typeof Typesense.Client> | null = null;
   private enabled = false;
 
   constructor(private prisma: PrismaService) {
@@ -30,7 +30,7 @@ export class SearchIndexService implements OnModuleInit {
   get isEnabled() { return this.enabled; }
   get searchClient() { return this.client; }
 
-  private getClient(): any {
+  private getClient(): InstanceType<typeof Typesense.Client> {
     if (!this.client) {
       throw new Error('Typesense client is not initialized');
     }
