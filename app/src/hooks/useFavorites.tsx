@@ -11,7 +11,7 @@ const FavoritesContext = createContext<FavoritesContextType | null>(null);
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem('sakhcom-favorites');
+      const stored = localStorage.getItem('rec-sakh-favorites');
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -23,7 +23,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       const next = prev.includes(newsId)
         ? prev.filter(id => id !== newsId)
         : [...prev, newsId];
-      localStorage.setItem('sakhcom-favorites', JSON.stringify(next));
+      localStorage.setItem('rec-sakh-favorites', JSON.stringify(next));
       return next;
     });
   }, []);

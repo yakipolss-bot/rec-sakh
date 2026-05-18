@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: sakhcom
-      POSTGRES_PASSWORD: sakhcom_dev
-      POSTGRES_DB: sakhcom
+      POSTGRES_USER: rec_sakh
+      POSTGRES_PASSWORD: rec_sakh_dev
+      POSTGRES_DB: rec_sakh
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sakhcom"]
+      test: ["CMD-SHELL", "pg_isready -U rec_sakh"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -34,13 +34,13 @@ services:
     ports:
       - "8108:8108"
     environment:
-      TYPESENSE_API_KEY: sakhcom_typesense_dev_key
+      TYPESENSE_API_KEY: rec_sakh_typesense_dev_key
       TYPESENSE_DATA_DIR: /data
     volumes:
       - typesensedata:/data
     command: >
       --data-dir /data
-      --api-key sakhcom_typesense_dev_key
+      --api-key rec_sakh_typesense_dev_key
       --listen-port 8108
       --enable-cors
 

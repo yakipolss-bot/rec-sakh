@@ -36,7 +36,7 @@ async function bootstrap() {
         scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com'],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:', 'http:'],
-        connectSrc: ["'self'", 'https://api.sakhcom.ru'],
+        connectSrc: ["'self'", 'https://api.rec-sakh.ru'],
         fontSrc: ["'self'", 'data:'],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],

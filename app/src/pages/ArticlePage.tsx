@@ -77,7 +77,7 @@ export default function ArticlePage({ id }: { id?: string }) {
 
   const [toast, setToast] = useState<string | null>(null);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://sakhcom.ru';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rec-sakh.ru';
 
   const copyLink = useCallback(async () => {
     try {

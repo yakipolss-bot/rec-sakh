@@ -104,7 +104,7 @@ export default function EditorialSeo() {
           <FileText size={48} className="mx-auto mb-4 text-[var(--text-muted)]" />
           <h3 className="sakh-title mb-2">Sitemap.xml</h3>
           <p className="sakh-body text-sm mb-6">
-            Последняя генерация: 15.05.2026. URL: https://sakhcom.ru/sitemap.xml
+            Последняя генерация: 15.05.2026. URL: https://rec-sakh.ru/sitemap.xml
           </p>
           <div className="flex items-center justify-center gap-3">
             <button className="sakh-btn sakh-btn--primary sakh-btn--md">

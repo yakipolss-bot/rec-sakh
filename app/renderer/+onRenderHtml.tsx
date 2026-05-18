@@ -35,7 +35,7 @@ async function onRenderHtml(pageContext: any) {
   const defaultTitle = 'Sakhcom — Новости Сахалина';
   const defaultDescription = 'Новости Сахалина и Курильских островов. Актуальные события, происшествия, экономика, спорт, культура.';
   const defaultImage = '/og-default.jpg';
-  const siteUrl = 'https://sakhcom.ru';
+  const siteUrl = 'https://rec-sakh.ru';
 
   const pageTitle = seo?.title
     ? `${seo.title} — Sakhcom`
@@ -60,7 +60,7 @@ async function onRenderHtml(pageContext: any) {
     foundingDate: '2024',
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'admin@sakhcom.ru',
+      email: 'admin@rec-sakh.ru',
       url: siteUrl,
     },
   });

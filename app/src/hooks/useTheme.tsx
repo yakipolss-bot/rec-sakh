@@ -20,7 +20,7 @@ function getEffectiveTheme(mode: ThemeMode): Exclude<ThemeMode, 'auto'> {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
-    const stored = localStorage.getItem('sakhcom-theme');
+    const stored = localStorage.getItem('rec-sakh-theme');
     return (stored as ThemeMode) || 'auto';
   });
 
@@ -32,7 +32,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback((newTheme: ThemeMode) => {
     setThemeState(newTheme);
-    localStorage.setItem('sakhcom-theme', newTheme);
+    localStorage.setItem('rec-sakh-theme', newTheme);
   }, []);
 
   return (

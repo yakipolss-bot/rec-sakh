@@ -250,7 +250,7 @@ export const sakhalinCities = [
 ];
 
 export const securityLogs = [
-  { id: 'sec1', event: 'Неудачная попытка входа', user: 'admin@sakhcom.ru', ip: '185.234.12.45', timestamp: '10 мин назад' },
+  { id: 'sec1', event: 'Неудачная попытка входа', user: 'admin@rec-sakh.ru', ip: '185.234.12.45', timestamp: '10 мин назад' },
   { id: 'sec2', event: 'Неудачная попытка входа', user: 'root', ip: '91.123.45.67', timestamp: '1 час назад' },
   { id: 'sec3', event: 'Блокировка IP', user: '—', ip: '185.234.12.45', timestamp: '5 мин назад' },
   { id: 'sec4', event: 'Смена пароля', user: 'alexey@mail.ru', ip: '95.24.68.12', timestamp: '3 часа назад' },

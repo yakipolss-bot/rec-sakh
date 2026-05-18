@@ -132,19 +132,19 @@ export default function AdminSettings() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 max-w-2xl">
             <div>
               <label className="sakh-caption block mb-1">Telegram (URL)</label>
-              <input type="url" className="sakh-input" defaultValue="https://t.me/sakhcom" placeholder="https://t.me/..." />
+              <input type="url" className="sakh-input" defaultValue="https://t.me/recsakh" placeholder="https://t.me/..." />
             </div>
             <div>
               <label className="sakh-caption block mb-1">ВКонтакте (URL)</label>
-              <input type="url" className="sakh-input" defaultValue="https://vk.com/sakhcom" placeholder="https://vk.com/..." />
+              <input type="url" className="sakh-input" defaultValue="https://vk.com/recsakh" placeholder="https://vk.com/..." />
             </div>
             <div>
               <label className="sakh-caption block mb-1">Яндекс.Дзен (URL)</label>
-              <input type="url" className="sakh-input" defaultValue="https://dzen.ru/sakhcom" placeholder="https://dzen.ru/..." />
+              <input type="url" className="sakh-input" defaultValue="https://dzen.ru/recsakh" placeholder="https://dzen.ru/..." />
             </div>
             <div>
               <label className="sakh-caption block mb-1">Одноклассники (URL)</label>
-              <input type="url" className="sakh-input" defaultValue="https://ok.ru/sakhcom" placeholder="https://ok.ru/..." />
+              <input type="url" className="sakh-input" defaultValue="https://ok.ru/recsakh" placeholder="https://ok.ru/..." />
             </div>
             <button className="sakh-btn sakh-btn--primary sakh-btn--md"><Save size={14} /> Сохранить</button>
           </motion.div>

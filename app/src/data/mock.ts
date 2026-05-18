@@ -554,7 +554,7 @@ export const events: Event[] = [
 export const currentUser: UserProfile = {
   id: 'u-current',
   name: 'Александр Иванов',
-  email: 'alex@sakhcom.ru',
+  email: 'alex@rec-sakh.ru',
   phone: '+7 (962) 123-45-67',
   avatar: '',
   city: 'Южно-Сахалинск',

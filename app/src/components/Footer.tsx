@@ -73,7 +73,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
                 <Mail size={14} />
-                <span>info@sakhcom.ru</span>
+                <span>info@rec-sakh.ru</span>
               </div>
             </div>
           </div>
