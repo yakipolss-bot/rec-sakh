@@ -1,4 +1,6 @@
 FROM node:22-alpine AS build
+ARG BUILD_ID=unknown
+RUN echo "Building with ID: $BUILD_ID"
 WORKDIR /app
 COPY apps/api/package*.json ./
 RUN npm ci
