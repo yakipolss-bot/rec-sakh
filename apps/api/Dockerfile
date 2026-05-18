@@ -5,6 +5,7 @@ RUN npm ci
 COPY apps/api/ .
 RUN npx prisma generate
 RUN npm run build 2>&1 || (echo "BUILD FAILED" && exit 1)
+# Force rebuild
 
 FROM node:22-alpine AS production
 ENV NODE_ENV=production
