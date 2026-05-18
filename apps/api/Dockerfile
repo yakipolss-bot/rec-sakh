@@ -1,4 +1,6 @@
 FROM node:22-alpine AS builder
+ARG CACHE_BUST=unknown
+RUN echo "Cache bust: $CACHE_BUST"
 WORKDIR /app
 COPY apps/api/package*.json ./
 RUN npm ci
