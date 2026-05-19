@@ -1,7 +1,25 @@
 import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from '../../src/components/ProtectedRoute';
 import HomePage from '../../src/pages/HomePage';
+import AdsPage from '../../src/pages/AdsPage';
+import AdDetailPage from '../../src/pages/AdDetailPage';
+import AdSubmitPage from '../../src/pages/AdSubmitPage';
+import WeatherPage from '../../src/pages/WeatherPage';
+import TransportPage from '../../src/pages/TransportPage';
+import CurrencyPage from '../../src/pages/CurrencyPage';
+import EventsPage from '../../src/pages/EventsPage';
+import EventDetailPage from '../../src/pages/EventDetailPage';
+import EventSubmitPage from '../../src/pages/EventSubmitPage';
+import JobsPage from '../../src/pages/JobsPage';
+import TvPage from '../../src/pages/TvPage';
+import CrosswordsPage from '../../src/pages/CrosswordsPage';
+import HoroscopePage from '../../src/pages/HoroscopePage';
+import DirectoryPage from '../../src/pages/DirectoryPage';
+import MediaPage from '../../src/pages/MediaPage';
+import RealtyPage from '../../src/pages/RealtyPage';
+import AboutPages from '../../src/pages/AboutPages';
 import ArticlePage from '../../src/pages/ArticlePage';
 import CategoryPage from '../../src/pages/CategoryPage';
 import SearchPage from '../../src/pages/SearchPage';
@@ -71,10 +89,27 @@ function AnimatedRoutes() {
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/login" element={<AuthPage />} />
+          <Route path="/about" element={<AboutPages />} />
+          <Route path="/weather" element={<WeatherPage />} />
+          <Route path="/transport" element={<TransportPage />} />
+          <Route path="/currency" element={<CurrencyPage />} />
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/event/:id" element={<EventDetailPage />} />
+          <Route path="/event/submit" element={<EventSubmitPage />} />
+          <Route path="/ads" element={<AdsPage />} />
+          <Route path="/ad/:id" element={<AdDetailPage />} />
+          <Route path="/ad/submit" element={<AdSubmitPage />} />
+          <Route path="/jobs" element={<JobsPage />} />
+          <Route path="/tv" element={<TvPage />} />
+          <Route path="/crosswords" element={<CrosswordsPage />} />
+          <Route path="/horoscope" element={<HoroscopePage />} />
+          <Route path="/directory" element={<DirectoryPage />} />
+          <Route path="/media" element={<MediaPage />} />
+          <Route path="/realty" element={<RealtyPage />} />
 
           <Route path="/account-old" element={<AccountPage />} />
 
-          <Route path="/account" element={<AccountLayout />}>
+          <Route path="/account" element={<ProtectedRoute><AccountLayout /></ProtectedRoute>}>
             <Route index element={<AccountDashboard />} />
             <Route path="profile" element={<AccountProfile />} />
             <Route path="security" element={<AccountSecurity />} />
@@ -90,7 +125,7 @@ function AnimatedRoutes() {
             <Route path="support" element={<AccountSupport />} />
           </Route>
 
-          <Route path="/editorial" element={<EditorialLayout />}>
+          <Route path="/editorial" element={<ProtectedRoute allowedRoles={['editor', 'admin']}><EditorialLayout /></ProtectedRoute>}>
             <Route index element={<EditorialDashboard />} />
             <Route path="news" element={<EditorialNews />}>
               <Route index element={<EditorialNewsList />} />
@@ -112,7 +147,7 @@ function AnimatedRoutes() {
             <Route path="newsletters" element={<EditorialNewsletters />} />
           </Route>
 
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="users/:id" element={<AdminUserId />} />

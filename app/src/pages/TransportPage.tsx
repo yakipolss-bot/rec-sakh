@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Bus, Plane, Ship, Road } from 'lucide-react';
+import { ArrowLeft, Bus, Plane, Ship, Route } from 'lucide-react';
 
 type TransportTab = 'schedule' | 'airport' | 'ferry' | 'roads';
 
@@ -9,7 +9,7 @@ const TABS: { value: TransportTab; label: string; icon: React.ReactNode }[] = [
   { value: 'schedule', label: 'Расписания', icon: <Bus size={14} /> },
   { value: 'airport', label: 'Аэропорт', icon: <Plane size={14} /> },
   { value: 'ferry', label: 'Паром', icon: <Ship size={14} /> },
-  { value: 'roads', label: 'Дороги', icon: <Road size={14} /> },
+  { value: 'roads', label: 'Дороги', icon: <Route size={14} /> },
 ];
 
 const mockSchedule = [

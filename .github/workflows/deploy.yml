@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI
 
 on:
   push:
@@ -72,31 +72,4 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-  deploy-api:
-    name: Deploy API to Railway
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    needs: [build-api]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-      - name: Deploy
-        run: railway up --service api
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-  deploy-frontend:
-    name: Deploy Frontend to Vercel
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    needs: [build-frontend]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: --prod
-          working-directory: app
