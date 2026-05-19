@@ -70,6 +70,16 @@ export interface WeatherData {
   pressure: number;
 }
 
+export interface ForecastDay {
+  day: string;
+  date: string;
+  tempMax: number;
+  tempMin: number;
+  condition: WeatherData['condition'];
+  precipitation: number;
+  windSpeed: number;
+}
+
 export interface CurrencyRate {
   code: string;
   name: string;

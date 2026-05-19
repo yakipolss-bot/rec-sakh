@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Cloud, CloudRain, Snowflake, Sun, Wind, Droplets, Gauge } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Cloud, CloudRain, Snowflake, Sun, Wind, Droplets, Gauge, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { weatherData } from '@/data/mock';
+import { fetchAllCitiesWeather, SAKHALIN_CITIES } from '@/services/weather.service';
 import type { WeatherData } from '@/types';
 
 const weatherIcons: Record<WeatherData['condition'], React.ReactNode> = {
@@ -23,8 +23,25 @@ const weatherLabels: Record<WeatherData['condition'], string> = {
 };
 
 export default function WeatherWidget() {
-  const [selectedCity, setSelectedCity] = useState(0);
-  const weather = weatherData[selectedCity];
+  const [allWeather, setAllWeather] = useState<WeatherData[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const data = await fetchAllCitiesWeather();
+      if (mounted) {
+        setAllWeather(data);
+        setLoading(false);
+      }
+    };
+    load();
+    const interval = setInterval(load, 10 * 60 * 1000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
+
+  const weather = allWeather[selectedIndex];
 
   return (
     <div className="sakh-card p-4">
@@ -33,59 +50,67 @@ export default function WeatherWidget() {
           Погода
         </h3>
         <select
-          value={selectedCity}
-          onChange={(e) => setSelectedCity(Number(e.target.value))}
+          value={selectedIndex}
+          onChange={(e) => setSelectedIndex(Number(e.target.value))}
           className="sakh-select"
           style={{ width: 'auto', fontSize: 'var(--text-xs)', padding: '2px 24px 2px 8px', backgroundPosition: 'right 4px center' }}
         >
-          {weatherData.map((w, i) => (
+          {allWeather.map((w, i) => (
             <option key={w.cityCode} value={i}>{w.city}</option>
           ))}
         </select>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={weather.cityCode}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <div style={{ color: 'var(--accent-ocean)' }}>
-              {weatherIcons[weather.condition]}
-            </div>
-            <div>
-              <div className="text-3xl font-mono font-medium" style={{ color: 'var(--text-primary)' }}>
-                {weather.temp > 0 ? `+${weather.temp}` : weather.temp}°
+      {loading ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 size={20} className="animate-spin" style={{ color: 'var(--text-secondary)' }} />
+        </div>
+      ) : weather ? (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={weather.cityCode}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div style={{ color: 'var(--accent-ocean)' }}>
+                {weatherIcons[weather.condition]}
               </div>
-              <div className="sakh-meta">{weatherLabels[weather.condition]}</div>
+              <div>
+                <div className="text-3xl font-mono font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {weather.temp > 0 ? `+${weather.temp}` : weather.temp}°
+                </div>
+                <div className="sakh-meta">{weatherLabels[weather.condition]}</div>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <div className="flex flex-col items-center p-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
-              <Wind size={14} style={{ color: 'var(--text-muted)' }} />
-              <span className="sakh-meta mt-1" style={{ color: 'var(--text-primary)' }}>
-                {weather.windSpeed} м/с
-              </span>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-col items-center p-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                <Wind size={14} style={{ color: 'var(--text-muted)' }} />
+                <span className="sakh-meta mt-1" style={{ color: 'var(--text-primary)' }}>
+                  {weather.windSpeed} м/с
+                </span>
+              </div>
+              <div className="flex flex-col items-center p-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                <Droplets size={14} style={{ color: 'var(--text-muted)' }} />
+                <span className="sakh-meta mt-1" style={{ color: 'var(--text-primary)' }}>
+                  {weather.humidity}%
+                </span>
+              </div>
+              <div className="flex flex-col items-center p-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
+                <Gauge size={14} style={{ color: 'var(--text-muted)' }} />
+                <span className="sakh-meta mt-1" style={{ color: 'var(--text-primary)' }}>
+                  {weather.pressure} мм
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col items-center p-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
-              <Droplets size={14} style={{ color: 'var(--text-muted)' }} />
-              <span className="sakh-meta mt-1" style={{ color: 'var(--text-primary)' }}>
-                {weather.humidity}%
-              </span>
-            </div>
-            <div className="flex flex-col items-center p-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
-              <Gauge size={14} style={{ color: 'var(--text-muted)' }} />
-              <span className="sakh-meta mt-1" style={{ color: 'var(--text-primary)' }}>
-                {weather.pressure}
-              </span>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
+      ) : (
+        <p className="text-xs text-center py-4" style={{ color: 'var(--text-secondary)' }}>Нет данных</p>
+      )}
     </div>
   );
 }
