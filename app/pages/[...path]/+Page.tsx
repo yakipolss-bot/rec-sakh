@@ -33,6 +33,25 @@ import AdminAdvertising from '../../src/pages/admin/advertising';
 import AdminBilling from '../../src/pages/admin/billing';
 import AdminSettings from '../../src/pages/admin/settings';
 import AdminSystem from '../../src/pages/admin/system';
+import EditorialLayout from '../../src/pages/editorial/EditorialLayout';
+import EditorialDashboard from '../../src/pages/editorial/EditorialDashboard';
+import EditorialNews from '../../src/pages/editorial/EditorialNews';
+import EditorialNewsCreate from '../../src/pages/editorial/EditorialNewsCreate';
+import EditorialNewsEdit from '../../src/pages/editorial/EditorialNewsEdit';
+import EditorialNewsPreview from '../../src/pages/editorial/EditorialNewsPreview';
+import EditorialNewsList from '../../src/pages/editorial/EditorialNewsList';
+import EditorialNewsStats from '../../src/pages/editorial/EditorialNewsStats';
+import EditorialNewsHistory from '../../src/pages/editorial/EditorialNewsHistory';
+import EditorialNewsComments from '../../src/pages/editorial/EditorialNewsComments';
+import EditorialCategories from '../../src/pages/editorial/EditorialCategories';
+import EditorialTags from '../../src/pages/editorial/EditorialTags';
+import EditorialMedia from '../../src/pages/editorial/EditorialMedia';
+import EditorialComments from '../../src/pages/editorial/EditorialComments';
+import EditorialAnalytics from '../../src/pages/editorial/EditorialAnalytics';
+import EditorialSeo from '../../src/pages/editorial/EditorialSeo';
+import EditorialAds from '../../src/pages/editorial/EditorialAds';
+import EditorialEvents from '../../src/pages/editorial/EditorialEvents';
+import EditorialNewsletters from '../../src/pages/editorial/EditorialNewsletters';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -69,6 +88,28 @@ function AnimatedRoutes() {
             <Route path="favorites" element={<AccountFavorites />} />
             <Route path="billing" element={<AccountBilling />} />
             <Route path="support" element={<AccountSupport />} />
+          </Route>
+
+          <Route path="/editorial" element={<EditorialLayout />}>
+            <Route index element={<EditorialDashboard />} />
+            <Route path="news" element={<EditorialNews />}>
+              <Route index element={<EditorialNewsList />} />
+              <Route path="create" element={<EditorialNewsCreate />} />
+              <Route path=":id/edit" element={<EditorialNewsEdit />} />
+              <Route path=":id/preview" element={<EditorialNewsPreview />} />
+              <Route path=":id/stats" element={<EditorialNewsStats />} />
+              <Route path=":id/history" element={<EditorialNewsHistory />} />
+              <Route path=":id/comments" element={<EditorialNewsComments />} />
+            </Route>
+            <Route path="categories" element={<EditorialCategories />} />
+            <Route path="tags" element={<EditorialTags />} />
+            <Route path="media" element={<EditorialMedia />} />
+            <Route path="comments" element={<EditorialComments />} />
+            <Route path="analytics" element={<EditorialAnalytics />} />
+            <Route path="seo" element={<EditorialSeo />} />
+            <Route path="ads" element={<EditorialAds />} />
+            <Route path="events" element={<EditorialEvents />} />
+            <Route path="newsletters" element={<EditorialNewsletters />} />
           </Route>
 
           <Route path="/admin" element={<AdminLayout />}>
