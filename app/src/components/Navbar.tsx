@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Sun, Moon, Focus, User, Menu, X, ChevronDown } from 'lucide-react';
+import { Search, Sun, Moon, Focus, User, Menu, X, ChevronDown, MapPin } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import ThemeSwitcher from './ThemeSwitcher';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const mainCategories = [
   { label: 'ОБЩЕСТВО', href: '/category/obshchestvo' },
@@ -38,350 +38,480 @@ const serviceLinks = [
   { label: 'Недвижимость', href: '/realty' },
 ];
 
+const quickLinks = [
+  { label: 'Погода', href: '/weather' },
+  { label: 'Курс валют', href: '/currency' },
+  { label: 'Афиша', href: '/events' },
+  { label: 'Работа', href: '/jobs' },
+];
+
+const themeIcons: Record<string, React.ReactNode> = {
+  morning: <Sun size={16} />,
+  day: <Sun size={16} />,
+  evening: <Sun size={16} />,
+  focus: <Focus size={16} />,
+  night: <Moon size={16} />,
+};
+
+const themeCycle: string[] = ['night', 'morning', 'day', 'evening', 'focus'];
+const themeLabels: Record<string, string> = {
+  night: 'Ночь',
+  morning: 'Утро',
+  day: 'День',
+  evening: 'Вечер',
+  focus: 'Фокус',
+};
+
+function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [query, setQuery] = useState('');
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setQuery('');
+    }
+  }, [open]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      onClose();
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[70] flex items-start justify-center pt-[15vh]"
+          style={{ backgroundColor: 'rgba(10, 15, 20, 0.92)', backdropFilter: 'blur(16px)' }}
+        >
+          <div className="w-full max-w-2xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                Поиск по порталу
+              </span>
+              <button onClick={onClose} className="p-2" style={{ color: 'var(--text-secondary)' }}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div
+                className="flex items-center gap-3 px-5 py-4"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <Search size={20} style={{ color: 'var(--accent-ocean)' }} />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Новости, события, объявления..."
+                  className="flex-1 bg-transparent text-lg outline-none"
+                  style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
+                />
+              </div>
+            </form>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Популярное:</span>
+              {['Погода', 'Происшествия', 'Спорт', 'Курс валют'].map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => {
+                    navigate(`/search?q=${encodeURIComponent(tag)}`);
+                    onClose();
+                  }}
+                  className="px-3 py-1 text-xs transition-colors"
+                  style={{
+                    backgroundColor: 'var(--bg-surface)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)',
+                  }}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const location = useLocation();
+  const isActive = (href: string) => location.pathname.startsWith(href);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60]"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="fixed top-0 right-0 bottom-0 z-[65] w-80 overflow-y-auto"
+            style={{
+              backgroundColor: 'var(--bg-primary)',
+              borderLeft: '1px solid var(--border-color)',
+            }}
+          >
+            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <span className="text-sm font-mono uppercase tracking-wider" style={{ color: 'var(--accent-ocean)' }}>
+                Меню
+              </span>
+              <button onClick={onClose} className="p-2" style={{ color: 'var(--text-secondary)' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-6">
+              <div>
+                <p className="text-xs uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Новости</p>
+                {[...mainCategories, ...moreCategories].map((s) => (
+                  <Link
+                    key={s.href}
+                    to={s.href}
+                    onClick={onClose}
+                    className="block px-3 py-2.5 text-sm transition-colors"
+                    style={{
+                      color: isActive(s.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)',
+                      backgroundColor: isActive(s.href) ? 'var(--ocean-alpha-10)' : 'transparent',
+                    }}
+                  >
+                    {s.label}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                <p className="text-xs uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Сервисы</p>
+                {serviceLinks.map((s) => (
+                  <Link
+                    key={s.href}
+                    to={s.href}
+                    onClick={onClose}
+                    className="block px-3 py-2.5 text-sm transition-colors"
+                    style={{ color: isActive(s.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)' }}
+                  >
+                    {s.label}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                <Link
+                  to="/account"
+                  onClick={onClose}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <User size={16} />
+                  Личный кабинет
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function Navbar() {
   const { theme, setTheme, effectiveTheme } = useTheme();
   const location = useLocation();
-  const navigate = useNavigate();
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [servicesOpen, setServicesOpen] = useState(false);
-  const themeRef = useRef<HTMLDivElement>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
-  const servicesRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (themeRef.current && !themeRef.current.contains(e.target as Node)) {
-        setShowThemeMenu(false);
-      }
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
-        setMoreOpen(false);
-      }
-      if (servicesRef.current && !servicesRef.current.contains(e.target as Node)) {
-        setServicesOpen(false);
-      }
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+      if (userRef.current && !userRef.current.contains(e.target as Node)) setUserMenuOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchOpen(false);
-      setSearchQuery('');
-    }
-  };
+  useEffect(() => {
+    setMobileOpen(false);
+    setSearchOpen(false);
+  }, [location.pathname]);
 
-  const themeIcon = effectiveTheme === 'morning'
-    ? <Sun size={18} className="text-[var(--accent-sunset)]" />
-    : effectiveTheme === 'night'
-    ? <Moon size={18} />
-    : effectiveTheme === 'focus'
-    ? <Focus size={18} />
-    : <Sun size={18} className={effectiveTheme === 'evening' ? 'text-[var(--accent-sunset)]' : 'text-[var(--accent-ocean)]'} />;
+  const cycleTheme = useCallback(() => {
+    const idx = themeCycle.indexOf(theme);
+    const next = themeCycle[(idx + 1) % themeCycle.length];
+    setTheme(next);
+  }, [theme, setTheme]);
 
-  const isCategoryActive = (href: string) => location.pathname.startsWith(href);
-  const isServiceActive = (href: string) => location.pathname.startsWith(href);
+  const isActive = (href: string) => location.pathname.startsWith(href);
 
   return (
-    <nav
-      className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center"
-      style={{
-        backgroundColor: 'rgba(10, 15, 20, 0.85)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border-color)',
-      }}
-    >
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <span
-            className="font-mono text-lg tracking-[0.1em] uppercase"
-            style={{ color: 'var(--text-primary)', fontWeight: 500 }}
-          >
-            SAKHALIN
-          </span>
-          <span
-            className="w-[2px] h-5 inline-block"
-            style={{ backgroundColor: 'var(--accent-ocean)' }}
-          />
-        </Link>
+    <>
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <MobileDrawer open={mobileOpen} onClose={() => setMobileOpen(false)} />
 
-        <div className="hidden lg:flex items-center gap-1 ml-8">
-          {mainCategories.map((section) => (
-            <Link
-              key={section.href}
-              to={section.href}
-              className="relative px-3 py-2 text-sm uppercase tracking-[0.05em] transition-colors whitespace-nowrap"
-              style={{
-                color: isCategoryActive(section.href) ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontFamily: 'var(--font-body)',
-                fontWeight: 500,
-              }}
-            >
-              {section.label}
-              {isCategoryActive(section.href) && (
-                <motion.div
-                  layoutId="nav-indicator"
-                  className="absolute bottom-0 left-3 right-3 h-[2px]"
-                  style={{ backgroundColor: 'var(--accent-ocean)' }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
-            </Link>
-          ))}
+      <header className="fixed top-0 left-0 right-0 z-50" style={{ backgroundColor: 'rgba(10, 15, 20, 0.88)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid var(--border-color)' }}>
+        {/* Top bar */}
+        <div className="flex items-center h-10 px-4 sm:px-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
+          <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/" className="flex items-center gap-2 shrink-0">
+                <span className="font-mono text-base tracking-[0.12em] uppercase" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                  SAKHALIN
+                </span>
+                <span className="w-[2px] h-4 inline-block" style={{ backgroundColor: 'var(--accent-ocean)' }} />
+              </Link>
+              <div className="hidden sm:flex items-center gap-1">
+                <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Южно-Сахалинск</span>
+              </div>
+            </div>
 
-          <div className="relative" ref={moreRef}>
-            <button
-              onClick={() => { setMoreOpen(!moreOpen); setServicesOpen(false); }}
-              className="flex items-center gap-1 px-3 py-2 text-sm uppercase tracking-[0.05em] transition-colors whitespace-nowrap"
-              style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontWeight: 500 }}
-            >
-              ЕЩЁ <ChevronDown size={14} className={`transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
-            </button>
-            <AnimatePresence>
-              {moreOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute left-0 top-full mt-2 w-56 py-1 z-50"
+            <div className="hidden md:flex items-center gap-1">
+              {quickLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className="px-2.5 py-1 text-xs transition-colors"
                   style={{
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-color)',
+                    color: isActive(link.href) ? 'var(--accent-ocean)' : 'var(--text-muted)',
                   }}
                 >
-                  {moreCategories.map((cat) => (
-                    <Link
-                      key={cat.href}
-                      to={cat.href}
-                      onClick={() => setMoreOpen(false)}
-                      className="block px-4 py-2 text-sm transition-colors"
-                      style={{
-                        color: isCategoryActive(cat.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)',
-                        fontFamily: 'var(--font-body)',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isCategoryActive(cat.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)'; }}
-                    >
-                      {cat.label}
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="relative" ref={servicesRef}>
-            <button
-              onClick={() => { setServicesOpen(!servicesOpen); setMoreOpen(false); }}
-              className="flex items-center gap-1 px-3 py-2 text-sm uppercase tracking-[0.05em] transition-colors whitespace-nowrap"
-              style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontWeight: 500 }}
-            >
-              СЕРВИСЫ <ChevronDown size={14} className={`transition-transform ${servicesOpen ? 'rotate-180' : ''}`} />
-            </button>
-            <AnimatePresence>
-              {servicesOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute left-0 top-full mt-2 w-56 py-1 z-50"
-                  style={{
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-color)',
-                  }}
-                >
-                  {serviceLinks.map((svc) => (
-                    <Link
-                      key={svc.href}
-                      to={svc.href}
-                      onClick={() => setServicesOpen(false)}
-                      className="block px-4 py-2 text-sm transition-colors"
-                      style={{
-                        color: isServiceActive(svc.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)',
-                        fontFamily: 'var(--font-body)',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = isServiceActive(svc.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)'; }}
-                    >
-                      {svc.label}
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          <AnimatePresence>
-            {searchOpen ? (
-              <motion.form
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 280, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onSubmit={handleSearch}
-                className="hidden sm:flex items-center overflow-hidden"
-              >
-                <input
-                  autoFocus
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Найти на Сахалине..."
-                  className="w-full h-9 px-3 text-sm outline-none"
+        {/* Main nav bar */}
+        <div className="flex items-center h-12 px-4 sm:px-6">
+          <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between">
+            {/* Categories - desktop */}
+            <div className="hidden lg:flex items-center gap-0.5 flex-1 min-w-0 overflow-hidden">
+              {mainCategories.map((cat) => (
+                <Link
+                  key={cat.href}
+                  to={cat.href}
+                  className="relative px-3.5 py-2 text-sm uppercase tracking-[0.06em] transition-colors whitespace-nowrap"
                   style={{
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--accent-ocean)',
-                    color: 'var(--text-primary)',
+                    color: isActive(cat.href) ? 'var(--text-primary)' : 'var(--text-secondary)',
                     fontFamily: 'var(--font-body)',
-                    boxShadow: '0 0 0 1px var(--accent-ocean-20)',
+                    fontWeight: 500,
+                    opacity: isActive(cat.href) ? 1 : 0.7,
                   }}
-                />
-                <button
-                  type="button"
-                  onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
-                  className="ml-2 p-1"
-                  style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = isActive(cat.href) ? '1' : '0.7'; }}
                 >
-                  <X size={16} />
+                  {cat.label}
+                  {isActive(cat.href) && (
+                    <motion.div
+                      layoutId="nav-indicator"
+                      className="absolute bottom-0 left-2 right-2 h-[2px]"
+                      style={{ backgroundColor: 'var(--accent-ocean)' }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                </Link>
+              ))}
+
+              <div className="relative" ref={moreRef}>
+                <button
+                  onClick={() => setMoreOpen(!moreOpen)}
+                  className="flex items-center gap-1 px-3 py-2 text-sm uppercase tracking-[0.06em] whitespace-nowrap transition-opacity"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 500,
+                    opacity: 0.7,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+                >
+                  ЕЩЁ <ChevronDown size={12} className={`transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
                 </button>
-              </motion.form>
-            ) : (
+                <AnimatePresence>
+                  {moreOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute left-0 top-full mt-1 w-52 py-1 z-50"
+                      style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                      }}
+                    >
+                      <div className="px-3 py-1.5 text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                        Рубрики
+                      </div>
+                      {moreCategories.map((cat) => (
+                        <Link
+                          key={cat.href}
+                          to={cat.href}
+                          onClick={() => setMoreOpen(false)}
+                          className="block px-4 py-2 text-sm transition-colors"
+                          style={{
+                            color: isActive(cat.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)',
+                          }}
+                        >
+                          {cat.label}
+                        </Link>
+                      ))}
+                      <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
+                      <div className="px-3 py-1.5 text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                        Сервисы
+                      </div>
+                      {serviceLinks.map((svc) => (
+                        <Link
+                          key={svc.href}
+                          to={svc.href}
+                          onClick={() => setMoreOpen(false)}
+                          className="block px-4 py-2 text-sm transition-colors"
+                          style={{ color: isActive(svc.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)' }}
+                        >
+                          {svc.label}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Right actions */}
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={() => setSearchOpen(true)}
-                className="hidden sm:flex p-2 transition-colors"
+                className="p-2 transition-colors"
                 style={{ color: 'var(--text-secondary)' }}
                 aria-label="Поиск"
               >
                 <Search size={18} />
               </button>
-            )}
-          </AnimatePresence>
 
-          <button
-            onClick={() => navigate('/search')}
-            className="sm:hidden p-2"
-            style={{ color: 'var(--text-secondary)' }}
-            aria-label="Поиск"
-          >
-            <Search size={18} />
-          </button>
+              <button
+                onClick={cycleTheme}
+                className="p-2 transition-colors hidden sm:block"
+                style={{ color: 'var(--text-secondary)' }}
+                aria-label={themeLabels[theme]}
+                title={themeLabels[theme]}
+              >
+                {themeIcons[theme] || <Sun size={16} />}
+              </button>
 
-          <div className="relative" ref={themeRef}>
-            <button
-              onClick={() => setShowThemeMenu(!showThemeMenu)}
-              className="p-2 transition-colors"
-              style={{ color: 'var(--text-secondary)' }}
-              aria-label="Тема"
-            >
-              {themeIcon}
-            </button>
-            <AnimatePresence>
-              {showThemeMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-40 py-1 z-50"
-                  style={{
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-color)',
-                  }}
+              <div className="relative hidden sm:block" ref={userRef}>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-1.5 px-2 py-2 transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                  aria-label="Пользователь"
                 >
-                  <ThemeSwitcher onSelect={() => setShowThemeMenu(false)} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <Link
-            to="/account"
-            className="p-2 transition-colors"
-            style={{
-              color: location.pathname.startsWith('/account') || location.pathname === '/login'
-                ? 'var(--accent-ocean)'
-                : 'var(--text-secondary)',
-            }}
-            aria-label="Профиль"
-          >
-            <User size={18} />
-          </Link>
-
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 ml-1"
-            style={{ color: 'var(--text-secondary)' }}
-            aria-label="Меню"
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden absolute top-16 left-0 right-0 overflow-hidden"
-            style={{
-              backgroundColor: 'rgba(10, 15, 20, 0.95)',
-              backdropFilter: 'blur(12px)',
-              borderBottom: '1px solid var(--border-color)',
-            }}
-          >
-            <div className="px-4 py-4 space-y-1 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              <div className="mb-2">
-                <p className="px-3 py-1 text-xs uppercase tracking-wider" style={{ color: 'var(--accent-ocean)', fontFamily: 'var(--font-mono)' }}>Новости</p>
-                {[...mainCategories, ...moreCategories].map((section) => (
-                  <Link
-                    key={section.href}
-                    to={section.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2.5 text-sm uppercase tracking-[0.05em]"
+                  <div
+                    className="w-6 h-6 flex items-center justify-center text-xs font-mono"
                     style={{
-                      color: isCategoryActive(section.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)',
-                      fontFamily: 'var(--font-body)',
-                      fontWeight: 500,
+                      backgroundColor: 'var(--bg-surface)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--accent-ocean)',
                     }}
                   >
-                    {section.label}
-                  </Link>
-                ))}
+                    <User size={14} />
+                  </div>
+                </button>
+                <AnimatePresence>
+                  {userMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute right-0 top-full mt-1 w-44 py-1 z-50"
+                      style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                      }}
+                    >
+                      <Link
+                        to="/login"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2 text-sm transition-colors"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Войти
+                      </Link>
+                      <Link
+                        to="/account"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2 text-sm transition-colors"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Личный кабинет
+                      </Link>
+                      <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
+                      <Link
+                        to="/editorial"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2 text-sm transition-colors"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        Редакция
+                      </Link>
+                      <Link
+                        to="/admin"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2 text-sm transition-colors"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        Админка
+                      </Link>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <div className="border-t border-[var(--border-color)] pt-2 mb-2">
-                <p className="px-3 py-1 text-xs uppercase tracking-wider" style={{ color: 'var(--accent-ocean)', fontFamily: 'var(--font-mono)' }}>Сервисы</p>
-                {serviceLinks.map((svc) => (
-                  <Link
-                    key={svc.href}
-                    to={svc.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2.5 text-sm"
-                    style={{
-                      color: isServiceActive(svc.href) ? 'var(--accent-ocean)' : 'var(--text-secondary)',
-                      fontFamily: 'var(--font-body)',
-                    }}
-                  >
-                    {svc.label}
-                  </Link>
-                ))}
-              </div>
+
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="lg:hidden p-2 transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+                aria-label="Меню"
+              >
+                <Menu size={20} />
+              </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+          </div>
+        </div>
+      </header>
+    </>
   );
 }
