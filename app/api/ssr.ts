@@ -14,10 +14,10 @@ export default async (req: any, res: any) => {
     res.statusCode = statusCode
     headers.forEach(([name, value]: [string, string]) => res.setHeader(name, value))
     res.end(body)
-  } catch (err) {
-    console.error('SSR render error:', err)
+  } catch (err: any) {
+    console.error('SSR render error:', err?.stack || err)
     res.statusCode = 500
     res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-    res.end('Внутренняя ошибка сервера')
+    res.end(`SSR Error: ${err?.message || String(err)}\n\n${err?.stack || ''}`)
   }
 }
