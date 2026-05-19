@@ -1,6 +1,6 @@
 import { escapeInject, dangerouslySkipEscape } from 'vike/server';
 import ReactDOMServer from 'react-dom/server';
-import { PageContextProvider } from 'vike-react/PageContextProvider';
+import { PageContextProvider } from 'vike-react/usePageContext';
 import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
 

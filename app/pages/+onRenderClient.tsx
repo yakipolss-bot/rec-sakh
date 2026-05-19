@@ -1,6 +1,6 @@
 import React from 'react';
 import { hydrateRoot } from 'react-dom/client';
-import { PageContextProvider } from 'vike-react/PageContextProvider';
+import { PageContextProvider } from 'vike-react/usePageContext';
 import { BrowserRouter } from 'react-router-dom';
 
 export { onRenderClient };
