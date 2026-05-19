@@ -15,12 +15,22 @@ function parseJwt(token: string): Record<string, unknown> | null {
   }
 }
 
+function getLocalStorage(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key);
+}
+
+function removeLocalStorage(key: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
+}
+
 export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
   const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = getLocalStorage('accessToken');
     if (!token) {
       setStatus('unauthenticated');
       return;
@@ -31,14 +41,14 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
       authService
         .refresh()
         .then(() => {
-          const newToken = localStorage.getItem('accessToken');
+          const newToken = getLocalStorage('accessToken');
           const newPayload = newToken ? parseJwt(newToken) : null;
           setRole((newPayload?.role as string) || null);
           setStatus('authenticated');
         })
         .catch(() => {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+          removeLocalStorage('accessToken');
+          removeLocalStorage('refreshToken');
           setStatus('unauthenticated');
         });
     } else {

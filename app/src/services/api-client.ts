@@ -27,9 +27,24 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
+function getLocalStorage(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key);
+}
+
+function setLocalStorage(key: string, value: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(key, value);
+}
+
+function removeLocalStorage(key: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
+}
+
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('accessToken');
+    const token = getLocalStorage('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -43,7 +58,6 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // M8: _retry flag prevents infinite loop. isRefreshing is reset in finally block (line ~89).
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -59,11 +73,11 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = getLocalStorage('refreshToken');
       if (!refreshToken) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        removeLocalStorage('accessToken');
+        removeLocalStorage('refreshToken');
+        if (typeof window !== 'undefined') window.location.href = '/login';
         return Promise.reject(error);
       }
 
@@ -74,8 +88,8 @@ apiClient.interceptors.response.use(
 
         const { accessToken, refreshToken: newRefreshToken } = data.data || data;
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
+        setLocalStorage('accessToken', accessToken);
+        setLocalStorage('refreshToken', newRefreshToken);
 
         processQueue(null, accessToken);
 
@@ -83,9 +97,9 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        removeLocalStorage('accessToken');
+        removeLocalStorage('refreshToken');
+        if (typeof window !== 'undefined') window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

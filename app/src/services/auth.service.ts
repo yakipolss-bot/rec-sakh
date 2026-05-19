@@ -12,6 +12,11 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+function ssrGuard<T>(fn: () => T, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  return fn();
+}
+
 export const authService = {
   async register(email: string, password: string, name: string, phone?: string) {
     const { data } = await apiClient.post('/auth/register', {
@@ -22,8 +27,8 @@ export const authService = {
     });
     const result = data.data || data;
     if (result.accessToken) {
-      localStorage.setItem('accessToken', result.accessToken);
-      localStorage.setItem('refreshToken', result.refreshToken);
+      ssrGuard(() => { localStorage.setItem('accessToken', result.accessToken); }, undefined);
+      ssrGuard(() => { localStorage.setItem('refreshToken', result.refreshToken); }, undefined);
     }
     return result as AuthResponse;
   },
@@ -32,19 +37,19 @@ export const authService = {
     const { data } = await apiClient.post('/auth/login', { email, password });
     const result = data.data || data;
     if (result.accessToken) {
-      localStorage.setItem('accessToken', result.accessToken);
-      localStorage.setItem('refreshToken', result.refreshToken);
+      ssrGuard(() => { localStorage.setItem('accessToken', result.accessToken); }, undefined);
+      ssrGuard(() => { localStorage.setItem('refreshToken', result.refreshToken); }, undefined);
     }
     return result as AuthResponse;
   },
 
   async refresh() {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = ssrGuard(() => localStorage.getItem('refreshToken'), null);
     const { data } = await apiClient.post('/auth/refresh', { refreshToken });
     const result = data.data || data;
     if (result.accessToken) {
-      localStorage.setItem('accessToken', result.accessToken);
-      localStorage.setItem('refreshToken', result.refreshToken);
+      ssrGuard(() => { localStorage.setItem('accessToken', result.accessToken); }, undefined);
+      ssrGuard(() => { localStorage.setItem('refreshToken', result.refreshToken); }, undefined);
     }
     return result as AuthResponse;
   },
@@ -53,8 +58,8 @@ export const authService = {
     try {
       await apiClient.post('/auth/logout');
     } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      ssrGuard(() => { localStorage.removeItem('accessToken'); }, undefined);
+      ssrGuard(() => { localStorage.removeItem('refreshToken'); }, undefined);
     }
   },
 
