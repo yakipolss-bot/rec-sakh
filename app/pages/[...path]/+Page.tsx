@@ -1,0 +1,95 @@
+import { useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import HomePage from '../../src/pages/HomePage';
+import ArticlePage from '../../src/pages/ArticlePage';
+import CategoryPage from '../../src/pages/CategoryPage';
+import SearchPage from '../../src/pages/SearchPage';
+import AccountPage from '../../src/pages/AccountPage';
+import AuthPage from '../../src/pages/AuthPage';
+import AccountLayout from '../../src/components/AccountLayout';
+import AccountDashboard from '../../src/pages/account/index';
+import AccountProfile from '../../src/pages/account/profile';
+import AccountSecurity from '../../src/pages/account/security';
+import AccountNotifications from '../../src/pages/account/notifications';
+import AccountPrivacy from '../../src/pages/account/privacy';
+import AccountComments from '../../src/pages/account/comments';
+import AccountAds from '../../src/pages/account/ads';
+import AccountJobs from '../../src/pages/account/jobs';
+import AccountEvents from '../../src/pages/account/events';
+import AccountSubscriptions from '../../src/pages/account/subscriptions';
+import AccountFavorites from '../../src/pages/account/favorites';
+import AccountBilling from '../../src/pages/account/billing';
+import AccountSupport from '../../src/pages/account/support';
+import AdminLayout from '../../src/pages/admin/AdminLayout';
+import AdminDashboard from '../../src/pages/admin/index';
+import AdminUsers from '../../src/pages/admin/users';
+import AdminUserId from '../../src/pages/admin/users-id';
+import AdminUsersRoles from '../../src/pages/admin/users-roles';
+import AdminStaff from '../../src/pages/admin/staff';
+import AdminModeration from '../../src/pages/admin/moderation';
+import AdminContent from '../../src/pages/admin/content';
+import AdminAdvertising from '../../src/pages/admin/advertising';
+import AdminBilling from '../../src/pages/admin/billing';
+import AdminSettings from '../../src/pages/admin/settings';
+import AdminSystem from '../../src/pages/admin/system';
+
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Routes location={location}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/news/:id" element={<ArticlePage />} />
+          <Route path="/category/:slug" element={<CategoryPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/login" element={<AuthPage />} />
+
+          <Route path="/account-old" element={<AccountPage />} />
+
+          <Route path="/account" element={<AccountLayout />}>
+            <Route index element={<AccountDashboard />} />
+            <Route path="profile" element={<AccountProfile />} />
+            <Route path="security" element={<AccountSecurity />} />
+            <Route path="notifications" element={<AccountNotifications />} />
+            <Route path="privacy" element={<AccountPrivacy />} />
+            <Route path="comments" element={<AccountComments />} />
+            <Route path="ads" element={<AccountAds />} />
+            <Route path="jobs" element={<AccountJobs />} />
+            <Route path="events" element={<AccountEvents />} />
+            <Route path="subscriptions" element={<AccountSubscriptions />} />
+            <Route path="favorites" element={<AccountFavorites />} />
+            <Route path="billing" element={<AccountBilling />} />
+            <Route path="support" element={<AccountSupport />} />
+          </Route>
+
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="users/:id" element={<AdminUserId />} />
+            <Route path="users/roles" element={<AdminUsersRoles />} />
+            <Route path="staff" element={<AdminStaff />} />
+            <Route path="moderation" element={<AdminModeration />} />
+            <Route path="content" element={<AdminContent />} />
+            <Route path="advertising" element={<AdminAdvertising />} />
+            <Route path="billing" element={<AdminBilling />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="system" element={<AdminSystem />} />
+          </Route>
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+export default function CatchAllPage() {
+  return <AnimatedRoutes />;
+}
