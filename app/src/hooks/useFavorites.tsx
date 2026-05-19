@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
 interface FavoritesContextType {
   favorites: string[];
@@ -9,14 +9,14 @@ interface FavoritesContextType {
 const FavoritesContext = createContext<FavoritesContextType | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favorites, setFavorites] = useState<string[]>(() => {
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  useEffect(() => {
     try {
       const stored = localStorage.getItem('rec-sakh-favorites');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+      if (stored) setFavorites(JSON.parse(stored));
+    } catch { /* ignore */ }
+  }, []);
 
   const toggleFavorite = useCallback((newsId: string) => {
     setFavorites(prev => {

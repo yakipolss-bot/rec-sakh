@@ -19,12 +19,13 @@ function getEffectiveTheme(mode: ThemeMode): Exclude<ThemeMode, 'auto'> {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>(() => {
-    const stored = localStorage.getItem('rec-sakh-theme');
-    return (stored as ThemeMode) || 'auto';
-  });
-
+  const [theme, setThemeState] = useState<ThemeMode>('auto');
   const effectiveTheme = getEffectiveTheme(theme);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('rec-sakh-theme');
+    if (stored) setThemeState(stored as ThemeMode);
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', effectiveTheme);
