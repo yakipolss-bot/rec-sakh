@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Eye, Phone, Heart, MoreVertical, TrendingUp, Star, Clock, Trash2 } from 'lucide-react';
+import { FileText, Eye, Phone, Heart, TrendingUp, Star, Clock, Trash2 } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 
 type TabId = 'active' | 'archive' | 'moderation';

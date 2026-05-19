@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Shield, CheckCircle, XCircle, AlertTriangle,
-  Activity, Ban, Flag, BookOpen, Sliders,
+  Activity, Ban, Flag, Sliders,
 } from 'lucide-react';
 import { moderationQueue, moderationRules } from '@/data/adminMock';
 

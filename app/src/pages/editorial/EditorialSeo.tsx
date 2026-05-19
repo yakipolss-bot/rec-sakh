@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Globe, Link, FileText, Search, RefreshCw, Download, AlertTriangle } from 'lucide-react';
+import { Globe, FileText, Search, RefreshCw, Download, AlertTriangle } from 'lucide-react';
 import { editorialRedirects, editorialBrokenLinks } from '@/data/editorialMock';
 
 type Tab = 'redirects' | 'broken' | 'sitemap' | 'schema';
