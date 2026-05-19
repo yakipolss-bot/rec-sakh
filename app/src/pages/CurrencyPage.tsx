@@ -1,34 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, TrendingUp, TrendingDown, ArrowRightLeft } from 'lucide-react';
-import { currencyRates } from '@/data/mock';
+import { ArrowLeft, TrendingUp, TrendingDown, ArrowRightLeft, Loader2 } from 'lucide-react';
+import { fetchCurrencyRates, generateHistory } from '@/services/currency.service';
+import type { CurrencyRate } from '@/types';
 
 const FLAGS: Record<string, string> = {
   USD: '🇺🇸',
   JPY: '🇯🇵',
   KRW: '🇰🇷',
   CNY: '🇨🇳',
+  EUR: '🇪🇺',
 };
-
-const MOCK_HISTORY = [
-  { date: '10.05', rate: 88.2 },
-  { date: '11.05', rate: 88.7 },
-  { date: '12.05', rate: 89.0 },
-  { date: '13.05', rate: 88.9 },
-  { date: '14.05', rate: 89.2 },
-  { date: '15.05', rate: 89.4 },
-  { date: '16.05', rate: 89.45 },
-];
 
 export default function CurrencyPage() {
   const [amount, setAmount] = useState('100');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('RUB');
+  const [rates, setRates] = useState<CurrencyRate[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadRates = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchCurrencyRates();
+      if (data.length > 0) {
+        setRates(data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRates();
+    const interval = setInterval(loadRates, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const history = useMemo(() => rates.length > 0
+    ? generateHistory(rates.find(r => r.code === 'USD')?.rate ?? 0)
+    : [], [rates]);
 
   const getRate = (code: string) => {
     if (code === 'RUB') return 1;
-    const found = currencyRates.find(r => r.code === code);
+    const found = rates.find(r => r.code === code);
     return found?.rate || 0;
   };
 
@@ -76,7 +92,14 @@ export default function CurrencyPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {currencyRates.map((rate) => (
+                    {loading && rates.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="p-8 text-center">
+                          <Loader2 size={20} className="inline animate-spin text-[var(--accent-ocean)]" />
+                        </td>
+                      </tr>
+                    )}
+                    {rates.map((rate) => (
                       <tr
                         key={rate.code}
                         className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-primary)] transition-colors"
@@ -120,23 +143,29 @@ export default function CurrencyPage() {
             >
               <h3 className="sakh-caption mb-4">График динамики USD</h3>
               <div className="bg-[var(--bg-primary)] p-4 border border-[var(--border-color)]">
-                <div className="flex items-end gap-1" style={{ height: 160 }}>
-                  {MOCK_HISTORY.map((point, i) => {
-                    const min = Math.min(...MOCK_HISTORY.map(p => p.rate));
-                    const max = Math.max(...MOCK_HISTORY.map(p => p.rate));
-                    const h = ((point.rate - min) / (max - min)) * 140;
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <span className="sakh-caption text-[10px]">{point.rate.toFixed(1)}</span>
-                        <div
-                          className="w-full bg-[var(--accent-ocean)] transition-all"
-                          style={{ height: `${Math.max(h, 4)}px`, opacity: 0.6 + (i / MOCK_HISTORY.length) * 0.4 }}
-                        />
-                        <span className="sakh-caption text-[10px]">{point.date}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                {loading && history.length === 0 ? (
+                  <div className="flex items-center justify-center" style={{ height: 160 }}>
+                    <Loader2 size={20} className="animate-spin text-[var(--accent-ocean)]" />
+                  </div>
+                ) : (
+                  <div className="flex items-end gap-1" style={{ height: 160 }}>
+                    {history.length > 0 && history.map((point, i) => {
+                      const min = Math.min(...history.map(p => p.rate));
+                      const max = Math.max(...history.map(p => p.rate));
+                      const h = ((point.rate - min) / (max - min)) * 140;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <span className="sakh-caption text-[10px]">{point.rate.toFixed(1)}</span>
+                          <div
+                            className="w-full bg-[var(--accent-ocean)] transition-all"
+                            style={{ height: `${Math.max(h, 4)}px`, opacity: 0.6 + (i / history.length) * 0.4 }}
+                          />
+                          <span className="sakh-caption text-[10px]">{point.date}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
@@ -176,6 +205,7 @@ export default function CurrencyPage() {
                     <option value="JPY">{FLAGS.JPY} JPY</option>
                     <option value="KRW">{FLAGS.KRW} KRW</option>
                     <option value="CNY">{FLAGS.CNY} CNY</option>
+                    <option value="EUR">{FLAGS.EUR} EUR</option>
                     <option value="RUB">🇷🇺 RUB</option>
                   </select>
                 </div>
@@ -191,6 +221,7 @@ export default function CurrencyPage() {
                     <option value="JPY">{FLAGS.JPY} JPY</option>
                     <option value="KRW">{FLAGS.KRW} KRW</option>
                     <option value="CNY">{FLAGS.CNY} CNY</option>
+                    <option value="EUR">{FLAGS.EUR} EUR</option>
                     <option value="RUB">🇷🇺 RUB</option>
                   </select>
                 </div>
