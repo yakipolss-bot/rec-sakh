@@ -14,6 +14,8 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
+  app.setGlobalPrefix('api/v1');
+
   // CSRF not needed — JWT in headers, not cookies
   const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(s => s.trim());
   app.enableCors({ origin: allowedOrigins, credentials: true });
