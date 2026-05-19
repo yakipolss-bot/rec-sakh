@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -77,7 +77,7 @@ export default function ArticlePage({ id }: { id?: string }) {
 
   const [toast, setToast] = useState<string | null>(null);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rec-sakh.ru';
+  const baseUrl = useMemo(() => typeof window !== 'undefined' ? window.location.origin : 'https://rec-sakh.ru', []);
 
   const copyLink = useCallback(async () => {
     try {
@@ -151,7 +151,7 @@ export default function ArticlePage({ id }: { id?: string }) {
     },
   };
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${baseUrl}/news/${article.slug}`;
+  const shareUrl = useMemo(() => typeof window !== 'undefined' ? window.location.href : `${baseUrl}/news/${article.slug}`, [baseUrl, article?.slug]);
   const shareTitle = encodeURIComponent(article.title);
 
   return (
