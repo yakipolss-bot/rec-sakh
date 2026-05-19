@@ -1,4 +1,5 @@
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '../src/hooks/useTheme';
 import { FavoritesProvider } from '../src/hooks/useFavorites';
 import Navbar from '../src/components/Navbar';
@@ -8,13 +9,15 @@ import '../src/index.css';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider>
-      <FavoritesProvider>
-        <ScrollProgress />
-        <Navbar />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
-      </FavoritesProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <FavoritesProvider>
+          <ScrollProgress />
+          <Navbar />
+          <main className="min-h-screen">{children}</main>
+          <Footer />
+        </FavoritesProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
