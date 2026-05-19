@@ -42,7 +42,6 @@ async function onRenderHtml(pageContext: any) {
     pageHtml = `<pre style="background:#1a1a2e;color:#ff6b6b;padding:2rem;font-family:monospace;font-size:14px;white-space:pre-wrap;margin:0;min-height:100vh">${msg}</pre>`;
   }
 
-  // Default SEO
   const defaultTitle = 'Sakhcom — Новости Сахалина';
   const defaultDescription = 'Новости Сахалина и Курильских островов. Актуальные события, происшествия, экономика, спорт, культура.';
   const defaultImage = '/og-default.jpg';
@@ -57,10 +56,8 @@ async function onRenderHtml(pageContext: any) {
     ? (seo.image.startsWith('http') ? seo.image : `${siteUrl}${seo.image}`)
     : `${siteUrl}${defaultImage}`;
 
-  // Build JSON-LD array
   const jsonLd: Record<string, unknown>[] = [];
 
-  // Organization
   jsonLd.push({
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -76,7 +73,6 @@ async function onRenderHtml(pageContext: any) {
     },
   });
 
-  // BreadcrumbList
   jsonLd.push({
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -102,7 +98,6 @@ async function onRenderHtml(pageContext: any) {
     ],
   });
 
-  // NewsArticle (only for article pages)
   if (seo?.article) {
     jsonLd.push({
       '@context': 'https://schema.org',
@@ -143,7 +138,6 @@ async function onRenderHtml(pageContext: any) {
         <title>${pageTitle}</title>
         <meta name="description" content="${pageDescription}" />
 
-        <!-- Open Graph / Social -->
         <meta property="og:type" content="${seo?.article ? 'article' : 'website'}" />
         <meta property="og:title" content="${pageTitle}" />
         <meta property="og:description" content="${pageDescription}" />
@@ -152,7 +146,6 @@ async function onRenderHtml(pageContext: any) {
         <meta property="og:site_name" content="Sakhcom" />
         <meta property="og:locale" content="ru_RU" />
 
-        <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="${pageTitle}" />
         <meta name="twitter:description" content="${pageDescription}" />
@@ -162,7 +155,6 @@ async function onRenderHtml(pageContext: any) {
         ${seo?.article ? `<meta property="article:modified_time" content="${seo.article.updatedAt}" />` : ''}
         ${seo?.article ? `<meta property="article:section" content="${seo.article.category}" />` : ''}
 
-        <!-- JSON-LD Schema.org -->
         ${dangerouslySkipEscape(jsonLdHtml.map((ld) => `<script type="application/ld+json">${ld}</script>`).join('\n        '))}
       </head>
       <body>
