@@ -26,7 +26,9 @@ async function onRenderHtml(pageContext: any) {
   const { Page, pageProps } = pageContext;
   const seo: SeoData | undefined = pageContext.seo;
 
-  const url = pageContext.urlParsed.pathname + pageContext.urlParsed.search;
+  const url = pageContext.urlParsed
+    ? (pageContext.urlParsed.pathname ?? '/') + (pageContext.urlParsed.search ?? '')
+    : '/'
   let pageHtml: string;
   try {
     pageHtml = ReactDOMServer.renderToString(
