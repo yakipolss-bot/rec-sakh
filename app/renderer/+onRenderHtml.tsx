@@ -1,6 +1,7 @@
 import { escapeInject, dangerouslySkipEscape } from 'vike/server';
 import ReactDOMServer from 'react-dom/server';
 import { PageContextProvider } from 'vike-react/PageContextProvider';
+import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
 
 export { onRenderHtml };
@@ -25,9 +26,12 @@ async function onRenderHtml(pageContext: any) {
   const { Page, pageProps } = pageContext;
   const seo: SeoData | undefined = pageContext.seo;
 
+  const url = pageContext.urlParsed.pathname + pageContext.urlParsed.search;
   const pageHtml = ReactDOMServer.renderToString(
     <PageContextProvider pageContext={pageContext}>
-      <Page {...pageProps} />
+      <MemoryRouter initialEntries={[url]}>
+        <Page {...pageProps} />
+      </MemoryRouter>
     </PageContextProvider>,
   );
 
