@@ -187,12 +187,17 @@ export default function WeatherPage() {
                   transition={{ duration: 0.3, delay: 0.1 }}
                   className="sakh-card p-4"
                 >
-                  <h3 className="sakh-caption mb-4">Радар осадков</h3>
-                  <div className="bg-[var(--bg-primary)] aspect-square flex items-center justify-center border border-[var(--border-color)]">
-                    <div className="text-center">
-                      <Cloud size={40} className="mx-auto mb-2 text-[var(--text-muted)]" />
-                      <span className="sakh-caption">Радар</span>
-                    </div>
+                  <h3 className="sakh-caption mb-4">Windy — осадки, ветер, температура</h3>
+                  <div className="overflow-hidden border border-[var(--border-color)]" style={{ aspectRatio: '4/3' }}>
+                    <iframe
+                      src="https://embed.windy.com/embed2.html?lat=49.0&lon=143.0&zoom=7&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      title="Windy — погода на Сахалине"
+                      loading="lazy"
+                      allow="fullscreen"
+                    />
                   </div>
                 </motion.div>
               </div>
