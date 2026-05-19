@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3, FileText, Layers, Tag, MessageSquare,
   Camera, Video, DollarSign, Send, Globe, Activity,
   Calendar, Menu, X, ChevronRight, Users, Zap, Search,
+  Loader2,
 } from 'lucide-react';
-import { currentUser } from '@/data/mock';
+import { usersService } from '@/services/users.service';
+import type { UserProfile } from '@/services/users.service';
 
 const navSections = [
   {
@@ -46,6 +48,15 @@ const navSections = [
 export default function EditorialLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    usersService.getMe().then((u) => {
+      if (mounted) setUser(u);
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/editorial') return location.pathname === '/editorial';
@@ -88,15 +99,19 @@ export default function EditorialLayout({ children }: { children: React.ReactNod
 
         <div className="flex items-center gap-3 p-4 border-b border-[var(--border-color)]">
           <div className="w-9 h-9 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden">
-            {currentUser.avatar ? (
-              <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
+            {user ? (
+              user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Users size={16} className="text-[var(--text-muted)]" />
+              )
             ) : (
-              <Users size={16} className="text-[var(--text-muted)]" />
+              <Loader2 size={16} className="animate-spin text-[var(--text-muted)]" />
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="sakh-caption text-[var(--text-primary)] truncate">{currentUser.name}</p>
-            <p className="sakh-meta">{currentUser.level}</p>
+            <p className="sakh-caption text-[var(--text-primary)] truncate">{user?.name || 'Загрузка...'}</p>
+            <p className="sakh-meta">{user?.role || ''}</p>
           </div>
         </div>
 

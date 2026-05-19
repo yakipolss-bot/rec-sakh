@@ -1,13 +1,20 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Save, Send, Image, Video, Globe, Tag,
-  MapPin, Calendar, ChevronDown, Upload, X,
+  Save, Send, Video, Globe, ChevronDown, Upload, X,
+  Loader2,
 } from 'lucide-react';
-import { categories } from '@/data/mock';
+import { newsService } from '@/services/news.service';
+import { categoriesService } from '@/services/categories.service';
+import type { Category } from '@/services/categories.service';
 
 export default function EditorialNewsCreate() {
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [title, setTitle] = useState('');
   const [lead, setLead] = useState('');
   const [content, setContent] = useState('');
@@ -18,11 +25,15 @@ export default function EditorialNewsCreate() {
   const [showSeo, setShowSeo] = useState(false);
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDesc, setSeoDesc] = useState('');
-  const [slug, setSlug] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [dragOver, setDragOver] = useState(false);
+  const [tagsInput, setTagsInput] = useState('');
+
+  useEffect(() => {
+    categoriesService.getCategories().then((cats) => {
+      setCategories(cats || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
 
   const addTag = () => {
     const trimmed = tagsInput.trim();
@@ -37,6 +48,53 @@ export default function EditorialNewsCreate() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { e.preventDefault(); addTag(); }
   };
+
+  const handleSubmit = async (status: 'draft' | 'published' | 'scheduled') => {
+    if (!title.trim()) { setError('Заголовок обязателен'); return; }
+    if (!content.trim()) { setError('Текст новости обязателен'); return; }
+
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const dto: Record<string, unknown> = {
+        title: title.trim(),
+        content: content.trim(),
+        lead: lead.trim() || undefined,
+        categoryId: category || undefined,
+        city: city || undefined,
+        tags: tags.length > 0 ? tags : undefined,
+        seoTitle: seoTitle.trim() || undefined,
+        seoDescription: seoDesc.trim() || undefined,
+      };
+
+      if (status === 'scheduled' && scheduledDate) {
+        dto.scheduledAt = new Date(scheduledDate).toISOString();
+      }
+
+      const article = await newsService.createNews(dto);
+
+      if (status === 'published') {
+        await newsService.updateStatus(article.id, 'published');
+      } else if (status === 'scheduled') {
+        await newsService.updateStatus(article.id, 'review');
+      }
+
+      navigate('/editorial/news');
+    } catch (err) {
+      setError('Ошибка при сохранении. Проверьте заполнение полей.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={24} className="animate-spin text-[var(--text-muted)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl">
@@ -255,16 +313,30 @@ export default function EditorialNewsCreate() {
           </div>
         </div>
 
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 p-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
         <div className="flex items-center gap-3 pt-4 border-t border-[var(--border-color)]">
-          <button className="sakh-btn sakh-btn--primary sakh-btn--md">
-            <Send size={14} />
+          <button
+            onClick={() => handleSubmit(publishNow ? 'published' : 'scheduled')}
+            disabled={submitting}
+            className="sakh-btn sakh-btn--primary sakh-btn--md"
+          >
+            {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             {publishNow ? 'Опубликовать' : 'Запланировать'}
           </button>
-          <button className="sakh-btn sakh-btn--secondary sakh-btn--md">
-            <Save size={14} />
+          <button
+            onClick={() => handleSubmit('draft')}
+            disabled={submitting}
+            className="sakh-btn sakh-btn--secondary sakh-btn--md"
+          >
+            {submitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Сохранить черновик
           </button>
-          <Link to="/editorial/news" className="sakh-btn sakh-btn--ghost sakh-btn--md">
+          <Link to="/editorial/news" className="sakh-btn sakh-btn--ghost sakh-btn--md" tabIndex={submitting ? -1 : 0}>
             Отмена
           </Link>
         </div>

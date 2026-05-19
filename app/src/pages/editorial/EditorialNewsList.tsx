@@ -1,35 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Search, Edit, Eye, History, BarChart3,
-  Trash2, AlertTriangle, ChevronDown,
+  Trash2, AlertTriangle, ChevronDown, Loader2,
 } from 'lucide-react';
-import { newsArticles, categories } from '@/data/mock';
-
-const mockStatuses: Record<string, string> = {
-  n1: 'published',
-  n2: 'published',
-  n3: 'published',
-  n4: 'published',
-  n5: 'published',
-  n6: 'published',
-  n7: 'published',
-  n8: 'published',
-  n9: 'published',
-  n10: 'draft',
-  n11: 'published',
-  n12: 'published',
-  n13: 'archived',
-  n14: 'scheduled',
-  n15: 'scheduled',
-};
+import { newsService } from '@/services/news.service';
+import { categoriesService } from '@/services/categories.service';
+import type { NewsArticle } from '@/services/news.service';
+import type { Category } from '@/services/categories.service';
 
 const statusColors: Record<string, string> = {
   draft: 'sakh-tag--sunset',
   scheduled: 'sakh-tag--accent',
   published: 'sakh-tag--accent',
   archived: 'sakh-tag--muted',
+  review: 'sakh-tag--sunset',
 };
 
 const statusLabels: Record<string, string> = {
@@ -37,66 +23,76 @@ const statusLabels: Record<string, string> = {
   scheduled: 'Запланирована',
   published: 'Опубликована',
   archived: 'Архив',
+  review: 'На проверке',
 };
 
 const statusList = [
   { value: 'draft', label: 'Черновик' },
+  { value: 'review', label: 'На проверке' },
   { value: 'scheduled', label: 'Запланирована' },
   { value: 'published', label: 'Опубликована' },
   { value: 'archived', label: 'Архив' },
 ];
 
-const authors = [...new Set(newsArticles.map((a) => a.author.name))];
-
 export default function EditorialNewsList() {
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [authorFilter, setAuthorFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [sortField, setSortField] = useState<string>('publishedAt');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const getStatus = (id: string): string => mockStatuses[id] || 'published';
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const [newsRes, cats] = await Promise.all([
+          newsService.getNews({ perPage: 100, sortBy: 'publishedAt', sortOrder: 'desc' }),
+          categoriesService.getCategories(),
+        ]);
+        if (mounted) {
+          setArticles(newsRes.data || []);
+          setCategories(cats || []);
+        }
+      } catch {}
+      if (mounted) setLoading(false);
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  const authors = useMemo(() =>
+    [...new Set(articles.map((a) => a.author?.name).filter(Boolean))] as string[],
+    [articles]
+  );
 
   const filtered = useMemo(() => {
-    let result = [...newsArticles];
-
+    let result = [...articles];
     if (search) {
       const q = search.toLowerCase();
       result = result.filter((n) => n.title.toLowerCase().includes(q));
     }
     if (statusFilter !== 'all') {
-      result = result.filter((n) => getStatus(n.id) === statusFilter);
+      result = result.filter((n) => n.status === statusFilter);
     }
     if (authorFilter !== 'all') {
-      result = result.filter((n) => n.author.name === authorFilter);
+      result = result.filter((n) => n.author?.name === authorFilter);
     }
     if (categoryFilter !== 'all') {
-      result = result.filter((n) => n.category.id === categoryFilter);
+      result = result.filter((n) => n.categoryId === categoryFilter);
     }
-
-    result.sort((a, b) => {
-      const aVal = sortField === 'title' ? a.title :
-                   sortField === 'views' ? a.views :
-                   sortField === 'commentsCount' ? a.commentsCount :
-                   new Date(a.publishedAt).getTime();
-      const bVal = sortField === 'title' ? b.title :
-                   sortField === 'views' ? b.views :
-                   sortField === 'commentsCount' ? b.commentsCount :
-                   new Date(b.publishedAt).getTime();
-      if (typeof aVal === 'string') {
-        return sortDir === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal);
-      }
-      return sortDir === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
-    });
-
+    result.sort((a, b) => new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime());
     return result;
-  }, [search, statusFilter, authorFilter, categoryFilter, sortField, sortDir]);
+  }, [articles, search, statusFilter, authorFilter, categoryFilter]);
 
-  const toggleSort = (field: string) => {
-    if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortField(field); setSortDir('desc'); }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={24} className="animate-spin text-[var(--text-muted)]" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -162,26 +158,15 @@ export default function EditorialNewsList() {
                 { key: 'views', label: 'Просмотры' },
                 { key: 'actions', label: '', sortable: false },
               ].map((col) => (
-                <th
-                  key={col.key}
-                  onClick={() => col.sortable !== false && toggleSort(col.key)}
-                  className={`px-3 py-2 text-left sakh-caption cursor-pointer ${
-                    sortField === col.key ? 'text-[var(--accent-ocean)]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    {col.label}
-                    {col.sortable !== false && (
-                      <ChevronDown size={10} className={`transition-transform ${sortField === col.key && sortDir === 'asc' ? 'rotate-180' : ''}`} />
-                    )}
-                  </div>
+                <th key={col.key} className="px-3 py-2 text-left sakh-caption">
+                  <div className="flex items-center gap-1">{col.label}</div>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((news, i) => {
-              const status = getStatus(news.id);
+              const cat = categories.find(c => c.id === news.categoryId);
               return (
                 <motion.tr
                   key={news.id}
@@ -196,36 +181,26 @@ export default function EditorialNewsList() {
                       <span className="text-[var(--text-primary)] line-clamp-1">{news.title}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-3 sakh-meta">{news.author.name}</td>
-                  <td className="px-3 py-3 sakh-meta">{news.category.name}</td>
+                  <td className="px-3 py-3 sakh-meta">{news.author?.name || '—'}</td>
+                  <td className="px-3 py-3 sakh-meta">{cat?.name || '—'}</td>
                   <td className="px-3 py-3">
-                    <span className={`sakh-tag ${statusColors[status] || 'sakh-tag--muted'}`}>
-                      {statusLabels[status] || '—'}
+                    <span className={`sakh-tag ${statusColors[news.status] || 'sakh-tag--muted'}`}>
+                      {statusLabels[news.status] || news.status || '—'}
                     </span>
                   </td>
                   <td className="px-3 py-3 sakh-meta">
-                    {new Date(news.publishedAt).toLocaleDateString('ru-RU')}
+                    {news.publishedAt ? new Date(news.publishedAt).toLocaleDateString('ru-RU') : new Date(news.createdAt).toLocaleDateString('ru-RU')}
                   </td>
                   <td className="px-3 py-3 font-mono text-xs text-[var(--text-secondary)]">
-                    {news.views.toLocaleString('ru-RU')}
+                    {(news.viewsCount || 0).toLocaleString('ru-RU')}
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1">
-                      <Link to={`/editorial/news/${news.id}/edit`} className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2">
-                        <Edit size={14} />
-                      </Link>
-                      <Link to={`/editorial/news/${news.id}/preview`} className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2">
-                        <Eye size={14} />
-                      </Link>
-                      <Link to={`/editorial/news/${news.id}/history`} className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2">
-                        <History size={14} />
-                      </Link>
-                      <Link to={`/editorial/news/${news.id}/stats`} className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2">
-                        <BarChart3 size={14} />
-                      </Link>
-                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2 text-[var(--accent-sunset)]">
-                        <Trash2 size={14} />
-                      </button>
+                      <Link to={`/editorial/news/${news.id}/edit`} className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2"><Edit size={14} /></Link>
+                      <Link to={`/editorial/news/${news.id}/preview`} className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2"><Eye size={14} /></Link>
+                      <Link to={`/editorial/news/${news.id}/history`} className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2"><History size={14} /></Link>
+                      <Link to={`/editorial/news/${news.id}/stats`} className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2"><BarChart3 size={14} /></Link>
+                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-2 text-[var(--accent-sunset)]"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </motion.tr>
