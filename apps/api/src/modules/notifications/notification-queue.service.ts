@@ -108,15 +108,6 @@ export class NotificationQueueService {
   }
 
   async retryFailed(): Promise<void> {
-    const failed = await this.prisma.notificationQueue.findMany({
-      where: {
-        status: 'failed',
-        retryCount: { lt: { gte: 0 } as any },
-      },
-      take: 100,
-    });
-
-    // Prisma doesn't support lt on same field well, use raw approach
     const result = await this.prisma.notificationQueue.updateMany({
       where: {
         status: 'failed',
