@@ -27,13 +27,20 @@ async function onRenderHtml(pageContext: any) {
   const seo: SeoData | undefined = pageContext.seo;
 
   const url = pageContext.urlParsed.pathname + pageContext.urlParsed.search;
-  const pageHtml = ReactDOMServer.renderToString(
-    <PageContextProvider pageContext={pageContext}>
-      <MemoryRouter initialEntries={[url]}>
-        <Page {...pageProps} />
-      </MemoryRouter>
-    </PageContextProvider>,
-  );
+  let pageHtml: string;
+  try {
+    pageHtml = ReactDOMServer.renderToString(
+      <PageContextProvider pageContext={pageContext}>
+        <MemoryRouter initialEntries={[url]}>
+          <Page {...pageProps} />
+        </MemoryRouter>
+      </PageContextProvider>,
+    );
+  } catch (err) {
+    const msg = `[SSR Error] ${(err as Error).message}\n${(err as Error).stack || ''}`;
+    console.error(msg);
+    pageHtml = `<pre style="background:#1a1a2e;color:#ff6b6b;padding:2rem;font-family:monospace;font-size:14px;white-space:pre-wrap;margin:0;min-height:100vh">${msg}</pre>`;
+  }
 
   // Default SEO
   const defaultTitle = 'Sakhcom — Новости Сахалина';
