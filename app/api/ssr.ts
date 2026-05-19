@@ -4,6 +4,14 @@ export default async (req: any, res: any) => {
   try {
     const pageContextInit = { urlOriginal: req.url }
     const pageContext = await renderPage(pageContextInit)
+    const renderErr = pageContext.abortReason || pageContext.errorWhileRender
+    if (renderErr) {
+      const msg = `Vike Error: ${renderErr?.message || String(renderErr)}\n\n${renderErr?.stack || ''}`
+      res.statusCode = 500
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+      res.end(msg)
+      return
+    }
     const { httpResponse } = pageContext
     if (!httpResponse) {
       res.statusCode = 200
