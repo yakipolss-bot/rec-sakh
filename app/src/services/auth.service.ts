@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import axios from 'axios';
 import type { AuthResponse as SupabaseAuthResponse } from '@supabase/supabase-js';
 
 export interface AuthResponse {
@@ -11,6 +12,33 @@ export interface AuthResponse {
   };
   accessToken: string;
   refreshToken: string;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+
+function getLocalStorage(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key);
+}
+
+function setLocalStorage(key: string, value: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(key, value);
+}
+
+function removeLocalStorage(key: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
+}
+
+function persistTokens(accessToken: string, refreshToken: string): void {
+  if (accessToken) setLocalStorage('accessToken', accessToken);
+  if (refreshToken) setLocalStorage('refreshToken', refreshToken);
+}
+
+function clearTokens(): void {
+  removeLocalStorage('accessToken');
+  removeLocalStorage('refreshToken');
 }
 
 function extractName(user: { user_metadata?: { name?: string }; email?: string }): string {
@@ -44,8 +72,10 @@ export const authService = {
     if (error) throw error;
     const result = toAuthResponse(data.session);
     if (!result && data.user) {
+      clearTokens();
       return { user: { id: data.user.id, email: data.user.email || '', name: extractName(data.user), role: 'authenticated', avatarUrl: null }, accessToken: '', refreshToken: '' };
     }
+    persistTokens(result!.accessToken, result!.refreshToken);
     return result!;
   },
 
@@ -54,18 +84,34 @@ export const authService = {
     if (error) throw error;
     const result = toAuthResponse(data.session);
     if (!result) throw new Error('Login failed');
+    persistTokens(result.accessToken, result.refreshToken);
     return result;
   },
 
   async logout() {
     const { error } = await supabase.auth.signOut();
+    clearTokens();
     if (error) throw error;
+  },
+
+  async refresh() {
+    const refreshToken = getLocalStorage('refreshToken');
+    if (!refreshToken) {
+      clearTokens();
+      throw new Error('No refresh token');
+    }
+    const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+    const { accessToken, refreshToken: newRefreshToken } = data.data || data;
+    persistTokens(accessToken, newRefreshToken);
+    return { accessToken, refreshToken: newRefreshToken };
   },
 
   async getSession() {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
-    return toAuthResponse(data.session);
+    const result = toAuthResponse(data.session);
+    if (result) persistTokens(result.accessToken, result.refreshToken);
+    return result;
   },
 
   async getProfile() {
@@ -111,11 +157,21 @@ export const authService = {
       provider: provider === 'vkontakte' ? 'vk' : provider,
     });
     if (error) throw error;
+    const { data } = await supabase.auth.getSession();
+    const result = toAuthResponse(data.session);
+    if (result) persistTokens(result.accessToken, result.refreshToken);
   },
 
   onAuthStateChange(callback: (event: string, session: AuthResponse | null) => void) {
     return supabase.auth.onAuthStateChange((event, session) => {
-      callback(event, toAuthResponse(session));
+      const result = toAuthResponse(session);
+      if (result && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        persistTokens(result.accessToken, result.refreshToken);
+      }
+      if (event === 'SIGNED_OUT') {
+        clearTokens();
+      }
+      callback(event, result);
     });
   },
 };
