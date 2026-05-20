@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Shield, Bell, Eye, Key, Smartphone,
-  Monitor, QrCode, Mail, MessageSquare, AlertTriangle,
-  CloudSun, Train, ToggleLeft
+  User, Shield, Bell, Eye, Smartphone,
+  Monitor, QrCode, Mail, MessageSquare, Send
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { currentUser } from '@/data/mock';
+import { useUser } from '@/hooks/useUser';
 
 const sessions = [
   { id: 's1', device: 'Chrome на Windows', ip: '192.168.1.42', lastActive: 'Сейчас', current: true },
@@ -15,11 +14,12 @@ const sessions = [
 ];
 
 export default function AccountSettings() {
+  const { user } = useUser();
   const [form, setForm] = useState({
-    name: currentUser.name,
-    email: currentUser.email,
-    phone: currentUser.phone,
-    city: currentUser.city,
+    name: user?.name || user?.email?.split('@')[0] || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    city: user?.city || '',
   });
 
   const [currentPassword, setCurrentPassword] = useState('');
