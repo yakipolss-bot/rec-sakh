@@ -39,12 +39,14 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
     const payload = parseJwt(token);
     if (!payload || !payload.exp || (payload.exp as number) * 1000 < Date.now()) {
       authService
-        .refresh()
-        .then(() => {
-          const newToken = getLocalStorage('accessToken');
-          const newPayload = newToken ? parseJwt(newToken) : null;
-          setRole((newPayload?.role as string) || null);
-          setStatus('authenticated');
+        .getSession()
+        .then((session) => {
+          if (session) {
+            setRole(session.user.role || 'authenticated');
+            setStatus('authenticated');
+          } else {
+            setStatus('unauthenticated');
+          }
         })
         .catch(() => {
           removeLocalStorage('accessToken');

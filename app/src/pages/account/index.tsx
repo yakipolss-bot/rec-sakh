@@ -3,14 +3,7 @@ import { Link } from 'react-router-dom';
 import { MessageSquare, FileText, Heart, MapPin, Calendar, Award, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { currentUser } from '@/data/mock';
-import { accountActivity } from '@/data/accountMock';
-
-const statCards = [
-  { icon: MessageSquare, label: 'Комментариев', value: currentUser.commentsCount, path: '/account/comments' },
-  { icon: FileText, label: 'Объявлений', value: currentUser.adsCount, path: '/account/ads' },
-  { icon: Heart, label: 'В избранном', value: 12, path: '/account/favorites' },
-];
+import { useUser, useUserActivity, useUserSubscriptions } from '@/hooks/useUser';
 
 const quickActions = [
   { label: 'Написать комментарий', path: '/account/comments', icon: MessageSquare },
@@ -26,9 +19,41 @@ const activityIcons: Record<string, React.ReactNode> = {
   subscription: <Heart size={14} />,
 };
 
-const formattedDate = format(new Date(currentUser.registeredAt), 'd MMMM yyyy', { locale: ru });
-
 export default function AccountDashboard() {
+  const { user, isLoading: userLoading, error: userError } = useUser();
+  const { activity, isLoading: activityLoading, error: activityError } = useUserActivity();
+  const { subscriptions, isLoading: subsLoading, error: subsError } = useUserSubscriptions();
+
+  if (userError) {
+    return (
+      <div className="sakh-card p-4 text-center">
+        <p className="text-[var(--accent-sunset)]">Ошибка загрузки профиля</p>
+        <button onClick={() => window.location.reload()} className="sakh-btn sakh-btn--sm mt-4">
+          Перезагрузить
+        </button>
+      </div>
+    );
+  }
+
+  if (userLoading || !user) {
+    return (
+      <div className="space-y-4">
+        <div className="sakh-card p-4 animate-pulse h-32"></div>
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => <div key={i} className="sakh-card p-4 h-24 animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const statCards = [
+    { icon: MessageSquare, label: 'Комментариев', value: user.commentsCount || 0, path: '/account/comments' },
+    { icon: FileText, label: 'Объявлений', value: user.adsCount || 0, path: '/account/ads' },
+    { icon: Heart, label: 'В избранном', value: 0, path: '/account/favorites' },
+  ];
+
+  const formattedDate = format(new Date(user.registeredAt), 'd MMMM yyyy', { locale: ru });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -39,22 +64,26 @@ export default function AccountDashboard() {
       <div className="sakh-card p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="w-16 h-16 shrink-0 flex items-center justify-center text-2xl font-mono uppercase bg-[var(--bg-surface)] text-[var(--accent-ocean)] border-2 border-[var(--accent-ocean)]">
-            {currentUser.name.charAt(0)}
+            {user.avatar ? (
+              <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+            ) : (
+              user.name.charAt(0)
+            )}
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-medium text-[var(--text-primary)] mb-1">
-              {currentUser.name}
+              {user.name}
             </h2>
-            <p className="text-sm text-[var(--text-secondary)] mb-2">{currentUser.email}</p>
+            <p className="text-sm text-[var(--text-secondary)] mb-2">{user.email}</p>
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="sakh-tag sakh-tag--accent">{currentUser.level}</span>
+              <span className="sakh-tag sakh-tag--accent">{user.level}</span>
               <span className="sakh-meta sakh-meta--with-icon">
                 <Award size={12} />
-                Карма: {currentUser.karma}
+                Карма: {user.karma}
               </span>
               <span className="sakh-meta sakh-meta--with-icon">
                 <MapPin size={12} />
-                {currentUser.city}
+                {user.city}
               </span>
               <span className="sakh-meta sakh-meta--with-icon">
                 <Calendar size={12} />
@@ -100,21 +129,21 @@ export default function AccountDashboard() {
         <div className="sakh-card p-4">
           <h3 className="sakh-caption font-medium mb-4">Последняя активность</h3>
           <div className="space-y-3">
-            {accountActivity.slice(0, 5).map(activity => (
-              <div key={activity.id} className="flex items-start gap-3 text-sm">
+            {activity.slice(0, 5).map((act) => (
+              <div key={act.id} className="flex items-start gap-3 text-sm">
                 <span className="mt-0.5 text-[var(--text-muted)]">
-                  {activityIcons[activity.type]}
+                  {activityIcons[act.type]}
                 </span>
                 <div className="flex-1 min-w-0">
-                  {activity.link ? (
-                    <Link to={activity.link} className="text-[var(--text-primary)] hover:text-[var(--accent-ocean)] transition-colors line-clamp-1">
-                      {activity.description}
+                  {act.link ? (
+                    <Link to={act.link} className="text-[var(--text-primary)] hover:text-[var(--accent-ocean)] transition-colors line-clamp-1">
+                      {act.description}
                     </Link>
                   ) : (
-                    <p className="text-[var(--text-primary)] line-clamp-1">{activity.description}</p>
+                    <p className="text-[var(--text-primary)] line-clamp-1">{act.description}</p>
                   )}
                   <p className="sakh-meta text-xs mt-1">
-                    {format(new Date(activity.date), 'd MMM, HH:mm', { locale: ru })}
+                    {format(new Date(act.date), 'd MMM, HH:mm', { locale: ru })}
                   </p>
                 </div>
               </div>
@@ -125,8 +154,8 @@ export default function AccountDashboard() {
         <div className="sakh-card p-4">
           <h3 className="sakh-caption font-medium mb-4">Мои подписки</h3>
           <div className="flex flex-wrap gap-2">
-            {currentUser.subscriptions.map(sub => (
-              <span key={sub} className="sakh-tag sakh-tag--accent">{sub}</span>
+            {subscriptions.map((sub) => (
+              <span key={sub.id} className="sakh-tag sakh-tag--accent">{sub.value}</span>
             ))}
           </div>
           <Link to="/account/subscriptions" className="sakh-link text-xs mt-4 inline-block">

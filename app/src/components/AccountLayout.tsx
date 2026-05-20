@@ -6,9 +6,9 @@ import {
   Calendar, Bell, Bookmark, CreditCard, Headphones, ChevronDown,
   LogOut, Lock, Eye, Settings, Heart
 } from 'lucide-react';
-import { currentUser } from '@/data/mock';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { useUser } from '@/hooks/useUser';
+import { authService } from '@/services/auth.service';
+import { toast } from 'sonner';
 
 export const accountNavItems = [
   { path: '/account', label: 'Дашборд', icon: LayoutDashboard, exact: true },
@@ -29,6 +29,7 @@ export const accountNavItems = [
 export default function AccountLayout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, isLoading, error } = useUser();
 
   const isActive = (item: typeof accountNavItems[number]) => {
     if (item.exact) return location.pathname === item.path;
@@ -36,6 +37,42 @@ export default function AccountLayout() {
   };
 
   const activeItem = accountNavItems.find(isActive);
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      window.location.href = '/login';
+    } catch (err) {
+      toast.error('Ошибка при выходе');
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="pt-20 pb-8">
+        <div className="max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
+          <div className="text-center py-12">
+            <p className="text-[var(--accent-sunset)]">Ошибка загрузки профиля</p>
+            <button onClick={() => window.location.reload()} className="sakh-btn sakh-btn--sm mt-4">
+              Перезагрузить
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || !user) {
+    return (
+      <div className="pt-20 pb-8">
+        <div className="max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-[var(--bg-surface)] rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-20 pb-8">
@@ -48,29 +85,34 @@ export default function AccountLayout() {
         >
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center text-lg font-mono uppercase bg-[var(--bg-surface)] text-[var(--accent-ocean)] border-2 border-[var(--accent-ocean)]">
-              {currentUser.name.charAt(0)}
+              {user.avatar ? (
+                <img src={user.avatar} alt="" className="w-full h-full object-cover rounded" />
+              ) : (
+                user.name.charAt(0)
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg sm:text-xl font-medium text-[var(--text-primary)] truncate">
-                {currentUser.name}
+                {user.name}
               </h1>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] truncate">
-                {currentUser.email}
+                {user.email}
               </p>
             </div>
             <div className="hidden sm:flex items-center gap-2">
-              <span className="sakh-meta">{currentUser.level}</span>
+              <span className="sakh-meta">{user.level}</span>
               <span className="sakh-meta">
-                Карма: {currentUser.karma}
+                Карма: {user.karma}
               </span>
             </div>
-            <Link
-              to="/login"
+            <button
+              onClick={handleLogout}
               className="sakh-btn sakh-btn--ghost sakh-btn--sm text-[var(--text-muted)]"
+              title="Выйти"
             >
               <LogOut size={14} />
               <span className="hide-mobile">Выйти</span>
-            </Link>
+            </button>
           </div>
         </motion.div>
 
