@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Search, X, Plus, Bookmark, Tag, User, Key } from 'lucide-react';
+import { Search, X, Plus, Bookmark, Tag, User, Key } from 'lucide-react';
 import { categories } from '@/data/mock';
-import { authorSubscriptions, keywordSubscriptions } from '@/data/accountMock';
+import { useUserSubscriptions } from '@/hooks/useUser';
+import { usersService } from '@/services/users.service';
+import { toast } from 'sonner';
 import EmptyState from '@/components/EmptyState';
 
 type TabId = 'categories' | 'tags' | 'authors' | 'keywords';
@@ -18,41 +20,100 @@ const popularTags = ['шторм', 'спорт', 'транспорт', 'экон
 
 export default function AccountSubscriptions() {
   const [activeTab, setActiveTab] = useState<TabId>('categories');
-  const [subscribedCategories, setSubscribedCategories] = useState<string[]>(['Общество', 'Спорт', 'Транспорт']);
-  const [subscribedTags, setSubscribedTags] = useState<string[]>(['спорт', 'транспорт']);
-  const [authors, setAuthors] = useState(authorSubscriptions);
-  const [keywords, setKeywords] = useState(keywordSubscriptions.map(k => k.keyword));
+  const { subscriptions, error, refetch } = useUserSubscriptions();
+  const [subscribedCategories, setSubscribedCategories] = useState<string[]>([]);
+  const [subscribedTags, setSubscribedTags] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const toggleCategory = (name: string) => {
-    setSubscribedCategories(prev =>
-      prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]
-    );
-  };
-
-  const toggleTag = (tag: string) => {
-    setSubscribedTags(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    );
-  };
-
-  const toggleAuthor = (id: string) => {
-    setAuthors(prev =>
-      prev.map(a => a.id === id ? { ...a, subscribed: !a.subscribed } : a)
-    );
-  };
-
-  const addKeyword = () => {
-    const kw = keywordInput.trim().toLowerCase();
-    if (kw && !keywords.includes(kw)) {
-      setKeywords(prev => [...prev, kw]);
+  useEffect(() => {
+    if (subscriptions && subscriptions.length > 0) {
+      const cats = subscriptions.filter(s => s.type === 'category').map(s => s.value);
+      const tags = subscriptions.filter(s => s.type === 'keyword').map(s => s.value);
+      setSubscribedCategories(cats);
+      setSubscribedTags(tags);
     }
-    setKeywordInput('');
+  }, [subscriptions]);
+
+  const toggleCategory = async (name: string) => {
+    try {
+      setIsSaving(true);
+      const isSubscribed = subscribedCategories.includes(name);
+      if (isSubscribed) {
+        const sub = subscriptions?.find(s => s.type === 'category' && s.value === name);
+        if (sub) await usersService.removeSubscription(sub.id);
+      } else {
+        await usersService.addSubscription('category', name);
+      }
+      refetch?.();
+      toast.success(isSubscribed ? 'Подписка отменена' : 'Подписка добавлена');
+    } catch (err) {
+      toast.error('Ошибка при изменении подписки');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const removeKeyword = (kw: string) => {
-    setKeywords(prev => prev.filter(k => k !== kw));
+  const toggleTag = async (tag: string) => {
+    try {
+      setIsSaving(true);
+      const isSubscribed = subscribedTags.includes(tag);
+      if (isSubscribed) {
+        const sub = subscriptions?.find(s => s.type === 'keyword' && s.value === tag);
+        if (sub) await usersService.removeSubscription(sub.id);
+      } else {
+        await usersService.addSubscription('keyword', tag);
+      }
+      refetch?.();
+      toast.success(isSubscribed ? 'Подписка отменена' : 'Подписка добавлена');
+    } catch (err) {
+      toast.error('Ошибка при изменении подписки');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const addKeyword = async () => {
+    const kw = keywordInput.trim().toLowerCase();
+    if (kw && !subscribedTags.includes(kw)) {
+      try {
+        setIsSaving(true);
+        await usersService.addSubscription('keyword', kw);
+        refetch?.();
+        setKeywordInput('');
+        toast.success('Ключевое слово добавлено');
+      } catch (err) {
+        toast.error('Ошибка при добавлении ключевого слова');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const removeKeyword = async (kw: string) => {
+    try {
+      setIsSaving(true);
+      const sub = subscriptions?.find(s => s.type === 'keyword' && s.value === kw);
+      if (sub) await usersService.removeSubscription(sub.id);
+      refetch?.();
+      toast.success('Ключевое слово удалено');
+    } catch (err) {
+      toast.error('Ошибка при удалении ключевого слова');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="sakh-card p-4 text-center">
+        <p className="text-[var(--accent-sunset)]">Ошибка загрузки подписок</p>
+        <button onClick={() => window.location.reload()} className="sakh-btn sakh-btn--sm mt-4">
+          Перезагрузить
+        </button>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -147,7 +208,7 @@ export default function AccountSubscriptions() {
                     {subscribedTags.map(tag => (
                       <span key={tag} className="sakh-tag sakh-tag--accent">
                         {tag}
-                        <button onClick={() => toggleTag(tag)} className="ml-1 hover:text-[var(--accent-sunset)]">
+                        <button onClick={() => toggleTag(tag)} className="ml-1 hover:text-[var(--accent-sunset)]" disabled={isSaving}>
                           <X size={10} />
                         </button>
                       </span>
@@ -160,27 +221,7 @@ export default function AccountSubscriptions() {
 
           {activeTab === 'authors' && (
             <div className="space-y-2">
-              {authors.length > 0 ? authors.map(author => (
-                <div key={author.id} className="sakh-card p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 flex items-center justify-center text-sm font-mono uppercase bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-color)]">
-                      {author.authorName.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[var(--text-primary)]">{author.authorName}</p>
-                      <p className="sakh-meta text-xs">{author.authorRole}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => toggleAuthor(author.id)}
-                    className={`sakh-btn sakh-btn--sm ${author.subscribed ? 'sakh-btn--primary' : 'sakh-btn--secondary'}`}
-                  >
-                    {author.subscribed ? 'Отписаться' : 'Подписаться'}
-                  </button>
-                </div>
-              )) : (
-                <EmptyState title="Нет авторов" description="Авторы пока недоступны для подписки" icon={<User size={48} />} />
-              )}
+              <EmptyState title="Авторы" description="Авторы пока недоступны для подписки" icon={<User size={48} />} />
             </div>
           )}
 
@@ -196,21 +237,22 @@ export default function AccountSubscriptions() {
                     onKeyDown={e => e.key === 'Enter' && addKeyword()}
                     placeholder="Введите слово..."
                     className="sakh-input flex-1"
+                    disabled={isSaving}
                   />
-                  <button onClick={addKeyword} className="sakh-btn sakh-btn--primary sakh-btn--sm">
+                  <button onClick={addKeyword} className="sakh-btn sakh-btn--primary sakh-btn--sm disabled:opacity-50" disabled={isSaving}>
                     <Plus size={14} />
                     Добавить
                   </button>
                 </div>
               </div>
-              {keywords.length > 0 ? (
+              {subscribedTags.length > 0 ? (
                 <div className="sakh-card p-4">
-                  <p className="sakh-caption mb-3">Ключевые слова ({keywords.length})</p>
+                  <p className="sakh-caption mb-3">Ключевые слова ({subscribedTags.length})</p>
                   <div className="flex flex-wrap gap-2">
-                    {keywords.map(kw => (
+                    {subscribedTags.map(kw => (
                       <span key={kw} className="sakh-tag sakh-tag--accent">
                         {kw}
-                        <button onClick={() => removeKeyword(kw)} className="ml-1 hover:text-[var(--accent-sunset)]">
+                        <button onClick={() => removeKeyword(kw)} className="ml-1 hover:text-[var(--accent-sunset)]" disabled={isSaving}>
                           <X size={10} />
                         </button>
                       </span>

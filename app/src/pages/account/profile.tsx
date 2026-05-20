@@ -1,22 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Camera } from 'lucide-react';
-import { currentUser } from '@/data/mock';
+import { useUser } from '@/hooks/useUser';
+import { usersService } from '@/services/users.service';
+import { toast } from 'sonner';
 
 export default function AccountProfile() {
+  const { user, isLoading, error, refetch } = useUser();
+  const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState({
-    name: currentUser.name,
-    email: currentUser.email,
-    phone: currentUser.phone,
-    city: currentUser.city,
+    name: '',
+    email: '',
+    phone: '',
+    city: '',
     birthDate: '',
     gender: 'male',
     about: '',
   });
 
+  useEffect(() => {
+    if (user) {
+      setForm({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        city: user.city || '',
+        birthDate: '',
+        gender: 'male',
+        about: '',
+      });
+    }
+  }, [user]);
+
   const handleChange = (key: string, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
   };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await usersService.updateProfile({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        city: form.city,
+      });
+      toast.success('Профиль обновлен');
+      refetch?.();
+    } catch (err) {
+      toast.error('Ошибка при сохранении профиля');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="sakh-card p-4 text-center">
+        <p className="text-[var(--accent-sunset)]">Ошибка загрузки профиля</p>
+        <button onClick={() => window.location.reload()} className="sakh-btn sakh-btn--sm mt-4">
+          Перезагрузить
+        </button>
+      </div>
+    );
+  }
+
+  if (isLoading || !user) {
+    return (
+      <div className="max-w-2xl space-y-4">
+        <div className="sakh-card p-4 animate-pulse h-64"></div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -121,8 +176,13 @@ export default function AccountProfile() {
       </div>
 
       <div className="flex justify-end">
-        <button type="button" className="sakh-btn sakh-btn--primary sakh-btn--lg">
-          Сохранить
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="sakh-btn sakh-btn--primary sakh-btn--lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? 'Сохранение...' : 'Сохранить'}
         </button>
       </div>
     </motion.div>
