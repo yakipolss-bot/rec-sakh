@@ -4,16 +4,13 @@ import {
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
   ) {}
 
   async getProfile(userId: string) {
@@ -143,16 +140,16 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const { passwordHash, ...rest } = user;
+    const { _count, ...rest } = user;
     return {
       ...rest,
       stats: {
-        adsCount: rest._count.ads,
-        commentsCount: rest._count.comments,
-        eventsCount: rest._count.events,
-        newsCount: rest._count.newsArticles,
-        jobsCount: rest._count.jobs,
-        realtyCount: rest._count.realty,
+        adsCount: _count.ads,
+        commentsCount: _count.comments,
+        eventsCount: _count.events,
+        newsCount: _count.newsArticles,
+        jobsCount: _count.jobs,
+        realtyCount: _count.realty,
       },
     };
   }
@@ -200,15 +197,6 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const payload = { sub: target.id, role: target.role };
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '1h',
-    });
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: '1d',
-    });
-
     await this.prisma.auditLog.create({
       data: {
         userId: adminId,
@@ -220,8 +208,6 @@ export class UsersService {
     });
 
     return {
-      accessToken,
-      refreshToken,
       user: {
         id: target.id,
         email: target.email,
@@ -229,30 +215,5 @@ export class UsersService {
         role: target.role,
       },
     };
-  }
-
-  async getSessions(userId: string) {
-    return this.prisma.session.findMany({
-      where: { userId },
-      orderBy: { expiresAt: 'desc' },
-      select: {
-        id: true,
-        expiresAt: true,
-      },
-    });
-  }
-
-  async deleteSession(userId: string, sessionId: string) {
-    const session = await this.prisma.session.findUnique({
-      where: { id: sessionId },
-    });
-    if (!session || session.userId !== userId) {
-      throw new NotFoundException('Session not found');
-    }
-    await this.prisma.session.delete({ where: { id: sessionId } });
-  }
-
-  async deleteAllSessions(userId: string) {
-    await this.prisma.session.deleteMany({ where: { userId } });
   }
 }

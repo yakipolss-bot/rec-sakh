@@ -1,19 +1,16 @@
 import { PrismaClient, UserRole } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Seeding database...');
 
-  // 1. Admin user
-  const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 12);
+  // 1. Admin user (password managed by Supabase Auth)
   const admin = await prisma.user.upsert({
     where: { email: 'admin@rec-sakh.ru' },
     update: {},
     create: {
       email: 'admin@rec-sakh.ru',
-      passwordHash: adminPassword,
       name: 'Администратор',
       role: UserRole.admin,
       isEmailVerified: true,

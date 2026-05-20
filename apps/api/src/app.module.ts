@@ -24,6 +24,7 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { SupabaseModule } from './common/supabase/supabase.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter.js';
@@ -54,6 +55,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter.
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
+    SupabaseModule,
     AuthModule,
     UsersModule,
     NewsModule,

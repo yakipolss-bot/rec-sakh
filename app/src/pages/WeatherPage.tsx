@@ -187,7 +187,7 @@ export default function WeatherPage() {
                   transition={{ duration: 0.3, delay: 0.1 }}
                   className="sakh-card p-4"
                 >
-                  <h3 className="sakh-caption mb-4">Windy — осадки, ветер, температура</h3>
+                  <h3 className="sakh-caption mb-4">Осадки, ветер, температура</h3>
                   <div className="overflow-hidden border border-[var(--border-color)]" style={{ aspectRatio: '4/3' }}>
                     <iframe
                       src="https://embed.windy.com/embed2.html?lat=49.0&lon=143.0&zoom=7&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"

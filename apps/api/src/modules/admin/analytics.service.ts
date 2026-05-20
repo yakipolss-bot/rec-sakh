@@ -22,9 +22,9 @@ export class AnalyticsService {
       totalUsers,
       totalComments,
     ] = await Promise.all([
-      // Пользователи онлайн (сессии в последние 15 минут)
-      this.prisma.session.count({
-        where: { expiresAt: { gte: last15min } },
+      // Пользователи онлайн (зарегистрированы за последние 15 минут)
+      this.prisma.user.count({
+        where: { createdAt: { gte: last15min } },
       }),
       // Новые пользователи сегодня
       this.prisma.user.count({
@@ -180,9 +180,9 @@ export class AnalyticsService {
     const last5min = new Date(Date.now() - 5 * 60 * 1000);
 
     const [onlineUsers, recentComments, recentSearches] = await Promise.all([
-      // Онлайн пользователи
-      this.prisma.session.count({
-        where: { expiresAt: { gte: last15min } },
+      // Новые пользователи за 15 минут
+      this.prisma.user.count({
+        where: { createdAt: { gte: last15min } },
       }),
       // Последние комментарии
       this.prisma.comment.findMany({

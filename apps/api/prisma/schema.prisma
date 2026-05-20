@@ -216,7 +216,6 @@ model User {
   id               String     @id @default(uuid()) @db.Uuid
   email            String     @unique
   phone            String?
-  passwordHash     String     @map("password_hash")
   role             UserRole   @default(user)
   status           UserStatus @default(active)
   name             String
@@ -233,10 +232,7 @@ model User {
   updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at")
 
   settings               UserSetting?
-  sessions               Session[]
   oauthAccounts          OAuthAccount[]
-  passwordResetTokens    PasswordResetToken[]
-  verificationTokens     VerificationToken[]
   newsArticles           NewsArticle[]
   newsVersions           NewsVersion[]
   comments               Comment[]
@@ -287,17 +283,6 @@ model UserSetting {
   @@map("user_settings")
 }
 
-model Session {
-  id           String   @id
-  userId       String   @map("user_id") @db.Uuid
-  refreshToken String?  @unique @map("refresh_token")
-  expiresAt    DateTime @map("expires_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
 model OAuthAccount {
   id                String        @id @default(uuid()) @db.Uuid
   userId            String        @map("user_id") @db.Uuid
@@ -309,27 +294,6 @@ model OAuthAccount {
 
   @@unique([provider, providerAccountId])
   @@map("oauth_accounts")
-}
-
-model PasswordResetToken {
-  tokenHash String   @id @map("token_hash")
-  userId    String   @map("user_id") @db.Uuid
-  expiresAt DateTime @map("expires_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("password_reset_tokens")
-}
-
-model VerificationToken {
-  tokenHash String   @id @map("token_hash")
-  userId    String   @map("user_id") @db.Uuid
-  type      String
-  expiresAt DateTime @map("expires_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("verification_tokens")
 }
 
 model Tag {

@@ -40,27 +40,6 @@ export class UsersController {
     return this.usersService.updateProfile(userId, dto);
   }
 
-  @Get('me/sessions')
-  @ApiOperation({ summary: 'Список сессий текущего пользователя' })
-  async getMySessions(@CurrentUser('id') userId: string) {
-    return this.usersService.getSessions(userId);
-  }
-
-  @Delete('me/sessions/:id')
-  @ApiOperation({ summary: 'Завершить сессию' })
-  async deleteMySession(
-    @CurrentUser('id') userId: string,
-    @Param('id') sessionId: string,
-  ) {
-    await this.usersService.deleteSession(userId, sessionId);
-  }
-
-  @Delete('me/sessions')
-  @ApiOperation({ summary: 'Завершить все сессии' })
-  async deleteAllMySessions(@CurrentUser('id') userId: string) {
-    await this.usersService.deleteAllSessions(userId);
-  }
-
   @Get()
   @UseGuards(RolesGuard)
   @Roles('admin', 'superadmin')

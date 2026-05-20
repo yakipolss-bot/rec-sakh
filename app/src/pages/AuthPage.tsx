@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail, Lock, Phone, UserPlus, ArrowLeft,
-  MessageCircle, Globe, Send, CheckCircle
+  MessageCircle, Globe, Send, CheckCircle, AlertCircle
 } from 'lucide-react';
+import { authService } from '../services/auth.service';
+import { supabase } from '../services/supabase';
 
 type AuthMode = 'login' | 'register' | 'sms' | 'recover';
 
@@ -35,9 +37,7 @@ function validatePhone(v: string): string {
 
 function validatePassword(v: string): string {
   if (!v) return 'Введите пароль';
-  if (v.length < 8) return 'Минимум 8 символов';
-  if (!/[a-zA-Zа-яА-Я]/.test(v)) return 'Должны быть буквы';
-  if (!/\d/.test(v)) return 'Должны быть цифры';
+  if (v.length < 6) return 'Минимум 6 символов';
   return '';
 }
 
@@ -49,6 +49,7 @@ const modes: { id: AuthMode; label: string }[] = [
 ];
 
 export default function AuthPage() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>('login');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -85,28 +86,43 @@ export default function AuthPage() {
     return () => clearTimeout(t);
   }, [countdown]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('recover');
+        setRecoverStep('reset');
+      }
+    });
+    return () => listener?.subscription.unsubscribe();
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setSuccess('');
     const errs: Record<string, string> = {};
     const ee = validateEmail(email);
-    const pe = validatePassword(password);
     if (ee) errs.email = ee;
-    if (pe) errs.password = pe;
+    if (!password) errs.password = 'Введите пароль';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSuccess('Вход выполнен!'); }, 1500);
+    try {
+      await authService.login(email, password);
+      setSuccess('Вход выполнен!');
+      setTimeout(() => navigate('/'), 1000);
+    } catch (err: unknown) {
+      setErrors({ form: err instanceof Error ? err.message : 'Ошибка входа' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setSuccess('');
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = 'Введите имя';
-    const phe = validatePhone(phone);
-    if (phe) errs.phone = phe;
     const ee = validateEmail(email);
     if (ee) errs.email = ee;
     const pe = validatePassword(password);
@@ -115,24 +131,35 @@ export default function AuthPage() {
     if (!agreed) errs.agreed = 'Необходимо согласие';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSuccess('Регистрация успешна!'); }, 1500);
+    try {
+      await authService.register(email, password, name, phone || undefined);
+      setSuccess('Регистрация успешна! Проверьте почту для подтверждения.');
+      setTimeout(() => navigate('/'), 2000);
+    } catch (err: unknown) {
+      setErrors({ form: err instanceof Error ? err.message : 'Ошибка регистрации' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRecoverRequest = (e: React.FormEvent) => {
+  const handleRecoverRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setSuccess('');
     const ee = validateEmail(recoverEmail);
     if (ee) { setErrors({ recoverEmail: ee }); return; }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setRecoverStep('reset');
+    try {
+      await authService.recover(recoverEmail);
       setSuccess('Ссылка для восстановления отправлена на вашу почту');
-    }, 1500);
+    } catch (err: unknown) {
+      setErrors({ recoverEmail: err instanceof Error ? err.message : 'Ошибка' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setSuccess('');
@@ -142,20 +169,46 @@ export default function AuthPage() {
     if (newPassword !== confirmNewPassword) errs.confirmNewPassword = 'Пароли не совпадают';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSuccess('Пароль успешно изменён!'); }, 1500);
+    try {
+      await authService.resetPassword(newPassword);
+      setSuccess('Пароль успешно изменён!');
+      setTimeout(() => { switchMode('login'); setRecoverStep('request'); }, 1500);
+    } catch (err: unknown) {
+      setErrors({ form: err instanceof Error ? err.message : 'Ошибка' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSendCode = useCallback(() => {
+  const handleSendCode = useCallback(async () => {
     const phe = validatePhone(smsPhone);
     if (phe) { setErrors({ smsPhone: phe }); return; }
     setLoading(true);
     setErrors({});
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await authService.sendSmsCode(smsPhone);
       setSmsStep('code');
       setCountdown(60);
-    }, 1000);
+    } catch (err: unknown) {
+      setErrors({ smsPhone: err instanceof Error ? err.message : 'Ошибка' });
+    } finally {
+      setLoading(false);
+    }
   }, [smsPhone]);
+
+  const handleVerifySms = useCallback(async () => {
+    if (smsCode.some(d => !d)) return;
+    setLoading(true);
+    setErrors({});
+    try {
+      await authService.verifySmsCode(smsPhone, smsCode.join(''));
+      setSuccess('Телефон подтверждён!');
+    } catch (err: unknown) {
+      setErrors({ smsCode: err instanceof Error ? err.message : 'Ошибка' });
+    } finally {
+      setLoading(false);
+    }
+  }, [smsPhone, smsCode]);
 
   const handleSmsCodeChange = (i: number, v: string) => {
     if (v.length > 1) return;
@@ -168,6 +221,14 @@ export default function AuthPage() {
   const handleSmsCodeKeyDown = (i: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !smsCode[i] && i > 0) {
       codeRefs.current[i - 1]?.focus();
+    }
+  };
+
+  const handleOAuth = async (provider: 'telegram' | 'vkontakte' | 'yandex') => {
+    try {
+      await authService.signInWithOAuth(provider);
+    } catch {
+      setErrors({ form: 'Ошибка входа через соцсеть' });
     }
   };
 
@@ -402,12 +463,14 @@ export default function AuthPage() {
                           />
                         ))}
                       </div>
+                      {errors.smsCode && <p className="text-xs text-[var(--accent-sunset)] mt-1 text-center font-mono">{errors.smsCode}</p>}
                       <button
                         type="button"
-                        disabled={countdown > 0 || smsCode.some(d => !d)}
-                        className="sakh-btn sakh-btn--primary sakh-btn--lg w-full"
+                        onClick={handleVerifySms}
+                        disabled={loading || countdown > 0 || smsCode.some(d => !d)}
+                        className={`sakh-btn sakh-btn--primary sakh-btn--lg w-full ${loading ? 'sakh-btn--loading' : ''}`}
                       >
-                        Подтвердить
+                        {loading ? '' : 'Подтвердить'}
                       </button>
                       <div className="text-center">
                         <button
@@ -501,6 +564,16 @@ export default function AuthPage() {
                 </div>
               )}
 
+              {errors.form && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 p-3 mt-4 text-sm text-[var(--accent-sunset)] bg-red-50/10"
+                >
+                  <AlertCircle size={16} />
+                  {errors.form}
+                </motion.div>
+              )}
               {success && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -521,15 +594,15 @@ export default function AuthPage() {
               <div className="flex-1 h-px bg-[var(--border-color)]" />
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <button className="sakh-btn sakh-btn--secondary sakh-btn--sm">
+              <button onClick={() => handleOAuth('telegram')} className="sakh-btn sakh-btn--secondary sakh-btn--sm">
                 <Send size={14} />
                 Telegram
               </button>
-              <button className="sakh-btn sakh-btn--secondary sakh-btn--sm">
+              <button onClick={() => handleOAuth('vkontakte')} className="sakh-btn sakh-btn--secondary sakh-btn--sm">
                 <MessageCircle size={14} />
                 VK
               </button>
-              <button className="sakh-btn sakh-btn--secondary sakh-btn--sm">
+              <button onClick={() => handleOAuth('yandex')} className="sakh-btn sakh-btn--secondary sakh-btn--sm">
                 <Globe size={14} />
                 Яндекс
               </button>
