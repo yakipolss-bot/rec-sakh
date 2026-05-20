@@ -1,14 +1,13 @@
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { authService } from '@/services/auth.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, User, MessageSquare, FileText, Briefcase,
   Calendar, Bell, Bookmark, CreditCard, Headphones, ChevronDown,
-  LogOut, Lock, Eye, Settings, Heart
+  LogOut, Lock, Eye, Heart
 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
-import { authService } from '@/services/auth.service';
 import { toast } from 'sonner';
 
 export const accountNavItems = [
@@ -33,11 +32,6 @@ export default function AccountLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isLoading, error } = useUser();
 
-  const handleLogout = useCallback(async () => {
-    await authService.logout();
-    navigate('/login');
-  }, [navigate]);
-
   const isActive = (item: typeof accountNavItems[number]) => {
     if (item.exact) return location.pathname === item.path;
     return location.pathname.startsWith(item.path);
@@ -49,7 +43,7 @@ export default function AccountLayout() {
     try {
       await authService.logout();
       window.location.href = '/login';
-    } catch (err) {
+    } catch {
       toast.error('Ошибка при выходе');
     }
   };
