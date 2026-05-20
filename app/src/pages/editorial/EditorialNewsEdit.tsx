@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Save, Send, Globe, ChevronDown, Upload, X,
+  Save, Send, Globe, ChevronDown, X,
   Loader2,
 } from 'lucide-react';
 import { newsService } from '@/services/news.service';
@@ -46,7 +46,9 @@ export default function EditorialNewsEdit() {
           setTags((art.tags as string[]) || []);
           setCategories(cats || []);
         }
-      } catch {}
+      } catch {
+        /* noop */
+      }
       if (mounted) setLoading(false);
     };
     load();

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Star } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 const ZODIAC_SIGNS = [
   { id: 'aries', name: 'Овен', date: '21 мар — 19 апр', emoji: '♈' },

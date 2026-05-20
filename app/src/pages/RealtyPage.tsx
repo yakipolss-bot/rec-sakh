@@ -12,13 +12,6 @@ const REALTY_CITIES = [
   { value: 'aniva', label: 'Анива' },
 ];
 
-const HOUSE_TYPES = [
-  { value: 'panel', label: 'Панельный' },
-  { value: 'brick', label: 'Кирпичный' },
-  { value: 'monolith', label: 'Монолитный' },
-  { value: 'wood', label: 'Деревянный' },
-];
-
 interface RealtyItem {
   id: string;
   title: string;

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Globe, FileText, Search, RefreshCw, Download, AlertTriangle, Info } from 'lucide-react';
+import { FileText, RefreshCw, Download, AlertTriangle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
 import type { AuditLogEntry } from '@/services/admin.service';

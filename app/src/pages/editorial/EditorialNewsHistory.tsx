@@ -12,11 +12,12 @@ export default function EditorialNewsHistory() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
+    let cancelled = false;
     newsService.getNewsById(id)
-      .then(setArticle)
-      .catch(() => setArticle(null))
-      .finally(() => setLoading(false));
+      .then((article) => { if (!cancelled) setArticle(article); })
+      .catch(() => { if (!cancelled) setArticle(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id]);
 
   if (loading) {

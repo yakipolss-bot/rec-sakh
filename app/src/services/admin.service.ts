@@ -1,5 +1,4 @@
 import apiClient from './api-client';
-import type { UserProfile } from './users.service';
 
 // ── Interfaces ──
 

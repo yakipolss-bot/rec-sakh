@@ -47,7 +47,7 @@ export default function AccountProfile() {
       });
       toast.success('Профиль обновлен');
       refetch?.();
-    } catch (err) {
+    } catch {
       toast.error('Ошибка при сохранении профиля');
     } finally {
       setIsSaving(false);

@@ -81,7 +81,7 @@ export default function EditorialNewsCreate() {
       }
 
       navigate('/editorial/news');
-    } catch (err) {
+    } catch {
       setError('Ошибка при сохранении. Проверьте заполнение полей.');
     } finally {
       setSubmitting(false);

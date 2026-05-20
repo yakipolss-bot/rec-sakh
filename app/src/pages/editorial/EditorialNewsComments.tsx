@@ -17,7 +17,6 @@ export default function EditorialNewsComments() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
     Promise.all([
       newsService.getNewsById(id).catch(() => null),
       commentsService.getComments(id).catch(() => [] as Comment[]),

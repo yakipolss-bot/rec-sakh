@@ -12,12 +12,7 @@ export default function EditorialTags() {
   const [sourceTag, setSourceTag] = useState('');
   const [targetTag, setTargetTag] = useState('');
 
-  useEffect(() => {
-    loadTags();
-  }, []);
-
   const loadTags = () => {
-    setLoading(true);
     tagsService.getTags()
       .then(setTags)
       .catch(() => {
@@ -26,6 +21,10 @@ export default function EditorialTags() {
       })
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    loadTags();
+  }, []);
 
   const filtered = useMemo(
     () => tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase())),

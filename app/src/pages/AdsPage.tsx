@@ -64,7 +64,7 @@ export default function AdsPage() {
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState('date');
 
-  let filtered = category
+  const filtered = category
     ? mockAds.filter(a => a.category === category)
     : [...mockAds];
 

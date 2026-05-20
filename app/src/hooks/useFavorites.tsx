@@ -9,21 +9,24 @@ interface FavoritesContextType {
 const FavoritesContext = createContext<FavoritesContextType | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favorites, setFavorites] = useState<string[]>([]);
-
-  useEffect(() => {
+  const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem('rec-sakh-favorites');
-      if (stored) setFavorites(JSON.parse(stored));
-    } catch { /* ignore */ }
-  }, []);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rec-sakh-favorites', JSON.stringify(favorites));
+  }, [favorites]);
 
   const toggleFavorite = useCallback((newsId: string) => {
     setFavorites(prev => {
       const next = prev.includes(newsId)
         ? prev.filter(id => id !== newsId)
         : [...prev, newsId];
-      localStorage.setItem('rec-sakh-favorites', JSON.stringify(next));
       return next;
     });
   }, []);

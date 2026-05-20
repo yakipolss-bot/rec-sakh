@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Search, Edit, Eye, History, BarChart3,
-  Trash2, AlertTriangle, ChevronDown, Loader2,
+  Trash2, AlertTriangle, Loader2,
 } from 'lucide-react';
 import { newsService } from '@/services/news.service';
 import { categoriesService } from '@/services/categories.service';
@@ -55,7 +55,9 @@ export default function EditorialNewsList() {
           setArticles(newsRes.data || []);
           setCategories(cats || []);
         }
-      } catch {}
+      } catch {
+        /* noop */
+      }
       if (mounted) setLoading(false);
     };
     load();

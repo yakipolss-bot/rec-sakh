@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Briefcase, DollarSign, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, Briefcase, Clock } from 'lucide-react';
 import FilterBar from '@/components/FilterBar';
 
 const JOB_CATEGORIES = [

@@ -18,7 +18,7 @@ export interface NewsArticle {
   content: string;
   mainImageUrl: string | null;
   mainImageThumbnail: string | null;
-  gallery: any[];
+  gallery: unknown[];
   videoUrl: string | null;
   videoType: string | null;
   videoDuration: number | null;

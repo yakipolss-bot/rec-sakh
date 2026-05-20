@@ -19,7 +19,9 @@ export default function EditorialDashboard() {
       try {
         const res = await newsService.getNews({ perPage: 50, sortBy: 'publishedAt', sortOrder: 'desc' });
         if (mounted) setArticles(res.data || []);
-      } catch {}
+      } catch {
+        /* noop */
+      }
       if (mounted) setLoading(false);
     };
     load();

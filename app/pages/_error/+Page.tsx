@@ -5,7 +5,7 @@ export { Page }
 function Page() {
   const pageContext = usePageContext()
   const is404 = pageContext.is404 === true
-  const error = (pageContext as any).errorWhileRendering
+  const error = (pageContext as { errorWhileRendering?: unknown }).errorWhileRendering
 
   if (is404) {
     return (

@@ -1,6 +1,7 @@
 import { escapeInject, dangerouslySkipEscape } from 'vike/server';
 import ReactDOMServer from 'react-dom/server';
 import { PageContextProvider } from 'vike-react/usePageContext';
+import type { PageContextServer } from 'vike/types';
 import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
 
@@ -22,7 +23,7 @@ interface SeoData {
   };
 }
 
-async function onRenderHtml(pageContext: any) {
+async function onRenderHtml(pageContext: PageContextServer) {
   const { Page, pageProps } = pageContext;
   const seo: SeoData | undefined = pageContext.seo;
 

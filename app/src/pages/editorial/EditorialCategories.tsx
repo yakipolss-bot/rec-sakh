@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Edit, Save, X, Plus, Tag, Layers } from 'lucide-react';
+import { Edit, Save, X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { categoriesService } from '@/services/categories.service';
 import type { Category } from '@/services/categories.service';

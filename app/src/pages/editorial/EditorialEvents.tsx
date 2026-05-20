@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Edit, Trash2, Plus, CheckCircle, XCircle, Eye, Info } from 'lucide-react';
+import { Calendar, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Tab = 'all' | 'moderation' | 'create';

@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Sun, Moon, Focus, User, Menu, X, ChevronDown, MapPin } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
-import ThemeSwitcher from './ThemeSwitcher';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const mainCategories = [
@@ -62,22 +61,14 @@ const themeLabels: Record<string, string> = {
   focus: 'Фокус',
 };
 
-function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+function SearchContent({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
-      setQuery('');
-    }
-  }, [open]);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +78,61 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
     }
   };
 
+  return (
+    <div className="w-full max-w-2xl mx-auto px-4">
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+          Поиск по порталу
+        </span>
+        <button onClick={onClose} className="p-2" style={{ color: 'var(--text-secondary)' }}>
+          <X size={20} />
+        </button>
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div
+          className="flex items-center gap-3 px-5 py-4"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+          }}
+        >
+          <Search size={20} style={{ color: 'var(--accent-ocean)' }} />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Новости, события, объявления..."
+            className="flex-1 bg-transparent text-lg outline-none"
+            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
+          />
+        </div>
+      </form>
+      <div className="mt-6 flex flex-wrap gap-2">
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Популярное:</span>
+        {['Погода', 'Происшествия', 'Спорт', 'Курс валют'].map((tag) => (
+          <button
+            key={tag}
+            onClick={() => {
+              navigate(`/search?q=${encodeURIComponent(tag)}`);
+              onClose();
+            }}
+            className="px-3 py-1 text-xs transition-colors"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-color)',
+            }}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <AnimatePresence>
       {open && (
@@ -98,56 +144,7 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
           className="fixed inset-0 z-[70] flex items-start justify-center pt-[15vh]"
           style={{ backgroundColor: 'rgba(10, 15, 20, 0.92)', backdropFilter: 'blur(16px)' }}
         >
-          <div className="w-full max-w-2xl mx-auto px-4">
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                Поиск по порталу
-              </span>
-              <button onClick={onClose} className="p-2" style={{ color: 'var(--text-secondary)' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div
-                className="flex items-center gap-3 px-5 py-4"
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  border: '1px solid var(--border-color)',
-                }}
-              >
-                <Search size={20} style={{ color: 'var(--accent-ocean)' }} />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Новости, события, объявления..."
-                  className="flex-1 bg-transparent text-lg outline-none"
-                  style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
-                />
-              </div>
-            </form>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Популярное:</span>
-              {['Погода', 'Происшествия', 'Спорт', 'Курс валют'].map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => {
-                    navigate(`/search?q=${encodeURIComponent(tag)}`);
-                    onClose();
-                  }}
-                  className="px-3 py-1 text-xs transition-colors"
-                  style={{
-                    backgroundColor: 'var(--bg-surface)',
-                    color: 'var(--text-secondary)',
-                    border: '1px solid var(--border-color)',
-                  }}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SearchContent key="search-content" onClose={onClose} />
         </motion.div>
       )}
     </AnimatePresence>
@@ -244,7 +241,7 @@ function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void })
 }
 
 export default function Navbar() {
-  const { theme, setTheme, effectiveTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -263,9 +260,13 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    setMobileOpen(false);
-    setSearchOpen(false);
-  }, [location.pathname]);
+    function handlePopState() {
+      setMobileOpen(false);
+      setSearchOpen(false);
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const cycleTheme = useCallback(() => {
     const idx = themeCycle.indexOf(theme);

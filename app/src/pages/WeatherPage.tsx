@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sun, Cloud, CloudRain, Snowflake, Wind, Droplets, Gauge, AlertTriangle, ArrowLeft, MapPin, Loader2, Umbrella } from 'lucide-react';
-import { fetchAllCitiesWeather, fetchCityForecast, SAKHALIN_CITIES } from '@/services/weather.service';
+import { fetchAllCitiesWeather, fetchCityForecast } from '@/services/weather.service';
 import type { WeatherData, ForecastDay } from '@/types';
 
 const weatherIcons: Record<WeatherData['condition'], React.ReactNode> = {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Plus, Eye, MousePointer, Mail, Info } from 'lucide-react';
+import { Send, Plus, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function EditorialNewsletters() {

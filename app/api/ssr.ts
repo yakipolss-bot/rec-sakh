@@ -1,4 +1,16 @@
 import { renderPage } from 'vike/server'
+import type { IncomingMessage, ServerResponse } from 'node:http'
+
+interface PageContextWithError {
+  errorWhileRendering?: unknown
+  abortReason?: unknown
+  httpResponse?: {
+    statusCode: number
+    headers: [string, string][]
+    body: string
+  }
+  urlOriginal?: string
+}
 
 function getErrorMessage(err: unknown): string {
   if (!err) return 'Unknown error'
@@ -6,13 +18,13 @@ function getErrorMessage(err: unknown): string {
   return String(err)
 }
 
-export default async (req: any, res: any) => {
+export default async (req: IncomingMessage, res: ServerResponse) => {
   try {
     const pageContextInit = { urlOriginal: req.url }
-    const pageContext = await renderPage(pageContextInit)
+    const pageContext = await renderPage(pageContextInit) as PageContextWithError
 
     // Check for Vike's internal rendering errors
-    const renderErr = (pageContext as any).errorWhileRendering || pageContext.abortReason
+    const renderErr = pageContext.errorWhileRendering || pageContext.abortReason
     if (renderErr) {
       const msg = `[Vike Error] ${getErrorMessage(renderErr)}`
       console.error(msg)
@@ -34,7 +46,7 @@ export default async (req: any, res: any) => {
     // If Vike returned 500 (e.g. error during global init or missing error page),
     // try to extract the actual error from pageContext
     if (statusCode >= 500) {
-      const ctxErr = (pageContext as any).errorWhileRendering
+      const ctxErr = pageContext.errorWhileRendering
       if (ctxErr) {
         const msg = `[SSR 500] ${getErrorMessage(ctxErr)}`
         console.error(msg)
@@ -49,8 +61,8 @@ export default async (req: any, res: any) => {
     res.statusCode = statusCode
     headers.forEach(([name, value]: [string, string]) => res.setHeader(name, value))
     res.end(body)
-  } catch (err: any) {
-    console.error('SSR render error:', err?.stack || err)
+  } catch (err: unknown) {
+    console.error('SSR render error:', err instanceof Error ? err.stack : String(err))
     res.statusCode = 500
     res.setHeader('Content-Type', 'text/plain; charset=utf-8')
     res.end(`[SSR Fatal] ${getErrorMessage(err)}`)

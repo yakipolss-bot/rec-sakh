@@ -26,37 +26,47 @@ function removeLocalStorage(key: string): void {
 }
 
 export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
-  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
-  const [role, setRole] = useState<string | null>(null);
+  const token = getLocalStorage('accessToken');
+
+  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>(() => {
+    if (!token) return 'unauthenticated';
+    const payload = parseJwt(token);
+    if (payload && payload.exp && (payload.exp as number) * 1000 >= Date.now()) {
+      return 'authenticated';
+    }
+    return 'loading';
+  });
+
+  const [role, setRole] = useState<string | null>(() => {
+    if (!token) return null;
+    const payload = parseJwt(token);
+    if (payload && payload.exp && (payload.exp as number) * 1000 >= Date.now()) {
+      return (payload.role as string) || null;
+    }
+    return null;
+  });
 
   useEffect(() => {
-    const token = getLocalStorage('accessToken');
-    if (!token) {
-      setStatus('unauthenticated');
-      return;
-    }
+    const stored = getLocalStorage('accessToken');
+    if (!stored) return;
+    const payload = parseJwt(stored);
+    if (payload && payload.exp && (payload.exp as number) * 1000 >= Date.now()) return;
 
-    const payload = parseJwt(token);
-    if (!payload || !payload.exp || (payload.exp as number) * 1000 < Date.now()) {
-      authService
-        .getSession()
-        .then((session) => {
-          if (session) {
-            setRole(session.user.role || 'authenticated');
-            setStatus('authenticated');
-          } else {
-            setStatus('unauthenticated');
-          }
-        })
-        .catch(() => {
-          removeLocalStorage('accessToken');
-          removeLocalStorage('refreshToken');
+    authService
+      .getSession()
+      .then((session) => {
+        if (session) {
+          setRole(session.user.role || 'authenticated');
+          setStatus('authenticated');
+        } else {
           setStatus('unauthenticated');
-        });
-    } else {
-      setRole((payload.role as string) || null);
-      setStatus('authenticated');
-    }
+        }
+      })
+      .catch(() => {
+        removeLocalStorage('accessToken');
+        removeLocalStorage('refreshToken');
+        setStatus('unauthenticated');
+      });
   }, []);
 
   if (status === 'loading') {

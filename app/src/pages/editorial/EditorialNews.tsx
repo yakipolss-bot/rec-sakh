@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import EditorialNewsList from './EditorialNewsList';
 import EditorialNewsCreate from './EditorialNewsCreate';
-import { FileText } from 'lucide-react';
 
 type Tab = 'list' | 'create';
 
@@ -12,9 +11,13 @@ const tabs: { value: Tab; label: string }[] = [
 ];
 
 export default function EditorialNews() {
-  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-  const tabParam = params.get('tab') as Tab | null;
-  const [activeTab, setActiveTab] = useState<Tab>(tabParam || 'list');
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab') as Tab | null;
+      return tabParam || 'list';
+    }
+    return 'list';
+  });
 
   return (
     <div>

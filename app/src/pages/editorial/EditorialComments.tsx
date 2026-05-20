@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, CheckCircle, XCircle, Shield, Ban, Flag, Search } from 'lucide-react';
+import { MessageSquare, CheckCircle, XCircle, Shield, Ban, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
 import type { Comment } from '@/services/admin.service';

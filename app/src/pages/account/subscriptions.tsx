@@ -66,7 +66,7 @@ export default function AccountSubscriptions() {
       }
       refetch?.();
       toast.success(isSubscribed ? 'Подписка отменена' : 'Подписка добавлена');
-    } catch (err) {
+    } catch {
       toast.error('Ошибка при изменении подписки');
     } finally {
       setIsSaving(false);
@@ -85,7 +85,7 @@ export default function AccountSubscriptions() {
       }
       refetch?.();
       toast.success(isSubscribed ? 'Подписка отменена' : 'Подписка добавлена');
-    } catch (err) {
+    } catch {
       toast.error('Ошибка при изменении подписки');
     } finally {
       setIsSaving(false);
@@ -101,7 +101,7 @@ export default function AccountSubscriptions() {
         refetch?.();
         setKeywordInput('');
         toast.success('Ключевое слово добавлено');
-      } catch (err) {
+      } catch {
         toast.error('Ошибка при добавлении ключевого слова');
       } finally {
         setIsSaving(false);
@@ -116,7 +116,7 @@ export default function AccountSubscriptions() {
       if (sub) await usersService.removeSubscription(sub.id);
       refetch?.();
       toast.success('Ключевое слово удалено');
-    } catch (err) {
+    } catch {
       toast.error('Ошибка при удалении ключевого слова');
     } finally {
       setIsSaving(false);

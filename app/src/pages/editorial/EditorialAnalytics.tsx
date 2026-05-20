@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  TrendingUp, FileText, Users, Search, Activity,
-  Eye, Clock, MousePointer, Globe,
+  Users, Activity,
+  Eye, Clock, MousePointer,
 } from 'lucide-react';
 
 type Tab = 'traffic' | 'content' | 'authors' | 'search' | 'online';
