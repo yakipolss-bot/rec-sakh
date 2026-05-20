@@ -60,12 +60,12 @@ export default function HomePage() {
   const heroArticles = newsArticles.slice(0, 3);
   const bentoNews = newsArticles.slice(3, 11);
   const popularNews = useMemo(
-    () => [...newsArticles].sort((a, b) => b.views - a.views).slice(0, 5),
+    () => [...newsArticles].sort((a, b) => (b.viewsCount ?? 0) - (a.viewsCount ?? 0)).slice(0, 5),
     [newsArticles],
   );
-  const videoArticle = newsArticles[0];
-  const photoArticle = newsArticles.length > 4 ? newsArticles[4] : newsArticles[0];
-  const themeArticles = newsArticles.filter(a => ['n2', 'n8', 'n12'].includes(a.id));
+  const videoArticle = newsArticles[1];
+  const photoArticle = newsArticles[2];
+  const themeArticles = newsArticles.filter(a => a.tags?.includes('theme-day'));
 
   const [pollVoted, setPollVoted] = useState(false);
   const [pollSelected, setPollSelected] = useState<string | null>(null);
@@ -142,7 +142,7 @@ export default function HomePage() {
                     <div className="mt-auto flex items-center gap-4">
                       <span className="sakh-meta sakh-meta--with-icon">
                         <Eye size={12} />
-                        {(heroArticles[0].views || 0).toLocaleString('ru-RU')}
+                        {(heroArticles[0].viewsCount ?? 0).toLocaleString('ru-RU')}
                       </span>
                       <span className="sakh-meta sakh-meta--with-icon">
                         <MessageSquare size={12} />
@@ -183,7 +183,7 @@ export default function HomePage() {
                       <div className="flex items-center gap-3 mt-auto">
                         <span className="sakh-meta sakh-meta--with-icon">
                           <Eye size={10} />
-                          {(article.views || 0).toLocaleString('ru-RU')}
+                          {(article.viewsCount ?? 0).toLocaleString('ru-RU')}
                         </span>
                         <span className="sakh-meta sakh-meta--with-icon">
                           <MessageSquare size={10} />
@@ -240,7 +240,7 @@ export default function HomePage() {
                       <h4 className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-[var(--accent-ocean)] transition-colors text-[var(--text-primary)]">
                         {article.title}
                       </h4>
-                      <span className="sakh-meta">{(article.views || 0).toLocaleString('ru-RU')} просмотров</span>
+                      <span className="sakh-meta">{(article.viewsCount ?? 0).toLocaleString('ru-RU')} просмотров</span>
                     </div>
                   </Link>
                 ))}
@@ -250,75 +250,79 @@ export default function HomePage() {
         </div>
 
         {/* Section 3: Video of the Day */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.5 }}
-          className="mb-12"
-          aria-label="Видео дня"
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <Play size={20} className="text-[var(--accent-ocean)]" />
-            <h2 className="sakh-heading">Видео дня</h2>
-          </div>
-          <div className="sakh-card overflow-hidden">
-            <Link to={`/news/${videoArticle.slug}`} className="block group" aria-label={videoArticle.title}>
-              <div className="relative aspect-video bg-[var(--bg-surface)] flex items-center justify-center overflow-hidden">
-                <img
-                  src={videoArticle.mainImageUrl || ''}
-                  alt={videoArticle.title}
-                  className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-[var(--accent-ocean)]/20 flex items-center justify-center backdrop-blur-sm group-hover:bg-[var(--accent-ocean)]/30 transition-all duration-300">
-                    <Play size={32} className="text-[var(--accent-ocean)] ml-1" />
+        {videoArticle && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.5 }}
+            className="mb-12"
+            aria-label="Видео дня"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <Play size={20} className="text-[var(--accent-ocean)]" />
+              <h2 className="sakh-heading">Видео дня</h2>
+            </div>
+            <div className="sakh-card overflow-hidden">
+              <Link to={`/news/${videoArticle.slug}`} className="block group" aria-label={videoArticle.title}>
+                <div className="relative aspect-video bg-[var(--bg-surface)] flex items-center justify-center overflow-hidden">
+                  <img
+                    src={videoArticle.mainImageUrl || ''}
+                    alt={videoArticle.title}
+                    className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-[var(--accent-ocean)]/20 flex items-center justify-center backdrop-blur-sm group-hover:bg-[var(--accent-ocean)]/30 transition-all duration-300">
+                      <Play size={32} className="text-[var(--accent-ocean)] ml-1" />
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[var(--bg-primary)]/90 to-transparent">
+                    <h3 className="sakh-title text-white line-clamp-2">{videoArticle.title}</h3>
+                    <p className="sakh-meta text-white/70 mt-1">{videoArticle.lead}</p>
                   </div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[var(--bg-primary)]/90 to-transparent">
-                  <h3 className="sakh-title text-white line-clamp-2">{videoArticle.title}</h3>
-                  <p className="sakh-meta text-white/70 mt-1">{videoArticle.lead}</p>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </motion.section>
+              </Link>
+            </div>
+          </motion.section>
+        )}
 
         {/* Section 4: Photo of the Day */}
-        <motion.section
-          initial={{ opacity: 0, scale: 0.98 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.5 }}
-          className="mb-12"
-          aria-label="Фото дня"
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <Camera size={20} className="text-[var(--accent-ocean)]" />
-            <h2 className="sakh-heading">Фото дня</h2>
-          </div>
-          <div className="sakh-card overflow-hidden group">
-            <Link to={`/news/${photoArticle.slug}`} className="block" aria-label={photoArticle.title}>
-              <div className="overflow-hidden">
-                <img
-                  src={photoArticle.mainImageUrl || ''}
-                  alt={photoArticle.title}
-                  className="w-full aspect-video object-cover transition-transform duration-700 group-hover:scale-105"
-                  loading="lazy"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="sakh-title mb-2">{photoArticle.title}</h3>
-                <div className="flex items-center gap-4 sakh-meta">
-                  <span>{photoArticle.city}</span>
-                  <span>{photoArticle.author?.name}</span>
-                  <span>{photoArticle.publishedAt ? new Date(photoArticle.publishedAt).toLocaleDateString('ru-RU') : ''}</span>
+        {photoArticle && (
+          <motion.section
+            initial={{ opacity: 0, scale: 0.98 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.5 }}
+            className="mb-12"
+            aria-label="Фото дня"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <Camera size={20} className="text-[var(--accent-ocean)]" />
+              <h2 className="sakh-heading">Фото дня</h2>
+            </div>
+            <div className="sakh-card overflow-hidden group">
+              <Link to={`/news/${photoArticle.slug}`} className="block" aria-label={photoArticle.title}>
+                <div className="overflow-hidden">
+                  <img
+                    src={photoArticle.mainImageUrl || ''}
+                    alt={photoArticle.title}
+                    className="w-full aspect-video object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
                 </div>
-              </div>
-            </Link>
-          </div>
-        </motion.section>
+                <div className="p-4">
+                  <h3 className="sakh-title mb-2">{photoArticle.title}</h3>
+                  <div className="flex items-center gap-4 sakh-meta">
+                    <span>{photoArticle.city}</span>
+                    <span>{photoArticle.author?.name}</span>
+                    <span>{photoArticle.publishedAt ? new Date(photoArticle.publishedAt).toLocaleDateString('ru-RU') : ''}</span>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </motion.section>
+        )}
 
         {/* Section 5: Poll of the Day */}
         <motion.section
@@ -410,26 +414,28 @@ export default function HomePage() {
         </motion.section>
 
         {/* Section 6: Theme of the Day */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.5 }}
-          aria-label="Тема дня"
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <Sun size={20} className="text-[var(--accent-ocean)]" />
-            <h2 className="sakh-heading">Тема дня</h2>
-          </div>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="sakh-tag sakh-tag--accent">Городская среда</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {themeArticles.map((article, i) => (
-              <NewsCard key={article.id} article={article} variant="compact" index={i} />
-            ))}
-          </div>
-        </motion.section>
+        {themeArticles.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.5 }}
+            aria-label="Тема дня"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <Sun size={20} className="text-[var(--accent-ocean)]" />
+              <h2 className="sakh-heading">Тема дня</h2>
+            </div>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="sakh-tag sakh-tag--accent">Городская среда</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {themeArticles.map((article, i) => (
+                <NewsCard key={article.id} article={article} variant="compact" index={i} />
+              ))}
+            </div>
+          </motion.section>
+        )}
       </div>
     </div>
   );

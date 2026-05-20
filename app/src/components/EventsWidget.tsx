@@ -1,7 +1,30 @@
-import { Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Calendar, MapPin } from 'lucide-react';
+import { eventsService } from '@/services/events.service';
+import type { ArticleEvent } from '@/services/events.service';
 
 export default function EventsWidget() {
+  const [events, setEvents] = useState<ArticleEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      try {
+        const res = await eventsService.getAll({ perPage: 4, sort: 'startDate' });
+        if (!cancelled) setEvents(res.data || []);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -9,14 +32,46 @@ export default function EventsWidget() {
       transition={{ duration: 0.2 }}
       className="sakh-card p-4"
     >
-      <h3 className="sakh-caption mb-4">
-        Афиша
-      </h3>
-      <div className="flex flex-col items-center justify-center py-8 text-center">
-        <Calendar size={32} className="text-[var(--text-muted)] mb-3" />
-        <p className="sakh-meta mb-1">Модуль событий скоро появится</p>
-        <p className="sakh-meta text-xs">Следите за обновлениями</p>
-      </div>
+      <Link to="/events" className="flex items-center justify-between mb-4 group">
+        <h3 className="sakh-caption group-hover:text-[var(--accent-ocean)] transition-colors">
+          Афиша
+        </h3>
+        <span className="text-xs text-[var(--accent-ocean)]">все →</span>
+      </Link>
+
+      {loading ? (
+        <div className="flex justify-center py-6">
+          <div className="w-6 h-6 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+        </div>
+      ) : events.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <Calendar size={28} className="text-[var(--text-muted)] mb-2" />
+          <p className="sakh-meta">Событий пока нет</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {events.map(event => (
+            <Link
+              key={event.id}
+              to={`/event/${event.id}`}
+              className="block group"
+            >
+              <div className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-ocean)] transition-colors line-clamp-2 leading-snug mb-1">
+                {event.title}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                <span>{new Date(event.startDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>
+                {event.city && (
+                  <>
+                    <span>·</span>
+                    <span className="flex items-center gap-0.5"><MapPin size={10} />{event.city}</span>
+                  </>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }

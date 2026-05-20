@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CalendarDays, ArrowLeft } from 'lucide-react';
-import FilterBar from '@/components/FilterBar';
-import EmptyState from '@/components/EmptyState';
+import { ArrowLeft, MapPin, CalendarDays, Clock, Tag } from 'lucide-react';
+import { eventsService } from '@/services/events.service';
+import type { ArticleEvent } from '@/services/events.service';
 
 const VIEW_OPTIONS = [
   { value: 'list', label: 'Список' },
@@ -11,18 +11,53 @@ const VIEW_OPTIONS = [
   { value: 'month', label: 'Месяц' },
 ];
 
-const CATEGORY_OPTIONS = [
-  { value: 'cinema', label: 'Кино' },
-  { value: 'theatre', label: 'Театр' },
-  { value: 'concert', label: 'Концерты' },
-  { value: 'exhibition', label: 'Выставки' },
-  { value: 'sport', label: 'Спорт' },
-  { value: 'festival', label: 'Фестивали' },
-];
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+  },
+};
 
 export default function EventsPage() {
-  const [view, setView] = useState('list');
-  const [category, setCategory] = useState<string | null>(null);
+  const [events, setEvents] = useState<ArticleEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = searchParams.get('view') || 'list';
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      try {
+        const res = await eventsService.getAll({ perPage: 50, sort: 'startDate' });
+        if (!cancelled) setEvents(res.data || []);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
+
+  const setView = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('view', v);
+    setSearchParams(next);
+  };
+
+  const now = new Date();
+  const filtered = events.filter(e => new Date(e.startDate) >= now).slice(0, 30);
 
   return (
     <div className="pt-20 pb-8">
@@ -55,33 +90,71 @@ export default function EventsPage() {
                   onClick={() => setView(opt.value)}
                   className={view === opt.value ? 'sakh-tag sakh-tag--accent' : 'sakh-tag sakh-tag--outline'}
                 >
-                  {opt.value === 'list' && <CalendarDays size={12} className="inline mr-1" />}
-                  {opt.value === 'week' && <CalendarDays size={12} className="inline mr-1" />}
-                  {opt.value === 'month' && <CalendarDays size={12} className="inline mr-1" />}
                   {opt.label}
                 </button>
               ))}
             </div>
           </div>
-
-          <FilterBar
-            options={CATEGORY_OPTIONS}
-            selected={category}
-            onChange={setCategory}
-          />
         </div>
 
-        <div className="col-span-full">
-          <EmptyState
-            title="Модуль событий скоро появится"
-            description="Календарь событий Сахалина уже в разработке. Скоро здесь появятся концерты, спектакли, выставки и спортивные мероприятия."
-            action={
-              <Link to="/" className="sakh-btn sakh-btn--primary sakh-btn--md">
-                На главную
-              </Link>
-            }
-          />
-        </div>
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <CalendarDays size={48} className="mx-auto text-[var(--text-muted)] mb-4" />
+            <p className="sakh-body text-[var(--text-secondary)]">Ближайших событий нет</p>
+          </div>
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {filtered.map(event => (
+              <motion.div key={event.id} variants={cardVariants}>
+                <Link
+                  to={`/event/${event.id}`}
+                  className="sakh-card block p-4 group h-full"
+                >
+                  {event.category && (
+                    <span className="sakh-tag sakh-tag--accent inline-flex items-center gap-1 mb-3">
+                      <Tag size={10} />
+                      {event.category.name}
+                    </span>
+                  )}
+                  <h3 className="sakh-title mb-2 group-hover:text-[var(--accent-ocean)] transition-colors">
+                    {event.title}
+                  </h3>
+                  {event.shortDescription && (
+                    <p className="sakh-meta mb-3 line-clamp-2">{event.shortDescription}</p>
+                  )}
+                  <div className="flex flex-col gap-1.5 mt-auto">
+                    <span className="sakh-meta sakh-meta--with-icon">
+                      <CalendarDays size={12} />
+                      {new Date(event.startDate).toLocaleDateString('ru-RU', {
+                        day: 'numeric', month: 'long', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })}
+                    </span>
+                    {event.venueName && (
+                      <span className="sakh-meta sakh-meta--with-icon">
+                        <MapPin size={12} />
+                        {event.venueName}{event.city ? `, ${event.city}` : ''}
+                      </span>
+                    )}
+                    <span className="sakh-meta sakh-meta--with-icon">
+                      <Clock size={12} />
+                      {event.isFree ? 'Бесплатно' : event.price ? `от ${event.price} ₽` : ''}
+                    </span>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   );

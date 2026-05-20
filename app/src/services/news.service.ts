@@ -1,5 +1,22 @@
 import apiClient from './api-client';
 
+function normalizeTags(article: Record<string, unknown>): Record<string, unknown> {
+  if (Array.isArray(article.tags)) {
+    article.tags = article.tags.map((t: unknown) => {
+      if (typeof t === 'object' && t && 'tag' in (t as object)) {
+        return ((t as { tag: { name: string } }).tag?.name || '') as string;
+      }
+      return t as string;
+    }).filter(Boolean);
+  }
+  return article;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeArticle(a: any): NewsArticle {
+  return normalizeTags(a) as unknown as NewsArticle;
+}
+
 export interface NewsArticle {
   id: string;
   slug: string;
@@ -23,7 +40,7 @@ export interface NewsArticle {
   readingTimeMinutes: number | null;
   createdAt: string;
   updatedAt: string;
-  tags?: string[] | { tag: { id: string; name: string } }[];
+  tags: string[];
 }
 
 export interface NewsListResponse {
@@ -50,40 +67,36 @@ export interface NewsQueryParams {
   author?: string;
 }
 
+function apiResponse(data: unknown): unknown {
+  if (data && typeof data === 'object' && 'data' in (data as object)) {
+    return (data as { data: unknown }).data;
+  }
+  return data;
+}
+
 export const newsService = {
   async getNews(params?: NewsQueryParams) {
     const { data } = await apiClient.get('/news', { params });
-    const result = data.data ? data : data;
-    return result as NewsListResponse;
+    const result: { data: NewsArticle[] } = apiResponse(data) as { data: NewsArticle[] };
+    return { ...result, data: (result.data || []).map(normalizeArticle) };
   },
 
   async getNewsById(id: string) {
     const { data } = await apiClient.get(`/news/${id}`);
-    return (data.data || data) as NewsArticle;
+    const article = apiResponse(data) as NewsArticle;
+    return normalizeArticle(article);
   },
 
-  async createNews(dto: {
-    title: string;
-    content: string;
-    lead?: string;
-    categoryId?: string;
-    city?: string;
-    mainImageUrl?: string;
-    isUrgent?: boolean;
-    isPremium?: boolean;
-    isBreaking?: boolean;
-    scheduledAt?: string;
-    tags?: string[];
-    seoTitle?: string;
-    seoDescription?: string;
-  }) {
+  async createNews(dto: Record<string, unknown>) {
     const { data } = await apiClient.post('/news', dto);
-    return (data.data || data) as NewsArticle;
+    const article = apiResponse(data) as NewsArticle;
+    return normalizeArticle(article);
   },
 
   async updateNews(id: string, dto: Record<string, unknown>) {
     const { data } = await apiClient.patch(`/news/${id}`, dto);
-    return (data.data || data) as NewsArticle;
+    const article = apiResponse(data) as NewsArticle;
+    return normalizeArticle(article);
   },
 
   async deleteNews(id: string) {
@@ -94,11 +107,13 @@ export const newsService = {
     const body: Record<string, string> = { status };
     if (rejectionReason) body.rejectionReason = rejectionReason;
     const { data } = await apiClient.patch(`/news/${id}/status`, body);
-    return (data.data || data) as NewsArticle;
+    const article = apiResponse(data) as NewsArticle;
+    return normalizeArticle(article);
   },
 
   async getRelatedNews(id: string, limit = 5) {
     const { data } = await apiClient.get(`/news/${id}/related`, { params: { limit } });
-    return (data.data || data) as NewsArticle[];
+    const articles = apiResponse(data) as NewsArticle[];
+    return (articles || []).map(normalizeArticle);
   },
 };
