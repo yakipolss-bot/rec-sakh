@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
@@ -42,6 +42,14 @@ export class CategoriesService {
         children: true,
       },
     });
+  }
+
+  async delete(id: string) {
+    const count = await this.prisma.newsArticle.count({ where: { categoryId: id } });
+    if (count > 0) {
+      throw new BadRequestException(`Cannot delete category: ${count} articles are linked to it`);
+    }
+    await this.prisma.category.delete({ where: { id } });
   }
 
   async update(id: string, dto: UpdateCategoryDto) {

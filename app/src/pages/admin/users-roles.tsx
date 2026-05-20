@@ -1,24 +1,53 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { Shield, Plus } from 'lucide-react';
-import { adminUsers, permissionMatrix } from '@/data/adminMock';
+import { adminService } from '@/services';
 
-const roles = ['admin', 'editor', 'moderator', 'user'];
 const roleLabels: Record<string, string> = {
   admin: 'Администратор', editor: 'Редактор', moderator: 'Модератор', user: 'Пользователь',
 };
 
+const sections = ['Новости', 'Комментарии', 'Рубрики', 'Пользователи', 'Реклама', 'Настройки', 'Рассылки', 'Медиа'];
+
+const defaultPermissions: Record<string, boolean[]> = {
+  admin: [true, true, true, true, true, true, true, true],
+  editor: [true, true, true, false, false, false, true, true],
+  moderator: [false, true, false, true, false, false, false, true],
+  user: [false, false, false, false, false, false, false, false],
+};
+
 export default function AdminUsersRoles() {
-  const roleCounts = roles.map(role => ({
-    role,
-    label: roleLabels[role],
-    count: adminUsers.filter(u => u.role === role).length,
-  }));
+  const [roleCounts, setRoleCounts] = useState<{ role: string; label: string; count: number }[]>([]);
+
+  useEffect(() => {
+    adminService.getUsers({ perPage: 1 })
+      .then(async ({ meta }) => {
+        const { data: allUsers } = await adminService.getUsers({ perPage: meta?.total || 100 });
+        return allUsers;
+      })
+      .then(users => {
+        const counts = Object.keys(roleLabels).map(role => ({
+          role,
+          label: roleLabels[role],
+          count: users.filter(u => u.role === role).length,
+        }));
+        setRoleCounts(counts);
+      })
+      .catch(() => {
+        setRoleCounts(Object.keys(roleLabels).map(role => ({
+          role, label: roleLabels[role], count: 0,
+        })));
+      });
+  }, []);
+
+  const roles = Object.keys(roleLabels);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="sakh-heading">Управление ролями</h1>
-        <button className="sakh-btn sakh-btn--primary sakh-btn--sm">
+        <button className="sakh-btn sakh-btn--primary sakh-btn--sm" onClick={() => toast.info('Добавление ролей — в разработке')}>
           <Plus size={14} />
           Добавить роль
         </button>
@@ -54,18 +83,18 @@ export default function AdminUsersRoles() {
             </tr>
           </thead>
           <tbody>
-            {permissionMatrix.map((perm, i) => (
+            {sections.map((section, i) => (
               <motion.tr
-                key={perm.section}
+                key={section}
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
                 className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface)] transition-colors"
               >
-                <td className="py-3 px-3 font-mono text-xs text-[var(--text-primary)]">{perm.section}</td>
+                <td className="py-3 px-3 font-mono text-xs text-[var(--text-primary)]">{section}</td>
                 {roles.map(r => (
                   <td key={r} className="py-3 px-3 text-center">
-                    {perm.roles[r] ? (
+                    {defaultPermissions[r]?.[i] ? (
                       <span className="text-[var(--accent-ocean)] font-mono text-xs">Да</span>
                     ) : (
                       <span className="text-[var(--text-muted)] font-mono text-xs">—</span>

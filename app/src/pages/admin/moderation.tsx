@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Shield, CheckCircle, XCircle, AlertTriangle,
   Activity, Ban, Flag, Sliders,
 } from 'lucide-react';
-import { moderationQueue, moderationRules } from '@/data/adminMock';
+import { toast } from 'sonner';
+import { adminService } from '@/services';
+import type { ModerationQueueItem, ModerationRule } from '@/services/admin.service';
 
 const tabs = ['Жалобы на контент', 'На пользователей', 'Авто-модерация', 'Правила'];
 
@@ -32,22 +34,48 @@ const actionStyle: Record<string, string> = {
   approve: 'sakh-tag--outline',
 };
 
-const ruleStatusLabels: Record<string, string> = {
-  active: 'Активно',
-  inactive: 'Отключено',
-};
-
-const ruleStatusStyle: Record<string, string> = {
-  active: 'sakh-tag--accent',
-  inactive: 'sakh-tag--outline',
-};
-
 export default function AdminModeration() {
   const [tab, setTab] = useState(0);
+  const [queue, setQueue] = useState<ModerationQueueItem[]>([]);
+  const [rules, setRules] = useState<ModerationRule[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const contentReports = moderationQueue.filter(r => r.contentType !== 'Пользователь');
-  const userReports = moderationQueue.filter(r => r.contentType === 'Пользователь');
-  const pendingCount = moderationQueue.filter(r => r.status === 'pending').length;
+  useEffect(() => {
+    Promise.all([
+      adminService.getModerationQueue({ perPage: 50 }),
+      adminService.getModerationRules(),
+    ])
+      .then(([queueData, rulesData]) => {
+        setQueue(queueData.data);
+        setRules(rulesData);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const contentReports = queue.filter(r => r.contentType !== 'Пользователь' && r.contentType !== 'user');
+  const userReports = queue.filter(r => r.contentType === 'Пользователь' || r.contentType === 'user');
+  const pendingCount = queue.filter(r => r.status === 'pending').length;
+
+  const handleReview = async (itemId: string, status: 'approved' | 'rejected') => {
+    try {
+      await adminService.reviewModeration(itemId, { status });
+      setQueue(prev => prev.map(r => r.id === itemId ? { ...r, status } : r));
+      toast.success(`Жалоба ${status === 'approved' ? 'одобрена' : 'отклонена'}`);
+    } catch {
+      toast.error('Ошибка при обработке жалобы');
+    }
+  };
+
+  const toggleRule = async (rule: ModerationRule) => {
+    try {
+      await adminService.updateModerationRule(rule.id, { isActive: !rule.isActive });
+      setRules(prev => prev.map(r => r.id === rule.id ? { ...r, isActive: !r.isActive } : r));
+      toast.success(`Правило "${rule.ruleType}" ${rule.isActive ? 'отключено' : 'активировано'}`);
+    } catch {
+      toast.error('Ошибка при обновлении правила');
+    }
+  };
 
   const autoStats = [
     { label: 'Всего проверено', value: '12 847', icon: Activity },
@@ -82,7 +110,9 @@ export default function AdminModeration() {
         ))}
       </div>
 
-      {tab === 0 && (
+      {loading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
+
+      {!loading && tab === 0 && (
         <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -112,8 +142,8 @@ export default function AdminModeration() {
                 >
                   <td className="py-3 px-3 font-mono text-xs text-[var(--text-primary)]">{r.contentType}</td>
                   <td className="py-3 px-3 font-mono text-xs text-[var(--text-secondary)]">{r.reason}</td>
-                  <td className="py-3 px-3 font-mono text-xs text-[var(--accent-ocean)]">{r.author}</td>
-                  <td className="py-3 px-3 font-mono text-xs text-[var(--text-secondary)]">{r.createdAt}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-[var(--accent-ocean)]">{r.reporter?.name || r.reportedBy || '—'}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-[var(--text-secondary)]">{r.createdAt ? new Date(r.createdAt).toLocaleString('ru-RU') : '—'}</td>
                   <td className="py-3 px-3">
                     <span className={`sakh-tag ${reportStatusStyle[r.status]}`}>
                       {reportStatusLabels[r.status]}
@@ -125,12 +155,14 @@ export default function AdminModeration() {
                         <button
                           className="sakh-btn sakh-btn--secondary sakh-btn--sm"
                           title="Одобрить"
+                          onClick={() => handleReview(r.id, 'approved')}
                         >
                           <CheckCircle size={14} />
                         </button>
                         <button
                           className="sakh-btn sakh-btn--danger sakh-btn--sm"
                           title="Отклонить"
+                          onClick={() => handleReview(r.id, 'rejected')}
                         >
                           <XCircle size={14} />
                         </button>
@@ -144,7 +176,7 @@ export default function AdminModeration() {
         </motion.div>
       )}
 
-      {tab === 1 && (
+      {!loading && tab === 1 && (
         <motion.div key="users" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -174,8 +206,8 @@ export default function AdminModeration() {
                 >
                   <td className="py-3 px-3 font-mono text-xs text-[var(--text-primary)]">{r.contentType}</td>
                   <td className="py-3 px-3 font-mono text-xs text-[var(--text-secondary)]">{r.reason}</td>
-                  <td className="py-3 px-3 font-mono text-xs text-[var(--accent-ocean)]">{r.author}</td>
-                  <td className="py-3 px-3 font-mono text-xs text-[var(--text-secondary)]">{r.createdAt}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-[var(--accent-ocean)]">{r.reporter?.name || r.reportedBy || '—'}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-[var(--text-secondary)]">{r.createdAt ? new Date(r.createdAt).toLocaleString('ru-RU') : '—'}</td>
                   <td className="py-3 px-3">
                     <span className={`sakh-tag ${reportStatusStyle[r.status]}`}>
                       {reportStatusLabels[r.status]}
@@ -187,12 +219,14 @@ export default function AdminModeration() {
                         <button
                           className="sakh-btn sakh-btn--secondary sakh-btn--sm"
                           title="Одобрить"
+                          onClick={() => handleReview(r.id, 'approved')}
                         >
                           <CheckCircle size={14} />
                         </button>
                         <button
                           className="sakh-btn sakh-btn--danger sakh-btn--sm"
                           title="Отклонить"
+                          onClick={() => handleReview(r.id, 'rejected')}
                         >
                           <XCircle size={14} />
                         </button>
@@ -206,7 +240,7 @@ export default function AdminModeration() {
         </motion.div>
       )}
 
-      {tab === 2 && (
+      {!loading && tab === 2 && (
         <motion.div key="auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {autoStats.map((stat, i) => {
@@ -279,7 +313,7 @@ export default function AdminModeration() {
         </motion.div>
       )}
 
-      {tab === 3 && (
+      {!loading && tab === 3 && (
         <motion.div key="rules" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -293,7 +327,13 @@ export default function AdminModeration() {
               </tr>
             </thead>
             <tbody>
-              {moderationRules.map((r, i) => (
+              {rules.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-[var(--text-muted)] font-mono text-xs">
+                    Нет правил
+                  </td>
+                </tr>
+              ) : rules.map((r, i) => (
                 <motion.tr
                   key={r.id}
                   initial={{ opacity: 0, y: 6 }}
@@ -301,23 +341,29 @@ export default function AdminModeration() {
                   transition={{ delay: i * 0.03 }}
                   className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface)] transition-colors"
                 >
-                  <td className="py-3 px-3 font-mono text-xs text-[var(--text-primary)]">{r.rule}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-[var(--text-primary)]">{r.ruleType}</td>
                   <td className="py-3 px-3">
                     <code className="text-xs bg-[var(--bg-surface)] px-2 py-0.5 text-[var(--accent-ocean)] font-mono">
                       {r.pattern}
                     </code>
                   </td>
                   <td className="py-3 px-3">
-                    <span className={`sakh-tag ${actionStyle[r.action]}`}>{actionLabels[r.action]}</span>
+                    <span className={`sakh-tag ${actionStyle[r.action]}`}>{actionLabels[r.action] || r.action}</span>
                   </td>
                   <td className="py-3 px-3">
                     <span className="font-mono text-xs text-[var(--text-primary)]">{r.priority}</span>
                   </td>
                   <td className="py-3 px-3">
-                    <span className={`sakh-tag ${ruleStatusStyle[r.status]}`}>{ruleStatusLabels[r.status]}</span>
+                    <span className={`sakh-tag ${r.isActive ? 'sakh-tag--accent' : 'sakh-tag--outline'}`}>
+                      {r.isActive ? 'Активно' : 'Отключено'}
+                    </span>
                   </td>
                   <td className="py-3 px-3">
-                    <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Редактировать">
+                    <button
+                      className="sakh-btn sakh-btn--ghost sakh-btn--sm"
+                      title="Включить/отключить"
+                      onClick={() => toggleRule(r)}
+                    >
                       <Sliders size={14} />
                     </button>
                   </td>

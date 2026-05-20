@@ -1,19 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Plus, Eye, MousePointer, Mail } from 'lucide-react';
-import { editorialNewsletters } from '@/data/editorialMock';
-
-const typeLabels: Record<string, string> = {
-  digest: 'Дайджест',
-  urgent: 'Экстренная',
-  thematic: 'Тематическая',
-};
-
-const typeColors: Record<string, string> = {
-  digest: 'sakh-tag--accent',
-  urgent: 'sakh-tag--sunset',
-  thematic: 'sakh-tag--outline',
-};
+import { Send, Plus, Eye, MousePointer, Mail, Info } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function EditorialNewsletters() {
   const [showCreate, setShowCreate] = useState(false);
@@ -71,7 +59,10 @@ export default function EditorialNewsletters() {
               />
             </div>
             <div className="flex gap-2">
-              <button className="sakh-btn sakh-btn--primary sakh-btn--md">
+              <button
+                onClick={() => toast.info('Модуль рассылок находится в разработке')}
+                className="sakh-btn sakh-btn--primary sakh-btn--md"
+              >
                 <Send size={14} /> Отправить
               </button>
               <button onClick={() => setShowCreate(false)} className="sakh-btn sakh-btn--ghost sakh-btn--md">Отмена</button>
@@ -80,43 +71,12 @@ export default function EditorialNewsletters() {
         </motion.div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border-color)]">
-              <th className="px-3 py-2 text-left sakh-caption">Тема</th>
-              <th className="px-3 py-2 text-left sakh-caption">Тип</th>
-              <th className="px-3 py-2 text-left sakh-caption">Дата</th>
-              <th className="px-3 py-2 text-left sakh-caption">
-                <div className="flex items-center gap-1"><Eye size={12} /> Открываемость</div>
-              </th>
-              <th className="px-3 py-2 text-left sakh-caption">
-                <div className="flex items-center gap-1"><MousePointer size={12} /> Клики</div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {editorialNewsletters.map((nl, i) => (
-              <motion.tr
-                key={nl.id}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="border-b border-[var(--border-color)] hover:bg-[var(--bg-surface)] transition-colors"
-              >
-                <td className="px-3 py-3 text-[var(--text-primary)]">{nl.subject}</td>
-                <td className="px-3 py-3">
-                  <span className={`sakh-tag ${typeColors[nl.type] || 'sakh-tag--muted'}`}>
-                    {typeLabels[nl.type] || nl.type}
-                  </span>
-                </td>
-                <td className="px-3 py-3 sakh-meta">{nl.sentAt}</td>
-                <td className="px-3 py-3 font-mono text-xs text-[var(--accent-ocean)]">{nl.openRate}%</td>
-                <td className="px-3 py-3 font-mono text-xs text-[var(--text-secondary)]">{nl.clickRate}%</td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="sakh-card p-8 text-center">
+        <Mail size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
+        <h3 className="sakh-title mb-2">Модуль рассылок скоро появится</h3>
+        <p className="sakh-body text-sm text-[var(--text-secondary)]">
+          Управление email-рассылками и аналитика находятся в разработке.
+        </p>
       </div>
     </div>
   );

@@ -51,6 +51,10 @@ import AdminAdvertising from '../../src/pages/admin/advertising';
 import AdminBilling from '../../src/pages/admin/billing';
 import AdminSettings from '../../src/pages/admin/settings';
 import AdminSystem from '../../src/pages/admin/system';
+import AdminNews from '../../src/pages/admin/news';
+import AdminComments from '../../src/pages/admin/comments';
+import AdminCategories from '../../src/pages/admin/categories';
+import AdminMedia from '../../src/pages/admin/media';
 import EditorialLayout from '../../src/pages/editorial/EditorialLayout';
 import EditorialDashboard from '../../src/pages/editorial/EditorialDashboard';
 import EditorialNews from '../../src/pages/editorial/EditorialNews';
@@ -157,6 +161,10 @@ function AnimatedRoutes() {
             <Route path="advertising" element={<AdminAdvertising />} />
             <Route path="billing" element={<AdminBilling />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="news" element={<AdminNews />} />
+            <Route path="comments" element={<AdminComments />} />
+            <Route path="categories" element={<AdminCategories />} />
+            <Route path="media" element={<AdminMedia />} />
             <Route path="system" element={<AdminSystem />} />
           </Route>
         </Routes>

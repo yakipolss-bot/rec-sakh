@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { AuditService } from './audit.service.js';
@@ -6,6 +6,8 @@ import { ModerationService } from './moderation.service.js';
 import { AnalyticsService } from './analytics.service.js';
 import { SettingsService } from './settings.service.js';
 import { StaffService } from './staff.service.js';
+import { readdir, stat, unlink } from 'fs/promises';
+import { join } from 'path';
 
 @Injectable()
 export class AdminService {
@@ -108,5 +110,39 @@ export class AdminService {
     }
 
     return { message: `Bulk ${action} completed for ${ids.length} articles` };
+  }
+
+  async getMediaList() {
+    const uploadDir = join(process.cwd(), 'uploads');
+    try {
+      const files = await readdir(uploadDir);
+      const items = await Promise.all(
+        files.map(async (filename) => {
+          const filePath = join(uploadDir, filename);
+          const stats = await stat(filePath);
+          return {
+            filename,
+            url: `/uploads/${filename}`,
+            size: stats.size,
+            createdAt: stats.birthtime.toISOString(),
+            isImage: /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(filename),
+          };
+        }),
+      );
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return { data: items, total: items.length };
+    } catch {
+      return { data: [], total: 0 };
+    }
+  }
+
+  async deleteMedia(filename: string) {
+    const filePath = join(process.cwd(), 'uploads', filename);
+    try {
+      await unlink(filePath);
+      return { message: `File "${filename}" deleted` };
+    } catch {
+      throw new NotFoundException(`File "${filename}" not found`);
+    }
   }
 }

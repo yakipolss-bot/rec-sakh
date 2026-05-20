@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   MapPin, TrendingUp, MousePointerClick,
   DollarSign, Eye, Layout,
 } from 'lucide-react';
-import { adCampaigns, adPlacements } from '@/data/adminMock';
+import { adminService } from '@/services';
+import type { AdCampaign, AdPlacement } from '@/services/admin.service';
 
 type AdTab = 'campaigns' | 'placements' | 'clients' | 'stats';
 
@@ -15,52 +16,52 @@ const tabs: { key: AdTab; label: string }[] = [
   { key: 'stats', label: 'Статистика' },
 ];
 
-const statusBadge: Record<string, string> = {
-  active: 'sakh-tag--accent',
-  paused: 'sakh-tag--sunset',
-  completed: 'sakh-tag--outline',
-};
 
-const statusLabels: Record<string, string> = {
-  active: 'Активна',
-  paused: 'Пауза',
-  completed: 'Завершена',
-};
-
-const placementStatusBadge: Record<string, string> = {
-  active: 'sakh-tag--accent',
-  inactive: 'sakh-tag--outline',
-};
-
-const clients = (() => {
-  const map = new Map<string, { name: string; campaigns: number; totalBudget: number; totalSpent: number }>();
-  adCampaigns.forEach(c => {
-    const existing = map.get(c.client);
-    if (existing) {
-      existing.campaigns++;
-      existing.totalBudget += c.budget;
-      existing.totalSpent += c.spent;
-    } else {
-      map.set(c.client, { name: c.client, campaigns: 1, totalBudget: c.budget, totalSpent: c.spent });
-    }
-  });
-  return Array.from(map.values());
-})();
-
-const totalStats = (() => {
-  const totals = adCampaigns.reduce((acc, c) => ({
-    impressions: acc.impressions + c.impressions,
-    clicks: acc.clicks + c.clicks,
-    spent: acc.spent + c.spent,
-  }), { impressions: 0, clicks: 0, spent: 0 });
-  return {
-    ...totals,
-    ctr: totals.impressions > 0 ? +((totals.clicks / totals.impressions) * 100).toFixed(2) : 0,
-  };
-})();
 
 export default function AdminAdvertising() {
   const [tab, setTab] = useState<AdTab>('campaigns');
+  const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [placements, setPlacements] = useState<AdPlacement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      adminService.getAnalyticsContent().catch(() => null),
+    ])
+      .then(() => {
+        setCampaigns([]);
+        setPlacements([]);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const clients = (() => {
+    const map = new Map<string, { name: string; campaigns: number; totalBudget: number; totalSpent: number }>();
+    campaigns.forEach(c => {
+      const existing = map.get(c.advertiserName);
+      if (existing) {
+        existing.campaigns++;
+        existing.totalBudget += c.budget;
+        existing.totalSpent += c.spent;
+      } else {
+        map.set(c.advertiserName, { name: c.advertiserName, campaigns: 1, totalBudget: c.budget, totalSpent: c.spent });
+      }
+    });
+    return Array.from(map.values());
+  })();
+
+  const totalStats = (() => {
+    const totals = campaigns.reduce((acc, c) => ({
+      impressions: acc.impressions + (c.impressionsTarget || 0),
+      clicks: acc.clicks + (c.clicksTarget || 0),
+      spent: acc.spent + c.spent,
+    }), { impressions: 0, clicks: 0, spent: 0 });
+    return {
+      ...totals,
+      ctr: totals.impressions > 0 ? +((totals.clicks / totals.impressions) * 100).toFixed(2) : 0,
+    };
+  })();
 
   return (
     <div className="space-y-6">
@@ -78,7 +79,9 @@ export default function AdminAdvertising() {
         ))}
       </div>
 
-      {tab === 'campaigns' && (
+      {loading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
+
+      {!loading && tab === 'campaigns' && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>
@@ -95,7 +98,12 @@ export default function AdminAdvertising() {
               </tr>
             </thead>
             <tbody>
-              {adCampaigns.map((c, i) => (
+              {campaigns.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="text-center py-8"><p className="sakh-meta">Нет рекламных кампаний</p></td>
+                </tr>
+              )}
+              {campaigns.map((c, i) => (
                 <motion.tr
                   key={c.id}
                   initial={{ opacity: 0, y: 6 }}
@@ -104,15 +112,17 @@ export default function AdminAdvertising() {
                   className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface)] transition-colors"
                 >
                   <td className="py-3 px-3 font-mono text-xs text-[var(--text-primary)]">{c.name}</td>
-                  <td className="py-3 px-3 text-[var(--text-secondary)] font-mono text-xs">{c.client}</td>
-                  <td className="py-3 px-3 text-[var(--text-secondary)] font-mono text-xs">{c.placement}</td>
+                  <td className="py-3 px-3 text-[var(--text-secondary)] font-mono text-xs">{c.advertiserName}</td>
+                  <td className="py-3 px-3 text-[var(--text-secondary)] font-mono text-xs">{c.placement?.name || c.placementId}</td>
                   <td className="py-3 px-3 font-mono text-xs text-right text-[var(--accent-ocean)]">{c.budget.toLocaleString('ru-RU')} ₽</td>
                   <td className="py-3 px-3 font-mono text-xs text-right text-[var(--text-primary)]">{c.spent.toLocaleString('ru-RU')} ₽</td>
-                  <td className="py-3 px-3 font-mono text-xs text-right text-[var(--text-primary)]">{c.impressions.toLocaleString('ru-RU')}</td>
-                  <td className="py-3 px-3 font-mono text-xs text-right text-[var(--text-primary)]">{c.clicks.toLocaleString('ru-RU')}</td>
-                  <td className="py-3 px-3 font-mono text-xs text-right text-[var(--accent-ocean)]">{c.ctr}%</td>
+                  <td className="py-3 px-3 font-mono text-xs text-right text-[var(--text-primary)]">{(c.impressionsTarget || 0).toLocaleString('ru-RU')}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-right text-[var(--text-primary)]">{(c.clicksTarget || 0).toLocaleString('ru-RU')}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-right text-[var(--accent-ocean)]">—</td>
                   <td className="py-3 px-3">
-                    <span className={`sakh-tag ${statusBadge[c.status]}`}>{statusLabels[c.status]}</span>
+                    <span className={`sakh-tag ${c.isActive ? 'sakh-tag--accent' : 'sakh-tag--outline'}`}>
+                      {c.isActive ? 'Активна' : 'Неактивна'}
+                    </span>
                   </td>
                 </motion.tr>
               ))}
@@ -121,9 +131,12 @@ export default function AdminAdvertising() {
         </div>
       )}
 
-      {tab === 'placements' && (
+      {!loading && tab === 'placements' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {adPlacements.map((p, i) => (
+          {placements.length === 0 && (
+            <p className="sakh-meta col-span-full text-center py-8">Нет рекламных мест</p>
+          )}
+          {placements.map((p, i) => (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, y: 12 }}
@@ -133,8 +146,8 @@ export default function AdminAdvertising() {
             >
               <div className="flex items-start justify-between mb-3">
                 <h3 className="sakh-title text-sm">{p.name}</h3>
-                <span className={`sakh-tag ${placementStatusBadge[p.status]}`}>
-                  {p.status === 'active' ? 'Активно' : 'Неактивно'}
+                <span className={`sakh-tag ${p.isActive ? 'sakh-tag--accent' : 'sakh-tag--outline'}`}>
+                  {p.isActive ? 'Активно' : 'Неактивно'}
                 </span>
               </div>
               <div className="space-y-2">
@@ -144,7 +157,7 @@ export default function AdminAdvertising() {
                 </div>
                 <div className="flex items-center gap-2 text-xs font-mono text-[var(--text-secondary)]">
                   <Layout size={12} />
-                  <span>{p.dimensions}</span>
+                  <span>{p.width}×{p.height}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-mono text-[var(--accent-ocean)]">
                   <DollarSign size={12} />
@@ -156,7 +169,7 @@ export default function AdminAdvertising() {
         </div>
       )}
 
-      {tab === 'clients' && (
+      {!loading && tab === 'clients' && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>
@@ -168,6 +181,11 @@ export default function AdminAdvertising() {
               </tr>
             </thead>
             <tbody>
+              {clients.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center py-8"><p className="sakh-meta">Нет клиентов</p></td>
+                </tr>
+              )}
               {clients.map((c, i) => (
                 <motion.tr
                   key={c.name}
@@ -187,7 +205,7 @@ export default function AdminAdvertising() {
         </div>
       )}
 
-      {tab === 'stats' && (
+      {!loading && tab === 'stats' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: Eye, label: 'Показы', value: totalStats.impressions.toLocaleString('ru-RU'), suffix: '' },

@@ -1,16 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Briefcase, Calendar, Check, X,
+  Calendar, Check, X,
 } from 'lucide-react';
-import { adminStaff, staffSchedule, permissionMatrix } from '@/data/adminMock';
+import { adminService } from '@/services';
+import type { StaffMember, StaffScheduleItem } from '@/services/admin.service';
 
-const statusLabels: Record<string, string> = {
-  active: 'Активен', vacation: 'Отпуск', sick: 'Болен', offline: 'Не в сети',
-};
-const statusBadge: Record<string, string> = {
-  active: 'sakh-tag--accent', vacation: 'sakh-tag--sunset', sick: 'sakh-tag--sunset', offline: 'sakh-tag--outline',
-};
 const shiftLabels: Record<string, string> = {
   morning: 'Утро (6-14)', day: 'День (14-22)', night: 'Ночь (22-6)',
 };
@@ -26,8 +21,24 @@ const defaultMatrix: Record<string, boolean[]> = {
 };
 
 export default function AdminStaff() {
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [schedule, setSchedule] = useState<StaffScheduleItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [matrix, setMatrix] = useState(defaultMatrix);
   const [activeTab, setActiveTab] = useState<'staff' | 'schedule' | 'permissions'>('staff');
+
+  useEffect(() => {
+    Promise.all([
+      adminService.getStaff({ perPage: 50 }),
+      adminService.getStaffSchedule().catch(() => []),
+    ])
+      .then(([staffRes, scheduleData]) => {
+        setStaff(staffRes.data);
+        setSchedule(scheduleData);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const tabs = [
     { key: 'staff', label: 'Сотрудники' },
@@ -51,7 +62,9 @@ export default function AdminStaff() {
         ))}
       </div>
 
-      {activeTab === 'staff' && (
+      {loading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
+
+      {!loading && activeTab === 'staff' && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>
@@ -64,9 +77,14 @@ export default function AdminStaff() {
               </tr>
             </thead>
             <tbody>
-              {adminStaff.map((staff, i) => (
+              {staff.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-8"><p className="sakh-meta">Нет сотрудников</p></td>
+                </tr>
+              )}
+              {staff.map((s, i) => (
                 <motion.tr
-                  key={staff.id}
+                  key={s.id}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
@@ -75,17 +93,19 @@ export default function AdminStaff() {
                   <td className="py-3 px-3">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center text-xs font-mono text-[var(--text-muted)]">
-                        {staff.name.charAt(0)}
+                        {s.user.name.charAt(0)}
                       </div>
-                      <span className="font-mono text-xs text-[var(--text-primary)]">{staff.name}</span>
+                      <span className="font-mono text-xs text-[var(--text-primary)]">{s.user.name}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-3 text-[var(--text-secondary)] font-mono text-xs">{staff.role}</td>
+                  <td className="py-3 px-3 text-[var(--text-secondary)] font-mono text-xs">{s.position}</td>
                   <td className="py-3 px-3">
-                    <span className={`sakh-tag ${statusBadge[staff.status]}`}>{statusLabels[staff.status]}</span>
+                    <span className={`sakh-tag ${s.isActive ? 'sakh-tag--accent' : 'sakh-tag--outline'}`}>
+                      {s.isActive ? 'Активен' : 'Неактивен'}
+                    </span>
                   </td>
-                  <td className="py-3 px-3 font-mono text-xs text-[var(--accent-ocean)]">{staff.articlesPerWeek}</td>
-                  <td className="py-3 px-3 text-[var(--text-secondary)] font-mono text-xs">{staff.hiredAt}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-[var(--accent-ocean)]">{s.kpiScore ?? '—'}</td>
+                  <td className="py-3 px-3 text-[var(--text-secondary)] font-mono text-xs">{s.hireDate?.slice(0, 10) || '—'}</td>
                 </motion.tr>
               ))}
             </tbody>
@@ -93,9 +113,12 @@ export default function AdminStaff() {
         </div>
       )}
 
-      {activeTab === 'schedule' && (
+      {!loading && activeTab === 'schedule' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {staffSchedule.map((s, i) => (
+          {schedule.length === 0 && (
+            <p className="sakh-meta col-span-full text-center py-8">Нет записей графика</p>
+          )}
+          {schedule.map((s, i) => (
             <motion.div
               key={s.id}
               initial={{ opacity: 0, y: 8 }}
@@ -108,13 +131,13 @@ export default function AdminStaff() {
                 <span className="font-mono text-xs text-[var(--text-primary)]">{s.date}</span>
               </div>
               <p className="text-sm font-medium text-[var(--text-primary)] mb-1">{s.staffName}</p>
-              <span className="sakh-tag sakh-tag--accent">{shiftLabels[s.shift]}</span>
+              <span className="sakh-tag sakh-tag--accent">{shiftLabels[s.shift] || s.shift}</span>
             </motion.div>
           ))}
         </div>
       )}
 
-      {activeTab === 'permissions' && (
+      {!loading && activeTab === 'permissions' && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>

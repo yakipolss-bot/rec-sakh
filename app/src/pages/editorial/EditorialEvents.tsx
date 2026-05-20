@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Edit, Trash2, Plus, CheckCircle, XCircle, Eye } from 'lucide-react';
-import { events } from '@/data/mock';
-import { editorialEvents } from '@/data/editorialMock';
-import type { Event } from '@/types';
+import { Calendar, Edit, Trash2, Plus, CheckCircle, XCircle, Eye, Info } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Tab = 'all' | 'moderation' | 'create';
 
@@ -13,22 +11,11 @@ const tabs: { value: Tab; label: string }[] = [
   { value: 'create', label: 'Создать' },
 ];
 
-const categoryLabels: Record<string, string> = {
-  exhibition: 'Выставка',
-  concert: 'Концерт',
-  sport: 'Спорт',
-  festival: 'Фестиваль',
-  theatre: 'Театр',
-  cinema: 'Кино',
-};
-
 export default function EditorialEvents() {
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [newEvent, setNewEvent] = useState({
     title: '', description: '', date: '', time: '', venue: '', city: '', price: '',
   });
-
-  const allEvents = events as (Event & { status?: string })[];
 
   return (
     <div>
@@ -124,7 +111,10 @@ export default function EditorialEvents() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="sakh-btn sakh-btn--primary sakh-btn--md">
+              <button
+                onClick={() => toast.info('Модуль событий находится в разработке')}
+                className="sakh-btn sakh-btn--primary sakh-btn--md"
+              >
                 <Calendar size={14} /> Создать событие
               </button>
             </div>
@@ -133,62 +123,12 @@ export default function EditorialEvents() {
       )}
 
       {activeTab !== 'create' && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border-color)]">
-                <th className="px-3 py-2 text-left sakh-caption">Событие</th>
-                <th className="px-3 py-2 text-left sakh-caption">Категория</th>
-                <th className="px-3 py-2 text-left sakh-caption">Дата</th>
-                <th className="px-3 py-2 text-left sakh-caption">Статус</th>
-                <th className="px-3 py-2 sakh-caption">Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(activeTab === 'moderation' ? editorialEvents.filter((e) => e.status === 'moderation') : editorialEvents).map((e, i) => (
-                <motion.tr
-                  key={e.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.02 }}
-                  className="border-b border-[var(--border-color)] hover:bg-[var(--bg-surface)] transition-colors"
-                >
-                  <td className="px-3 py-3 text-[var(--text-primary)]">{e.title}</td>
-                  <td className="px-3 py-3 sakh-meta">{categoryLabels[e.category] || e.category}</td>
-                  <td className="px-3 py-3 sakh-meta">{e.date}</td>
-                  <td className="px-3 py-3">
-                    <span className={`sakh-tag ${
-                      e.status === 'published' ? 'sakh-tag--accent' :
-                      e.status === 'moderation' ? 'sakh-tag--sunset' : 'sakh-tag--muted'
-                    }`}>
-                      {e.status === 'published' ? 'Опубликовано' :
-                       e.status === 'moderation' ? 'На модерации' : 'Черновик'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-1">
-                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-1.5">
-                        <Edit size={14} />
-                      </button>
-                      {e.status === 'moderation' && (
-                        <>
-                          <button className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-1.5 text-[var(--accent-ocean)]">
-                            <CheckCircle size={14} />
-                          </button>
-                          <button className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-1.5 text-[var(--accent-sunset)]">
-                            <XCircle size={14} />
-                          </button>
-                        </>
-                      )}
-                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-1.5 text-[var(--accent-sunset)]">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="sakh-card p-8 text-center">
+          <Info size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
+          <h3 className="sakh-title mb-2">Модуль афиши скоро появится</h3>
+          <p className="sakh-body text-sm text-[var(--text-secondary)]">
+            Управление событиями и календарь находятся в разработке.
+          </p>
         </div>
       )}
     </div>

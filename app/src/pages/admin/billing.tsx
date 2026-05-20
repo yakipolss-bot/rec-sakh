@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   CreditCard, RotateCcw, FileText, Clock,
   CheckCircle,
 } from 'lucide-react';
-import { transactions, tariffs } from '@/data/adminMock';
+import { toast } from 'sonner';
+import { adminService } from '@/services';
+import type { Transaction, Tariff } from '@/services/admin.service';
 
 type BillingTab = 'transactions' | 'refunds' | 'reports' | 'tariffs';
 
@@ -39,22 +41,52 @@ const statusLabels: Record<string, string> = {
   failed: 'Ошибка',
 };
 
-const refunds = transactions.filter(t => t.type === 'refund');
-
-const reportsData = (() => {
-  const successfulPayments = transactions.filter(t => t.type === 'payment' && t.status === 'success');
-  const successfulRefunds = transactions.filter(t => t.type === 'refund' && t.status === 'success');
-  const pending = transactions.filter(t => t.status === 'pending');
-  return {
-    totalRevenue: successfulPayments.reduce((s, t) => s + t.amount, 0),
-    totalRefunds: successfulRefunds.reduce((s, t) => s + t.amount, 0),
-    netRevenue: successfulPayments.reduce((s, t) => s + t.amount, 0) - successfulRefunds.reduce((s, t) => s + t.amount, 0),
-    pendingAmount: pending.reduce((s, t) => s + t.amount, 0),
-  };
-})();
-
 export default function AdminBilling() {
   const [tab, setTab] = useState<BillingTab>('transactions');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [tariffs, setTariffs] = useState<Tariff[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      adminService.getTransactions({ perPage: 50 }),
+      adminService.getTariffs(),
+    ])
+      .then(([txData, tariffData]) => {
+        setTransactions(txData.data);
+        setTariffs(tariffData);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const refunds = transactions.filter(t => t.type === 'refund');
+
+  const handleSelectTariff = async (tariff: Tariff) => {
+    if (tariff.price === 0) {
+      toast.info('Это ваш текущий тариф');
+      return;
+    }
+    if (!confirm(`Выбрать тариф "${tariff.name}" за ${tariff.price} ₽/${tariff.interval}?`)) return;
+    try {
+      await adminService.selectTariff(tariff.id);
+      toast.success(`Тариф "${tariff.name}" активирован`);
+    } catch {
+      toast.error('Ошибка при выборе тарифа');
+    }
+  };
+
+  const reportsData = (() => {
+    const successfulPayments = transactions.filter(t => t.type === 'payment' && t.status === 'success');
+    const successfulRefunds = transactions.filter(t => t.type === 'refund' && t.status === 'success');
+    const pending = transactions.filter(t => t.status === 'pending');
+    return {
+      totalRevenue: successfulPayments.reduce((s, t) => s + t.amount, 0),
+      totalRefunds: successfulRefunds.reduce((s, t) => s + t.amount, 0),
+      netRevenue: successfulPayments.reduce((s, t) => s + t.amount, 0) - successfulRefunds.reduce((s, t) => s + t.amount, 0),
+      pendingAmount: pending.reduce((s, t) => s + t.amount, 0),
+    };
+  })();
 
   return (
     <div className="space-y-6">
@@ -72,7 +104,9 @@ export default function AdminBilling() {
         ))}
       </div>
 
-      {(tab === 'transactions' || tab === 'refunds') && (
+      {loading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
+
+      {!loading && (tab === 'transactions' || tab === 'refunds') && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>
@@ -86,6 +120,11 @@ export default function AdminBilling() {
               </tr>
             </thead>
             <tbody>
+              {(tab === 'transactions' ? transactions : refunds).length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-8"><p className="sakh-meta">Нет транзакций</p></td>
+                </tr>
+              )}
               {(tab === 'transactions' ? transactions : refunds).map((t, i) => (
                 <motion.tr
                   key={t.id}
@@ -113,7 +152,7 @@ export default function AdminBilling() {
         </div>
       )}
 
-      {tab === 'reports' && (
+      {!loading && tab === 'reports' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: CreditCard, label: 'Доход', value: reportsData.totalRevenue.toLocaleString('ru-RU'), suffix: ' ₽' },
@@ -140,8 +179,11 @@ export default function AdminBilling() {
         </div>
       )}
 
-      {tab === 'tariffs' && (
+      {!loading && tab === 'tariffs' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tariffs.length === 0 && (
+            <p className="sakh-meta col-span-full text-center py-8">Нет тарифов</p>
+          )}
           {tariffs.map((tr, i) => (
             <motion.div
               key={tr.id}
@@ -161,14 +203,14 @@ export default function AdminBilling() {
                 {tr.price > 0 && <span className="text-xs font-mono text-[var(--text-muted)] ml-1">/{tr.interval}</span>}
               </div>
               <ul className="space-y-2 flex-1">
-                {tr.features.map((f, fi) => (
+                {(tr.features || []).map((f, fi) => (
                   <li key={fi} className="flex items-center gap-2 text-xs font-mono text-[var(--text-secondary)]">
                     <CheckCircle size={12} className="text-[var(--accent-ocean)] shrink-0" />
                     <span>{f}</span>
                   </li>
                 ))}
               </ul>
-              <button className="sakh-btn sakh-btn--primary sakh-btn--sm mt-5 w-full">
+              <button className="sakh-btn sakh-btn--primary sakh-btn--sm mt-5 w-full" onClick={() => handleSelectTariff(tr)}>
                 {tr.price === 0 ? 'Текущий тариф' : 'Выбрать'}
               </button>
             </motion.div>

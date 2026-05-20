@@ -320,4 +320,16 @@ export class BillingController {
     await this.tariffService.seedDefaults();
     return { message: 'Тарифы по умолчанию созданы' };
   }
+
+  @Post('admin/tariffs/:id/select')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Активировать тариф для пользователя (админ)' })
+  async selectTariff(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.subscriptionService.subscribe(userId, { tariffId: id, method: 'balance' });
+  }
 }

@@ -1,18 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Briefcase, Shield, FileText,
   Megaphone, DollarSign, Settings, Server, ExternalLink,
-  Menu, X, ChevronDown, ChevronRight,
+  Menu, X, ChevronRight, Newspaper, MessageSquare, FolderTree, Image,
 } from 'lucide-react';
-import { currentUser } from '@/data/mock';
+import { usersService } from '@/services';
+import type { UserProfile } from '@/services/users.service';
 
 const navItems = [
   { path: '/admin', icon: LayoutDashboard, label: 'Дашборд', exact: true },
   { path: '/admin/users', icon: Users, label: 'Пользователи' },
   { path: '/admin/staff', icon: Briefcase, label: 'Сотрудники' },
   { path: '/admin/moderation', icon: Shield, label: 'Модерация' },
+  { path: '/admin/news', icon: Newspaper, label: 'Новости' },
+  { path: '/admin/comments', icon: MessageSquare, label: 'Комментарии' },
+  { path: '/admin/categories', icon: FolderTree, label: 'Рубрики' },
+  { path: '/admin/media', icon: Image, label: 'Медиатека' },
   { path: '/admin/content', icon: FileText, label: 'Контент' },
   { path: '/admin/advertising', icon: Megaphone, label: 'Реклама' },
   { path: '/admin/billing', icon: DollarSign, label: 'Финансы' },
@@ -23,6 +28,11 @@ const navItems = [
 export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    usersService.getMe().then(setUser).catch(() => setUser(null));
+  }, []);
 
   const isActive = (item: typeof navItems[number]) => {
     if (item.exact) return location.pathname === item.path;
@@ -67,17 +77,17 @@ export default function AdminLayout() {
 
         <div className="flex items-center gap-3 p-4 border-b border-[var(--border-color)]">
           <div className="w-9 h-9 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center overflow-hidden">
-            {currentUser.avatar ? (
-              <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
               <span className="text-[var(--text-muted)] font-mono text-sm">
-                {currentUser.name.charAt(0)}
+                {user?.name?.charAt(0) || '?'}
               </span>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="sakh-caption text-[var(--text-primary)] truncate">{currentUser.name}</p>
-            <p className="sakh-meta">Администратор</p>
+            <p className="sakh-caption text-[var(--text-primary)] truncate">{user?.name || 'Загрузка...'}</p>
+            <p className="sakh-meta">{user?.role === 'admin' ? 'Администратор' : user?.role || ''}</p>
           </div>
         </div>
 
@@ -129,7 +139,7 @@ export default function AdminLayout() {
             <span>{activeItem?.label ?? 'Админ-панель'}</span>
           </div>
           <div className="hidden sm:flex items-center gap-2">
-            <span className="sakh-meta">{currentUser.level}</span>
+            <span className="sakh-meta">{user?.level || ''}</span>
             <div className="w-2 h-2 rounded-full bg-[var(--accent-ocean)]" />
           </div>
         </header>

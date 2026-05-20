@@ -1,23 +1,49 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Activity, Clock, AlertTriangle, Users as UsersIcon,
   ArrowUpRight, Cpu, Server as ServerIcon,
 } from 'lucide-react';
-import { adminStats, recentActions, alerts } from '@/data/adminMock';
-
-const statCards = [
-  { label: 'Uptime', value: adminStats.uptime, icon: Clock, color: 'var(--accent-ocean)' },
-  { label: 'Нагрузка CPU', value: `${adminStats.cpuLoad}%`, icon: Cpu, color: adminStats.cpuLoad > 80 ? 'var(--accent-sunset)' : 'var(--accent-ocean)' },
-  { label: 'Ошибки 500', value: String(adminStats.errors500), icon: AlertTriangle, color: adminStats.errors500 > 0 ? 'var(--accent-sunset)' : 'var(--accent-ocean)' },
-  { label: 'Отклик API', value: `${adminStats.apiResponseTime}ms`, icon: ServerIcon, color: 'var(--accent-ocean)' },
-];
+import { adminService } from '@/services';
+import type { AdminStats, RecentAction, Alert } from '@/services/admin.service';
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [actions, setActions] = useState<RecentAction[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      adminService.getDashboard(),
+      adminService.getRecentActions(),
+      adminService.getAlerts(),
+    ])
+      .then(([dashboard, recentActionsData, alertsData]) => {
+        setStats(dashboard.stats);
+        setActions(recentActionsData);
+        setAlerts(alertsData);
+      })
+      .catch(() => {
+        setStats(null);
+        setActions([]);
+        setAlerts([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const statCards = stats ? [
+    { label: 'Uptime', value: stats.uptime, icon: Clock, color: 'var(--accent-ocean)' },
+    { label: 'Нагрузка CPU', value: `${stats.cpuLoad}%`, icon: Cpu, color: stats.cpuLoad > 80 ? 'var(--accent-sunset)' : 'var(--accent-ocean)' },
+    { label: 'Ошибки 500', value: String(stats.errors500), icon: AlertTriangle, color: stats.errors500 > 0 ? 'var(--accent-sunset)' : 'var(--accent-ocean)' },
+    { label: 'Отклик API', value: `${stats.apiResponseTime}ms`, icon: ServerIcon, color: 'var(--accent-ocean)' },
+  ] : [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="sakh-heading">Дашборд</h1>
-        <span className="sakh-meta">Обновлено: только что</span>
+        <span className="sakh-meta">Обновлено: {loading ? 'загрузка...' : 'только что'}</span>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -51,7 +77,7 @@ export default function AdminDashboard() {
             <h2 className="sakh-caption text-[var(--text-primary)]">Пользователи онлайн</h2>
             <UsersIcon size={16} className="text-[var(--accent-ocean)]" />
           </div>
-          <p className="text-3xl font-mono font-bold text-[var(--accent-ocean)]">{adminStats.usersOnline}</p>
+          <p className="text-3xl font-mono font-bold text-[var(--accent-ocean)]">{stats?.usersOnline ?? '—'}</p>
           <p className="sakh-meta mt-1">сейчас на сайте</p>
           <div className="mt-4 space-y-2">
             <div className="flex justify-between text-xs font-mono">
@@ -79,7 +105,10 @@ export default function AdminDashboard() {
             <Activity size={16} className="text-[var(--text-muted)]" />
           </div>
           <div className="space-y-3 max-h-[320px] overflow-y-auto custom-scrollbar">
-            {recentActions.map((action) => (
+            {actions.length === 0 && (
+              <p className="sakh-meta text-center py-4">Нет записей</p>
+            )}
+            {actions.map((action) => (
               <div key={action.id} className="flex items-start gap-2 pb-2 border-b border-[var(--border-subtle)] last:border-0">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-[var(--text-primary)]">
@@ -101,6 +130,9 @@ export default function AdminDashboard() {
             <AlertTriangle size={16} className="text-[var(--accent-sunset)]" />
           </div>
           <div className="space-y-3">
+            {alerts.length === 0 && (
+              <p className="sakh-meta text-center py-4">Нет алертов</p>
+            )}
             {alerts.map((alert) => (
               <div key={alert.id} className="flex items-start gap-2 pb-2 border-b border-[var(--border-subtle)] last:border-0">
                 <div className={`w-2 h-2 mt-1 shrink-0 rounded-full ${

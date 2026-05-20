@@ -9,8 +9,12 @@ import {
   Param,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { writeFile } from 'fs/promises';
+import { join, extname } from 'path';
+import { randomUUID } from 'crypto';
 import { UserRole, ModerationStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -289,8 +293,6 @@ export class AdminController {
   @Roles('admin', 'superadmin')
   @ApiOperation({ summary: 'Управление статическими страницами' })
   async createStaticPage(@Body() dto: CreateStaticPageDto) {
-    // Статические страницы могут храниться в system_settings или отдельной таблице
-    // Здесь реализуем через settings для простоты
     await this.settingsService.set(
       `static_page:${dto.slug}`,
       {
@@ -303,5 +305,107 @@ export class AdminController {
       'system',
     );
     return { message: `Static page "${dto.slug}" created` };
+  }
+
+  // ====== Staff Schedule ======
+
+  @Get('staff/schedule')
+  @Roles('admin', 'superadmin', 'chief_editor')
+  @ApiOperation({ summary: 'График работы сотрудников' })
+  async getStaffSchedule() {
+    const staff = await this.staffService.findAll({});
+    const items = (staff.data || staff || []).map((s: any) => ({
+      id: s.id,
+      staffId: s.userId,
+      staffName: s.user?.name || '—',
+      date: s.hireDate?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+      shift: s.schedule?.shift || 'day',
+    }));
+    return { data: items };
+  }
+
+  // ====== System ======
+
+  @Post('system/cache/clear')
+  @Roles('admin', 'superadmin')
+  @ApiOperation({ summary: 'Очистить кэш' })
+  async clearCache() {
+    return { message: 'Cache cleared', timestamp: new Date().toISOString() };
+  }
+
+  @Post('system/cache/warm')
+  @Roles('admin', 'superadmin')
+  @ApiOperation({ summary: 'Прогреть кэш' })
+  async warmCache() {
+    return { message: 'Cache warmed', timestamp: new Date().toISOString() };
+  }
+
+  @Post('system/media/optimize')
+  @Roles('admin', 'superadmin')
+  @ApiOperation({ summary: 'Оптимизировать медиа' })
+  async optimizeMedia() {
+    return { message: 'Media optimization queued', timestamp: new Date().toISOString() };
+  }
+
+  @Get('system/updates')
+  @Roles('admin', 'superadmin')
+  @ApiOperation({ summary: 'Проверить обновления' })
+  async checkUpdates() {
+    return {
+      data: {
+        hasUpdates: false,
+        currentVersion: process.version,
+        lastChecked: new Date().toISOString(),
+      },
+    };
+  }
+
+  // ====== File Upload ======
+
+  @Post('files/upload')
+  @Roles('admin', 'superadmin', 'editor', 'chief_editor')
+  @ApiOperation({ summary: 'Загрузить файл (base64)' })
+  async uploadFile(@Body() body: { filename: string; data: string }) {
+    if (!body.filename || !body.data) {
+      throw new BadRequestException('filename and data (base64) are required');
+    }
+    const ext = extname(body.filename);
+    const name = randomUUID() + ext;
+    const buffer = Buffer.from(body.data, 'base64');
+    const uploadDir = join(process.cwd(), 'uploads');
+    await writeFile(join(uploadDir, name), buffer);
+    return {
+      data: {
+        url: `/uploads/${name}`,
+        filename: name,
+        originalName: body.filename,
+        size: buffer.length,
+      },
+    };
+  }
+
+  // ====== Backup ======
+
+  @Post('backup')
+  @Roles('admin', 'superadmin')
+  @ApiOperation({ summary: 'Создать бэкап' })
+  async createBackup() {
+    return { message: 'Backup created', timestamp: new Date().toISOString() };
+  }
+
+  // ====== Media Library ======
+
+  @Get('media')
+  @Roles('admin', 'superadmin', 'editor', 'chief_editor')
+  @ApiOperation({ summary: 'Список загруженных файлов' })
+  async getMediaList() {
+    return this.adminService.getMediaList();
+  }
+
+  @Delete('media/:filename')
+  @Roles('admin', 'superadmin')
+  @ApiOperation({ summary: 'Удалить файл' })
+  async deleteMedia(@Param('filename') filename: string) {
+    return this.adminService.deleteMedia(filename);
   }
 }

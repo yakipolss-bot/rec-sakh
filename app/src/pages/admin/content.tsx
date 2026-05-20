@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
-  FileText, CheckCircle, XCircle, AlertTriangle,
+  FileText, CheckCircle,
   ArrowUp, ArrowDown, Eye, Edit, Trash2,
-  Layout, Image, Menu as MenuIcon, Grid,
+  Image, Grid,
 } from 'lucide-react';
 
 const tabs = ['Массовые операции', 'Статические страницы', 'Баннеры', 'Меню', 'Виджеты'];
@@ -200,10 +201,10 @@ export default function AdminContent() {
                   </td>
                   <td className="py-3 px-3">
                     <div className="flex items-center gap-1">
-                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Редактировать">
+                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Редактировать" onClick={() => toast.info('Редактор страниц — в разработке')}>
                         <Edit size={14} />
                       </button>
-                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Просмотр">
+                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Просмотр" onClick={() => toast.info('Просмотр страниц — в разработке')}>
                         <Eye size={14} />
                       </button>
                     </div>
@@ -290,7 +291,7 @@ export default function AdminContent() {
                 >
                   <ArrowDown size={14} />
                 </button>
-                <button className="sakh-btn sakh-btn--ghost sakh-btn--sm text-[var(--accent-sunset)]" title="Удалить">
+                <button className="sakh-btn sakh-btn--ghost sakh-btn--sm text-[var(--accent-sunset)]" title="Удалить" onClick={() => { if (confirm(`Удалить пункт меню «${item.label}»?`)) { setMenuList(prev => prev.filter(m => m.id !== item.id)); toast.success(`Пункт «${item.label}» удалён`); } }}>
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -321,6 +322,7 @@ export default function AdminContent() {
                 <div className="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
                   <span className={`sakh-tag ${statusStyle[w.status]}`}>{statusLabels[w.status]}</span>
                   <button
+                    onClick={() => toast.info('Управление виджетами — в разработке')}
                     className={`w-10 h-5 rounded-full transition-colors relative ${
                       w.status === 'active' ? 'bg-[var(--accent-ocean)]' : 'bg-[var(--bg-surface)]'
                     }`}

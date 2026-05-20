@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -45,5 +46,15 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Обновление категории' })
   async update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
     return this.categoriesService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Удаление категории' })
+  async delete(@Param('id') id: string) {
+    await this.categoriesService.delete(id);
+    return { message: 'Category deleted' };
   }
 }

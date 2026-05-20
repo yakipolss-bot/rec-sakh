@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings, MapPin, Globe, Share2, Key, Shield, FileText,
   Save, Upload, Eye, EyeOff,
 } from 'lucide-react';
-import { sakhalinCities, serverLogs } from '@/data/adminMock';
+import { toast } from 'sonner';
+import { adminService } from '@/services';
+import type { ServerLog } from '@/services/admin.service';
+
+const sakhalinCities = [
+  'Южно-Сахалинск', 'Корсаков', 'Оха', 'Невельск', 'Холмск',
+  'Поронайск', 'Долинск', 'Анива', 'Смирных', 'Томари',
+  'Углегорск', 'Александровск-Сахалинский', 'Тымовское',
+];
 
 const tabs = [
   { id: 'main', label: 'Основные', icon: Settings },
@@ -24,9 +32,72 @@ export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('main');
   const [activeCities, setActiveCities] = useState(cityNames);
   const [showApi, setShowApi] = useState<Record<string, boolean>>({});
+  const [logEntries, setLogEntries] = useState<ServerLog[]>([]);
+  const [settings, setSettings] = useState<Record<string, unknown>>({});
+
+  useEffect(() => {
+    adminService.getSettings()
+      .then(s => {
+        const map: Record<string, unknown> = {};
+        s.forEach(item => { map[item.key] = item.value; });
+        setSettings(map);
+      })
+      .catch(() => {});
+
+    adminService.getAuditLog({ perPage: 20 })
+      .then(({ data }) => {
+        setLogEntries(data.map((log: Record<string, unknown>) => ({
+          id: String(log.id ?? ''),
+          level: 'info',
+          message: `${String(log.action ?? '')}: ${String(log.target ?? '')}`,
+          timestamp: String(log.timestamp ?? ''),
+        })));
+      })
+      .catch(() => {});
+  }, []);
 
   const toggleCity = (city: string) => {
     setActiveCities(prev => ({ ...prev, [city]: !prev[city] }));
+  };
+
+  const handleSave = async (el: HTMLElement, successMsg = 'Настройки сохранены') => {
+    const inputs = el.querySelectorAll('input, textarea, select') as NodeListOf<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+    try {
+      for (const input of inputs) {
+        if (input.name) {
+          await adminService.updateSetting(input.name, input.value).catch(() => {});
+        }
+      }
+      toast.success(successMsg);
+    } catch {
+      toast.error('Ошибка при сохранении');
+    }
+  };
+
+  const handleUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        await adminService.uploadFile(file);
+        toast.success('Файл загружен');
+      } catch {
+        toast.error('Ошибка при загрузке');
+      }
+    };
+    input.click();
+  };
+
+  const handleBackup = async () => {
+    try {
+      await adminService.createBackup();
+      toast.success('Бэкап создан');
+    } catch {
+      toast.error('Ошибка при создании бэкапа');
+    }
   };
 
   return (
@@ -54,25 +125,25 @@ export default function AdminSettings() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 max-w-2xl">
             <div>
               <label className="sakh-caption block mb-1">Название сайта</label>
-              <input type="text" className="sakh-input" defaultValue="Сахалинский портал" />
+              <input type="text" name="site_name" className="sakh-input" defaultValue={settings.site_name || 'Сахалинский портал'} />
             </div>
             <div>
               <label className="sakh-caption block mb-1">Логотип (URL)</label>
               <div className="flex gap-2">
-                <input type="text" className="sakh-input" defaultValue="/logo.svg" />
-                <button className="sakh-btn sakh-btn--secondary sakh-btn--sm"><Upload size={14} /> Загрузить</button>
+                <input type="text" name="logo_url" className="sakh-input" defaultValue={settings.logo_url || '/logo.svg'} />
+                <button className="sakh-btn sakh-btn--secondary sakh-btn--sm" onClick={handleUpload}><Upload size={14} /> Загрузить</button>
               </div>
             </div>
             <div>
               <label className="sakh-caption block mb-1">Favicon (URL)</label>
               <div className="flex gap-2">
-                <input type="text" className="sakh-input" defaultValue="/favicon.ico" />
-                <button className="sakh-btn sakh-btn--secondary sakh-btn--sm"><Upload size={14} /> Загрузить</button>
+                <input type="text" name="favicon_url" className="sakh-input" defaultValue={settings.favicon_url || '/favicon.ico'} />
+                <button className="sakh-btn sakh-btn--secondary sakh-btn--sm" onClick={handleUpload}><Upload size={14} /> Загрузить</button>
               </div>
             </div>
             <div>
               <label className="sakh-caption block mb-1">Тема оформления</label>
-              <select className="sakh-select">
+              <select name="theme" className="sakh-select" defaultValue={settings.theme || 'default'}>
                 <option>default (Night)</option>
                 <option>morning</option>
                 <option>day</option>
@@ -83,9 +154,9 @@ export default function AdminSettings() {
             </div>
             <div>
               <label className="sakh-caption block mb-1">Meta Description</label>
-              <textarea className="sakh-textarea" defaultValue="Новости Сахалина, объявления, погода, карты. Актуальная информация о жизни на острове." rows={3} />
+              <textarea name="meta_description" className="sakh-textarea" defaultValue={settings.meta_description || 'Новости Сахалина, объявления, погода, карты. Актуальная информация о жизни на острове.'} rows={3} />
             </div>
-            <button className="sakh-btn sakh-btn--primary sakh-btn--md"><Save size={14} /> Сохранить</button>
+            <button className="sakh-btn sakh-btn--primary sakh-btn--md" onClick={e => handleSave(e.currentTarget.parentElement!)}><Save size={14} /> Сохранить</button>
           </motion.div>
         )}
 
@@ -114,17 +185,17 @@ export default function AdminSettings() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 max-w-2xl">
             <div>
               <label className="sakh-caption block mb-1">Meta Title</label>
-              <input type="text" className="sakh-input" defaultValue="Сахалинский портал — новости, объявления, погода" />
+              <input type="text" name="seo_title" className="sakh-input" defaultValue={settings.seo_title || 'Сахалинский портал — новости, объявления, погода'} />
             </div>
             <div>
               <label className="sakh-caption block mb-1">Meta Description</label>
-              <textarea className="sakh-textarea" defaultValue="Новости Сахалина, объявления, погода, карты. Актуальная информация о жизни на острове." rows={3} />
+              <textarea name="seo_description" className="sakh-textarea" defaultValue={settings.seo_description || 'Новости Сахалина, объявления, погода, карты. Актуальная информация о жизни на острове.'} rows={3} />
             </div>
             <div>
               <label className="sakh-caption block mb-1">Robots.txt</label>
-              <textarea className="sakh-textarea font-mono text-xs" defaultValue="User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/" rows={5} />
+              <textarea name="robots_txt" className="sakh-textarea font-mono text-xs" defaultValue={settings.robots_txt || 'User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/'} rows={5} />
             </div>
-            <button className="sakh-btn sakh-btn--primary sakh-btn--md"><Save size={14} /> Сохранить</button>
+            <button className="sakh-btn sakh-btn--primary sakh-btn--md" onClick={e => handleSave(e.currentTarget.parentElement!)}><Save size={14} /> Сохранить</button>
           </motion.div>
         )}
 
@@ -132,30 +203,30 @@ export default function AdminSettings() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 max-w-2xl">
             <div>
               <label className="sakh-caption block mb-1">Telegram (URL)</label>
-              <input type="url" className="sakh-input" defaultValue="https://t.me/recsakh" placeholder="https://t.me/..." />
+              <input type="url" name="telegram_url" className="sakh-input" defaultValue={settings.telegram_url || 'https://t.me/recsakh'} placeholder="https://t.me/..." />
             </div>
             <div>
               <label className="sakh-caption block mb-1">ВКонтакте (URL)</label>
-              <input type="url" className="sakh-input" defaultValue="https://vk.com/recsakh" placeholder="https://vk.com/..." />
+              <input type="url" name="vk_url" className="sakh-input" defaultValue={settings.vk_url || 'https://vk.com/recsakh'} placeholder="https://vk.com/..." />
             </div>
             <div>
               <label className="sakh-caption block mb-1">Яндекс.Дзен (URL)</label>
-              <input type="url" className="sakh-input" defaultValue="https://dzen.ru/recsakh" placeholder="https://dzen.ru/..." />
+              <input type="url" name="dzen_url" className="sakh-input" defaultValue={settings.dzen_url || 'https://dzen.ru/recsakh'} placeholder="https://dzen.ru/..." />
             </div>
             <div>
               <label className="sakh-caption block mb-1">Одноклассники (URL)</label>
-              <input type="url" className="sakh-input" defaultValue="https://ok.ru/recsakh" placeholder="https://ok.ru/..." />
+              <input type="url" name="ok_url" className="sakh-input" defaultValue={settings.ok_url || 'https://ok.ru/recsakh'} placeholder="https://ok.ru/..." />
             </div>
-            <button className="sakh-btn sakh-btn--primary sakh-btn--md"><Save size={14} /> Сохранить</button>
+            <button className="sakh-btn sakh-btn--primary sakh-btn--md" onClick={e => handleSave(e.currentTarget.parentElement!)}><Save size={14} /> Сохранить</button>
           </motion.div>
         )}
 
         {activeTab === 'api' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 max-w-2xl">
             {[
-              { label: 'Погода (OpenWeatherMap)', key: 'weather', value: 'sk_live_xxxxxxxxxxxxxxxx' },
-              { label: 'Валюты (ExchangeRate)', key: 'currency', value: 'sk_live_yyyyyyyyyyyyyyyy' },
-              { label: 'Карты (Yandex Maps)', key: 'maps', value: 'sk_live_zzzzzzzzzzzzzzzz' },
+              { label: 'Погода (OpenWeatherMap)', key: 'weather', value: '••••••••••••••••' },
+              { label: 'Валюты (ExchangeRate)', key: 'currency', value: '••••••••••••••••' },
+              { label: 'Карты (Yandex Maps)', key: 'maps', value: '••••••••••••••••' },
             ].map(field => (
               <div key={field.key}>
                 <label className="sakh-caption block mb-1">{field.label}</label>
@@ -163,6 +234,7 @@ export default function AdminSettings() {
                   <div className="relative flex-1">
                     <input
                       type={showApi[field.key] ? 'text' : 'password'}
+                      name={`api_key_${field.key}`}
                       className="sakh-input !pr-10"
                       defaultValue={field.value}
                     />
@@ -177,7 +249,7 @@ export default function AdminSettings() {
                 </div>
               </div>
             ))}
-            <button className="sakh-btn sakh-btn--primary sakh-btn--md"><Save size={14} /> Сохранить</button>
+            <button className="sakh-btn sakh-btn--primary sakh-btn--md" onClick={e => handleSave(e.currentTarget.parentElement!)}><Save size={14} /> Сохранить</button>
           </motion.div>
         )}
 
@@ -186,18 +258,14 @@ export default function AdminSettings() {
             <div className="sakh-card p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="sakh-caption">Последний бэкап</span>
-                <span className="font-mono text-sm text-[var(--text-secondary)]">16 мая 2026, 04:00</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="sakh-caption">Размер</span>
-                <span className="font-mono text-sm text-[var(--text-secondary)]">1.4 GB</span>
+                <span className="font-mono text-sm text-[var(--text-secondary)]">{settings.last_backup || '—'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="sakh-caption">Статус</span>
                 <span className="sakh-tag sakh-tag--accent">Успешно</span>
               </div>
               <hr className="border-[var(--border-color)]" />
-              <button className="sakh-btn sakh-btn--primary sakh-btn--md"><Shield size={14} /> Создать бэкап</button>
+              <button className="sakh-btn sakh-btn--primary sakh-btn--md" onClick={handleBackup}><Shield size={14} /> Создать бэкап</button>
             </div>
           </motion.div>
         )}
@@ -214,7 +282,12 @@ export default function AdminSettings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {serverLogs.map((log, i) => (
+                  {logEntries.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="text-center py-8"><p className="sakh-meta">Нет записей</p></td>
+                    </tr>
+                  )}
+                  {logEntries.map((log, i) => (
                     <motion.tr
                       key={log.id}
                       initial={{ opacity: 0, y: 6 }}

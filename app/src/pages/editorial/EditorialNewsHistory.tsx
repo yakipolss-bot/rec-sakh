@@ -1,20 +1,27 @@
 import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Clock, Edit, User } from 'lucide-react';
-import { getNewsById } from '@/data/mock';
-
-const mockHistory = [
-  { id: 'h1', user: 'Анна Кузнецова', action: 'Создал материал', timestamp: '2026-05-16 10:30', field: null },
-  { id: 'h2', user: 'Мария Соколова', action: 'Изменил заголовок', timestamp: '2026-05-16 11:15', field: 'title' },
-  { id: 'h3', user: 'Мария Соколова', action: 'Изменил лид', timestamp: '2026-05-16 11:16', field: 'lead' },
-  { id: 'h4', user: 'Иван Петров', action: 'Добавил теги', timestamp: '2026-05-16 11:45', field: 'tags' },
-  { id: 'h5', user: 'Иван Петров', action: 'Изменил рубрику', timestamp: '2026-05-16 12:00', field: 'category' },
-  { id: 'h6', user: 'Дмитрий Волков', action: 'Опубликовал', timestamp: '2026-05-16 14:30', field: 'status' },
-];
+import { ArrowLeft, Clock, User } from 'lucide-react';
+import { newsService } from '@/services';
+import type { NewsArticle } from '@/services/news.service';
 
 export default function EditorialNewsHistory() {
   const { id } = useParams<{ id: string }>();
-  const article = getNewsById(id || '');
+  const [article, setArticle] = useState<NewsArticle | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    newsService.getNewsById(id)
+      .then(setArticle)
+      .catch(() => setArticle(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return <p className="sakh-meta text-center py-8">Загрузка...</p>;
+  }
 
   if (!article) {
     return (
@@ -23,6 +30,13 @@ export default function EditorialNewsHistory() {
         <Link to="/editorial/news" className="sakh-btn sakh-btn--primary sakh-btn--md mt-4">К списку</Link>
       </div>
     );
+  }
+
+  const history = [
+    { id: 'created', user: article.author?.name || '—', action: 'Создал материал', timestamp: new Date(article.createdAt).toLocaleString('ru-RU'), field: null as string | null },
+  ];
+  if (article.updatedAt && article.updatedAt !== article.createdAt) {
+    history.push({ id: 'updated', user: article.author?.name || '—', action: 'Последнее изменение', timestamp: new Date(article.updatedAt).toLocaleString('ru-RU'), field: null });
   }
 
   return (
@@ -42,7 +56,7 @@ export default function EditorialNewsHistory() {
         </div>
 
         <div className="space-y-0">
-          {mockHistory.map((entry, i) => (
+          {history.map((entry, i) => (
             <motion.div
               key={entry.id}
               initial={{ opacity: 0, x: -8 }}

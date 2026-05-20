@@ -1,11 +1,27 @@
 import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Eye, Clock, User } from 'lucide-react';
-import { getNewsById } from '@/data/mock';
+import { newsService } from '@/services';
+import type { NewsArticle } from '@/services/news.service';
 
 export default function EditorialNewsPreview() {
   const { id } = useParams<{ id: string }>();
-  const article = getNewsById(id || '');
+  const [article, setArticle] = useState<NewsArticle | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    newsService.getNewsById(id)
+      .then(setArticle)
+      .catch(() => setArticle(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return <p className="sakh-meta text-center py-8">Загрузка...</p>;
+  }
 
   if (!article) {
     return (
@@ -15,6 +31,10 @@ export default function EditorialNewsPreview() {
       </div>
     );
   }
+
+  const tagList = Array.isArray(article.tags)
+    ? article.tags.map(t => (typeof t === 'string' ? t : t.tag.name))
+    : [];
 
   return (
     <div>
@@ -42,14 +62,14 @@ export default function EditorialNewsPreview() {
         )}
 
         <div className="flex items-center gap-3 mb-4">
-          <span className="sakh-tag sakh-tag--accent">{article.category.name}</span>
+          <span className="sakh-tag sakh-tag--accent">{article.category?.name || article.categoryId || 'Без рубрики'}</span>
           <span className="sakh-meta flex items-center gap-1">
             <Clock size={12} />
-            {article.readingTimeMinutes} мин чтения
+            {article.readingTimeMinutes ?? '—'} мин чтения
           </span>
           <span className="sakh-meta flex items-center gap-1">
             <Eye size={12} />
-            {article.views?.toLocaleString('ru-RU')}
+            {article.viewsCount?.toLocaleString('ru-RU')}
           </span>
         </div>
 
@@ -57,9 +77,9 @@ export default function EditorialNewsPreview() {
 
         <div className="flex items-center gap-2 mb-6 text-sm text-[var(--text-secondary)]">
           <User size={14} />
-          <span>{article.author.name}</span>
+          <span>{article.author?.name || '—'}</span>
           <span className="text-[var(--text-muted)]">·</span>
-          <span>{new Date(article.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+          <span>{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
         </div>
 
         <p className="text-lg text-[var(--text-primary)] font-medium leading-relaxed mb-6">
@@ -70,9 +90,9 @@ export default function EditorialNewsPreview() {
           {article.content}
         </div>
 
-        {article.tags.length > 0 && (
+        {tagList.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-[var(--border-color)]">
-            {article.tags.map((tag) => (
+            {tagList.map((tag) => (
               <span key={tag} className="sakh-tag sakh-tag--outline">{tag}</span>
             ))}
           </div>

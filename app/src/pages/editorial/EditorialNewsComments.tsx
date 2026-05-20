@@ -1,16 +1,34 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle, XCircle, Shield, MessageSquare } from 'lucide-react';
-import { getNewsById, getCommentsByNewsId } from '@/data/mock';
+import { ArrowLeft, CheckCircle, XCircle, Shield, MessageSquare, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { newsService, adminService } from '@/services';
+import { commentsService } from '@/services/comments.service';
+import type { NewsArticle } from '@/services/news.service';
 import type { Comment } from '@/types';
 
 export default function EditorialNewsComments() {
   const { id } = useParams<{ id: string }>();
-  const article = getNewsById(id || '');
-  const allComments = getCommentsByNewsId(id || '');
-  const [comments, setComments] = useState<Comment[]>(allComments);
+  const [article, setArticle] = useState<NewsArticle | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    Promise.all([
+      newsService.getNewsById(id).catch(() => null),
+      commentsService.getComments(id).catch(() => [] as Comment[]),
+    ])
+      .then(([articleData, commentsData]) => {
+        setArticle(articleData);
+        setComments(commentsData);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const filtered = filter === 'all' ? comments : comments.filter((c) => c.status === filter);
 
@@ -25,15 +43,40 @@ export default function EditorialNewsComments() {
 
   const flatFiltered = flattenComments(filtered);
 
-  const updateStatus = (commentId: string, status: Comment['status']) => {
-    const update = (items: Comment[]): Comment[] =>
-      items.map((c) => {
-        if (c.id === commentId) return { ...c, status };
-        if (c.replies) return { ...c, replies: update(c.replies) };
-        return c;
-      });
-    setComments(update(comments));
+  const updateStatus = async (commentId: string, status: 'approved' | 'rejected') => {
+    try {
+      await adminService.moderateComment(commentId, status);
+      const update = (items: Comment[]): Comment[] =>
+        items.map((c) => {
+          if (c.id === commentId) return { ...c, status };
+          if (c.replies) return { ...c, replies: update(c.replies) };
+          return c;
+        });
+      setComments(update(comments));
+      toast.success(status === 'approved' ? 'Комментарий одобрен' : 'Комментарий отклонён');
+    } catch {
+      toast.error('Ошибка при модерации');
+    }
   };
+
+  const handleDelete = async (commentId: string) => {
+    if (!confirm('Удалить комментарий?')) return;
+    try {
+      await commentsService.deleteComment(commentId);
+      const remove = (items: Comment[]): Comment[] =>
+        items
+          .filter((c) => c.id !== commentId)
+          .map((c) => c.replies ? { ...c, replies: remove(c.replies) } : c);
+      setComments(remove(comments));
+      toast.success('Комментарий удалён');
+    } catch {
+      toast.error('Ошибка при удалении');
+    }
+  };
+
+  if (loading) {
+    return <p className="sakh-meta text-center py-8">Загрузка...</p>;
+  }
 
   if (!article) {
     return (
@@ -119,6 +162,13 @@ export default function EditorialNewsComments() {
                       <Shield size={14} />
                     </button>
                   )}
+                  <button
+                    onClick={() => handleDelete(comment.id)}
+                    className="sakh-btn sakh-btn--ghost sakh-btn--sm !px-1.5 text-[var(--accent-sunset)]"
+                    title="Удалить"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
             </motion.div>

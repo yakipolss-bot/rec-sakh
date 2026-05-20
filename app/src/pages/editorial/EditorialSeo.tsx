@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Globe, FileText, Search, RefreshCw, Download, AlertTriangle } from 'lucide-react';
-import { editorialRedirects, editorialBrokenLinks } from '@/data/editorialMock';
+import { Globe, FileText, Search, RefreshCw, Download, AlertTriangle, Info } from 'lucide-react';
+import { toast } from 'sonner';
+import { adminService } from '@/services';
+import type { AuditLogEntry } from '@/services/admin.service';
 
 type Tab = 'redirects' | 'broken' | 'sitemap' | 'schema';
 
@@ -14,6 +16,19 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialSeo() {
   const [activeTab, setActiveTab] = useState<Tab>('redirects');
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    adminService.getAuditLog()
+      .then((res) => setAuditLog(res.data || []))
+      .catch(() => setAuditLog([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredRedirects = auditLog.filter(
+    (e) => e.action?.toLowerCase().includes('redirect') || e.action?.toLowerCase().includes('move'),
+  );
 
   return (
     <div>
@@ -41,26 +56,40 @@ export default function EditorialSeo() {
               Добавить редирект
             </button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border-color)]">
-                  <th className="px-3 py-2 text-left sakh-caption">From</th>
-                  <th className="px-3 py-2 text-left sakh-caption">To</th>
-                  <th className="px-3 py-2 text-left sakh-caption">Создан</th>
-                </tr>
-              </thead>
-              <tbody>
-                {editorialRedirects.map((r) => (
-                  <tr key={r.id} className="border-b border-[var(--border-color)]">
-                    <td className="px-3 py-2 font-mono text-xs text-[var(--accent-ocean)]">{r.from}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{r.to}</td>
-                    <td className="px-3 py-2 sakh-meta">{r.created}</td>
+          {loading ? (
+            <p className="sakh-meta text-center py-8">Загрузка...</p>
+          ) : filteredRedirects.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th className="px-3 py-2 text-left sakh-caption">Действие</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Цель</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Пользователь</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Время</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredRedirects.map((r) => (
+                    <tr key={r.id} className="border-b border-[var(--border-color)]">
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--accent-ocean)]">{r.action}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{r.target}</td>
+                      <td className="px-3 py-2 sakh-meta">{r.user}</td>
+                      <td className="px-3 py-2 sakh-meta">{r.timestamp}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="sakh-card p-8 text-center">
+              <Info size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
+              <h3 className="sakh-title mb-2">SEO-инструменты скоро появятся</h3>
+              <p className="sakh-body text-sm text-[var(--text-secondary)]">
+                Управление редиректами и полный SEO-инструментарий находятся в разработке.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -72,29 +101,18 @@ export default function EditorialSeo() {
               <RefreshCw size={14} /> Проверить
             </button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border-color)]">
-                  <th className="px-3 py-2 text-left sakh-caption">URL</th>
-                  <th className="px-3 py-2 text-left sakh-caption">Код ответа</th>
-                  <th className="px-3 py-2 text-left sakh-caption">Обнаружена</th>
-                </tr>
-              </thead>
-              <tbody>
-                {editorialBrokenLinks.map((link) => (
-                  <tr key={link.id} className="border-b border-[var(--border-color)]">
-                    <td className="px-3 py-2 font-mono text-xs text-[var(--accent-sunset)] line-through">{link.url}</td>
-                    <td className="px-3 py-2">
-                      <span className={`sakh-tag ${link.statusCode >= 500 ? 'sakh-tag--sunset' : 'sakh-tag--sunset'}`}>
-                        {link.statusCode}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 sakh-meta">{link.foundAt}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="sakh-card p-8 text-center">
+            <AlertTriangle size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
+            <h3 className="sakh-title mb-2">Проверка битых ссылок</h3>
+            <p className="sakh-body text-sm text-[var(--text-secondary)]">
+              Автоматическая проверка битых ссылок будет доступна в ближайшее время.
+            </p>
+            <button
+              onClick={() => toast.info('Проверка запущена. Результаты появятся после завершения.')}
+              className="sakh-btn sakh-btn--primary sakh-btn--md mt-4"
+            >
+              <RefreshCw size={14} /> Запустить проверку
+            </button>
           </div>
         </div>
       )}

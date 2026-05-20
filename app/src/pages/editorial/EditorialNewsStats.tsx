@@ -1,11 +1,27 @@
 import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Eye, Clock, TrendingUp, Users, Globe } from 'lucide-react';
-import { getNewsById } from '@/data/mock';
+import { ArrowLeft, Eye, Clock, TrendingUp, Users, Globe, Activity } from 'lucide-react';
+import { newsService } from '@/services';
+import type { NewsArticle } from '@/services/news.service';
 
 export default function EditorialNewsStats() {
   const { id } = useParams<{ id: string }>();
-  const article = getNewsById(id || '');
+  const [article, setArticle] = useState<NewsArticle | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    newsService.getNewsById(id)
+      .then(setArticle)
+      .catch(() => setArticle(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return <p className="sakh-meta text-center py-8">Загрузка...</p>;
+  }
 
   if (!article) {
     return (
@@ -17,10 +33,10 @@ export default function EditorialNewsStats() {
   }
 
   const stats = [
-    { icon: Eye, label: 'Просмотры', value: (article.views ?? article.viewsCount).toLocaleString('ru-RU'), color: 'text-[var(--accent-ocean)]' },
-    { icon: Clock, label: 'Время чтения', value: `${article.readingTimeMinutes} мин`, color: 'text-[var(--accent-sunset)]' },
+    { icon: Eye, label: 'Просмотры', value: article.viewsCount.toLocaleString('ru-RU'), color: 'text-[var(--accent-ocean)]' },
+    { icon: Clock, label: 'Время чтения', value: `${article.readingTimeMinutes ?? '—'} мин`, color: 'text-[var(--accent-sunset)]' },
     { icon: TrendingUp, label: 'Комментарии', value: article.commentsCount.toString(), color: 'text-[var(--accent-ocean)]' },
-    { icon: Users, label: 'Лайки', value: article.viewsCount?.toString() || '0', color: 'text-[var(--text-primary)]' },
+    { icon: Users, label: 'Лайки', value: article.viewsCount.toString(), color: 'text-[var(--text-primary)]' },
   ];
 
   return (
