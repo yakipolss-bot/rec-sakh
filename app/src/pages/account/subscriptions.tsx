@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Plus, Bookmark, Tag, User, Key } from 'lucide-react';
-import { categories } from '@/data/mock';
+import { categoriesService } from '@/services/categories.service';
 import { useUserSubscriptions } from '@/hooks/useUser';
 import { usersService } from '@/services/users.service';
 import { toast } from 'sonner';
 import EmptyState from '@/components/EmptyState';
+import type { Category } from '@/types';
 
 type TabId = 'categories' | 'tags' | 'authors' | 'keywords';
 
@@ -21,10 +22,28 @@ const popularTags = ['шторм', 'спорт', 'транспорт', 'экон
 export default function AccountSubscriptions() {
   const [activeTab, setActiveTab] = useState<TabId>('categories');
   const { subscriptions, error, refetch } = useUserSubscriptions();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [subscribedCategories, setSubscribedCategories] = useState<string[]>([]);
   const [subscribedTags, setSubscribedTags] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      try {
+        const data = await categoriesService.getCategories();
+        if (!cancelled) setCategories(data);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setCategoriesLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (subscriptions && subscriptions.length > 0) {
@@ -146,29 +165,35 @@ export default function AccountSubscriptions() {
           transition={{ duration: 0.2 }}
         >
           {activeTab === 'categories' && (
-            <div className="sakh-card p-4 space-y-1">
-              {categories.map(cat => {
-                const subscribed = subscribedCategories.includes(cat.name);
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => toggleCategory(cat.name)}
-                    className={`flex items-center justify-between w-full px-3 py-2.5 text-sm border-l-2 transition-colors ${
-                      subscribed
-                        ? 'text-[var(--accent-ocean)] border-[var(--accent-ocean)] bg-[var(--ocean-alpha-10)]'
-                        : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)] hover:border-[var(--border-color)]'
-                    }`}
-                  >
-                    <span>{cat.name}</span>
-                    <span className={`w-4 h-4 border transition-colors ${
-                      subscribed
-                        ? 'bg-[var(--accent-ocean)] border-[var(--accent-ocean)]'
-                        : 'border-[var(--border-color)]'
-                    }`} />
-                  </button>
-                );
-              })}
-            </div>
+            categoriesLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="w-6 h-6 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+              </div>
+            ) : (
+              <div className="sakh-card p-4 space-y-1">
+                {categories.map(cat => {
+                  const subscribed = subscribedCategories.includes(cat.name);
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleCategory(cat.name)}
+                      className={`flex items-center justify-between w-full px-3 py-2.5 text-sm border-l-2 transition-colors ${
+                        subscribed
+                          ? 'text-[var(--accent-ocean)] border-[var(--accent-ocean)] bg-[var(--ocean-alpha-10)]'
+                          : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)] hover:border-[var(--border-color)]'
+                      }`}
+                    >
+                      <span>{cat.name}</span>
+                      <span className={`w-4 h-4 border transition-colors ${
+                        subscribed
+                          ? 'bg-[var(--accent-ocean)] border-[var(--accent-ocean)]'
+                          : 'border-[var(--border-color)]'
+                      }`} />
+                    </button>
+                  );
+                })}
+              </div>
+            )
           )}
 
           {activeTab === 'tags' && (

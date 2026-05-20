@@ -9,8 +9,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
-import { newsArticles, categories } from '@/data/mock';
+import { newsService } from '@/services/news.service';
+import { categoriesService } from '@/services/categories.service';
 import type { NewsArticle } from '@/types';
+import type { Category } from '@/types';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -34,7 +36,7 @@ const sortOptions = [
   { value: 'popularity', label: 'Популярность' },
 ] as const;
 
-const similarQueries: Record<string, string[]> = {
+const similarQueriesRecord: Record<string, string[]> = {
   шторм: ['штормовое предупреждение', 'циклон сахалин', 'отмена рейсов', 'паром ванино холмск'],
   транспорт: ['электробусы', 'паром', 'дороги', 'авиабилеты'],
   погода: ['шторм', 'циклон', 'температура', 'снег'],
@@ -57,8 +59,8 @@ function getExplainData(article: NewsArticle, q: string) {
   return {
     titleMatches,
     contentMatches,
-    category: article.category.name,
-    city: article.city,
+    category: article.category?.name || '',
+    city: article.city || '',
   };
 }
 
@@ -78,14 +80,14 @@ function filterArticles(
     const queryWords = q.split(/\s+/).filter(w => w.length > 1);
     if (queryWords.length) {
       filtered = filtered.filter(a => {
-        const text = `${a.title} ${a.lead} ${a.content} ${a.tags.join(' ')}`.toLowerCase();
+        const text = `${a.title} ${a.lead} ${a.content} ${(a.tags || []).map(t => typeof t === 'string' ? t : (t as { tag: { name: string } }).tag?.name || '').join(' ')}`.toLowerCase();
         return queryWords.some(w => text.includes(w));
       });
     }
   }
 
   if (category !== 'all') {
-    filtered = filtered.filter(a => a.category.slug === category);
+    filtered = filtered.filter(a => a.category?.slug === category);
   }
 
   if (city !== 'Все') {
@@ -98,7 +100,7 @@ function filterArticles(
     if (dateRange === 'today') cutoff.setDate(now.getDate() - 1);
     else if (dateRange === 'week') cutoff.setDate(now.getDate() - 7);
     else if (dateRange === 'month') cutoff.setDate(now.getDate() - 30);
-    filtered = filtered.filter(a => new Date(a.publishedAt) >= cutoff);
+    filtered = filtered.filter(a => a.publishedAt ? new Date(a.publishedAt) >= cutoff : false);
   }
 
   if (type !== 'all') {
@@ -108,15 +110,16 @@ function filterArticles(
   }
 
   if (sort === 'date') {
-    filtered.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    filtered.sort((a, b) => new Date(b.publishedAt || '').getTime() - new Date(a.publishedAt || '').getTime());
   } else if (sort === 'popularity') {
-    filtered.sort((a, b) => b.views - a.views);
+    filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
   }
 
   return filtered;
 }
 
 function computeFacetCount(
+  articles: NewsArticle[],
   query: string,
   category: string,
   city: string,
@@ -125,16 +128,16 @@ function computeFacetCount(
   sort: 'relevance' | 'date' | 'popularity',
   overrideCategory: string,
 ): number {
-  return newsArticles.filter(a => {
+  return articles.filter(a => {
     if (query) {
       const q = query.toLowerCase();
       const words = q.split(/\s+/).filter(w => w.length > 1);
       if (words.length) {
-        const text = `${a.title} ${a.lead} ${a.content} ${a.tags.join(' ')}`.toLowerCase();
+        const text = `${a.title} ${a.lead} ${a.content} ${(a.tags || []).map(t => typeof t === 'string' ? t : (t as { tag: { name: string } }).tag?.name || '').join(' ')}`.toLowerCase();
         if (!words.some(w => text.includes(w))) return false;
       }
     }
-    if (overrideCategory !== 'all' && a.category.slug !== overrideCategory) return false;
+    if (overrideCategory !== 'all' && a.category?.slug !== overrideCategory) return false;
     if (city !== 'Все' && a.city !== city) return false;
     if (dateRange !== 'all') {
       const now = new Date();
@@ -142,7 +145,7 @@ function computeFacetCount(
       if (dateRange === 'today') cutoff.setDate(now.getDate() - 1);
       else if (dateRange === 'week') cutoff.setDate(now.getDate() - 7);
       else if (dateRange === 'month') cutoff.setDate(now.getDate() - 30);
-      if (new Date(a.publishedAt) < cutoff) return false;
+      if (a.publishedAt && new Date(a.publishedAt) < cutoff) return false;
     }
     if (type !== 'all') {
       if (type === 'video' && !a.hasVideo) return false;
@@ -154,6 +157,7 @@ function computeFacetCount(
 }
 
 function computeCityCount(
+  articles: NewsArticle[],
   query: string,
   category: string,
   city: string,
@@ -162,16 +166,16 @@ function computeCityCount(
   sort: 'relevance' | 'date' | 'popularity',
   overrideCity: string,
 ): number {
-  return newsArticles.filter(a => {
+  return articles.filter(a => {
     if (query) {
       const q = query.toLowerCase();
       const words = q.split(/\s+/).filter(w => w.length > 1);
       if (words.length) {
-        const text = `${a.title} ${a.lead} ${a.content} ${a.tags.join(' ')}`.toLowerCase();
+        const text = `${a.title} ${a.lead} ${a.content} ${(a.tags || []).map(t => typeof t === 'string' ? t : (t as { tag: { name: string } }).tag?.name || '').join(' ')}`.toLowerCase();
         if (!words.some(w => text.includes(w))) return false;
       }
     }
-    if (category !== 'all' && a.category.slug !== category) return false;
+    if (category !== 'all' && a.category?.slug !== category) return false;
     if (overrideCity !== 'Все' && a.city !== overrideCity) return false;
     if (dateRange !== 'all') {
       const now = new Date();
@@ -179,7 +183,7 @@ function computeCityCount(
       if (dateRange === 'today') cutoff.setDate(now.getDate() - 1);
       else if (dateRange === 'week') cutoff.setDate(now.getDate() - 7);
       else if (dateRange === 'month') cutoff.setDate(now.getDate() - 30);
-      if (new Date(a.publishedAt) < cutoff) return false;
+      if (a.publishedAt && new Date(a.publishedAt) < cutoff) return false;
     }
     if (type !== 'all') {
       if (type === 'video' && !a.hasVideo) return false;
@@ -205,6 +209,31 @@ const itemVariants = {
 export default function SearchPage({ q: propQ }: { q?: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      try {
+        const [newsData, catsData] = await Promise.all([
+          newsService.getNews({ status: 'published' }),
+          categoriesService.getCategories(),
+        ]);
+        if (cancelled) return;
+        setNewsArticles(newsData.data || []);
+        setCategories(catsData);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setDataLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
+
   const [query, setQuery] = useState(propQ || searchParams.get('q') || '');
   const [debouncedQuery, setDebouncedQuery] = useState(propQ || searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
@@ -226,13 +255,13 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
   const facetButtonRef = useRef<HTMLButtonElement>(null);
 
   const allCities = useMemo(() => {
-    const set = new Set(newsArticles.map(a => a.city));
+    const set = new Set(newsArticles.map(a => a.city).filter(Boolean) as string[]);
     return ['Все', ...Array.from(set).sort()];
-  }, []);
+  }, [newsArticles]);
 
   const results = useMemo(
     () => filterArticles(newsArticles, debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy),
-    [debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy],
+    [newsArticles, debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy],
   );
 
   const displayedResults = useMemo(() => results.slice(0, displayCount), [results, displayCount]);
@@ -245,24 +274,24 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
     const counts: Record<string, number> = { all: results.length };
     for (const cat of categories) {
       counts[cat.slug] = computeFacetCount(
-        debouncedQuery, selectedCategory, selectedCity,
+        newsArticles, debouncedQuery, selectedCategory, selectedCity,
         selectedDateRange, selectedType, sortBy, cat.slug,
       );
     }
     return counts;
-  }, [debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy]);
+  }, [newsArticles, categories, debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy]);
 
   const cityCounts = useMemo(() => {
     const counts: Record<string, number> = { 'Все': results.length };
     for (const city of allCities) {
       if (city === 'Все') continue;
       counts[city] = computeCityCount(
-        debouncedQuery, selectedCategory, selectedCity,
+        newsArticles, debouncedQuery, selectedCategory, selectedCity,
         selectedDateRange, selectedType, sortBy, city,
       );
     }
     return counts;
-  }, [debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy, allCities]);
+  }, [newsArticles, debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy, allCities]);
 
   const suggestions = useMemo(() => {
     if (query.length < 2) return { news: [] as { text: string; slug: string }[], tags: [] as string[] };
@@ -271,18 +300,21 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
       .filter(a => a.title.toLowerCase().includes(q))
       .slice(0, 5)
       .map(a => ({ text: a.title, slug: a.slug }));
-    const tags = Array.from(new Set(newsArticles.flatMap(a => a.tags)))
+    const tags = Array.from(new Set(newsArticles.flatMap(a => {
+      const t = (a.tags || []).map(tag => typeof tag === 'string' ? tag : (tag as { tag: { name: string } }).tag?.name || '');
+      return t.filter(Boolean);
+    })))
       .filter(t => t.toLowerCase().includes(q))
       .slice(0, 3);
     return { news: titles, tags };
-  }, [query]);
+  }, [query, newsArticles]);
 
   const hasSuggestions = suggestions.news.length > 0 || suggestions.tags.length > 0;
 
   const currentSimilarQueries = useMemo(() => {
     if (!debouncedQuery) return [];
     const q = debouncedQuery.toLowerCase();
-    for (const [key, queries] of Object.entries(similarQueries)) {
+    for (const [key, queries] of Object.entries(similarQueriesRecord)) {
       if (q.includes(key) || key.includes(q)) return queries;
     }
     return ['шторм', 'транспорт', 'погода', 'спорт', 'Корсаков', 'рыболовство'];
@@ -399,6 +431,18 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
     setSortBy(value);
     setDisplayCount(ITEMS_PER_PAGE);
   }, []);
+
+  if (dataLoading) {
+    return (
+      <main className="pt-24 pb-8">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="pt-20 pb-8">
@@ -663,10 +707,10 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
             >
               {displayedResults.map(article => {
                 const explain = getExplainData(article, debouncedQuery);
-                const dateStr = formatDistanceToNow(new Date(article.publishedAt), {
+                const dateStr = article.publishedAt ? formatDistanceToNow(new Date(article.publishedAt), {
                   addSuffix: true,
                   locale: ru,
-                });
+                }) : '';
 
                 return (
                   <motion.div
@@ -698,16 +742,18 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
                       {/* Meta */}
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <span className="sakh-meta sakh-meta--accent">
-                          {article.category.name}
+                          {article.category?.name || ''}
                         </span>
                         <span className="sakh-meta">{article.city}</span>
-                        <span className="sakh-meta sakh-meta--with-icon">
-                          <Clock size={10} />
-                          {dateStr}
-                        </span>
+                        {article.publishedAt && (
+                          <span className="sakh-meta sakh-meta--with-icon">
+                            <Clock size={10} />
+                            {dateStr}
+                          </span>
+                        )}
                         <span className="sakh-meta sakh-meta--with-icon">
                           <Eye size={12} />
-                          {article.views.toLocaleString('ru-RU')}
+                          {(article.views || 0).toLocaleString('ru-RU')}
                         </span>
                         <span className="sakh-meta sakh-meta--with-icon">
                           <MessageSquare size={12} />

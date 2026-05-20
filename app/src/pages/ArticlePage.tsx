@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,8 +9,12 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import CommentSection from '@/components/CommentSection';
 import NewsCard from '@/components/NewsCard';
-import { getNewsBySlug, getNewsById, getCommentsByNewsId, getRelatedNews } from '@/data/mock';
+import { newsService } from '@/services/news.service';
+import { commentsService } from '@/services/comments.service';
 import { useFavorites } from '@/hooks/useFavorites';
+import type { NewsArticle } from '@/types';
+import type { Comment } from '@/types';
+
 function renderContentBlock(block: string, i: number, variants: Record<string, unknown>) {
   const trimmed = block.trim();
 
@@ -72,7 +76,41 @@ const shareVariants = {
 export default function ArticlePage({ id }: { id?: string }) {
   const params = useParams<{ id: string }>();
   const articleId = id || params.id;
-  const article = articleId ? getNewsBySlug(articleId) || getNewsById(articleId) : undefined;
+
+  const [article, setArticle] = useState<NewsArticle | null>(null);
+  const [articleComments, setArticleComments] = useState<Comment[]>([]);
+  const [relatedNews, setRelatedNews] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!articleId) return;
+    let cancelled = false;
+
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const result = await newsService.getNewsById(articleId);
+        if (cancelled) return;
+        setArticle(result);
+
+        const [comments, related] = await Promise.all([
+          commentsService.getComments(result.id).catch(() => [] as Comment[]),
+          newsService.getRelatedNews(result.id, 3).catch(() => [] as NewsArticle[]),
+        ]);
+        if (cancelled) return;
+        setArticleComments(comments);
+        setRelatedNews(related);
+      } catch {
+        if (!cancelled) setArticle(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, [articleId]);
+
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const [toast, setToast] = useState<string | null>(null);
@@ -89,6 +127,16 @@ export default function ArticlePage({ id }: { id?: string }) {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="pt-24 pb-8 max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
+        <div className="flex justify-center py-12">
+          <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   if (!article) {
     return (
       <div className="pt-24 pb-8 max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
@@ -104,12 +152,12 @@ export default function ArticlePage({ id }: { id?: string }) {
     );
   }
 
-  const articleComments = getCommentsByNewsId(article.id);
-  const relatedNews = getRelatedNews(article);
+  const tags: string[] = (article.tags || []).map(t => typeof t === 'string' ? t : (t as { tag: { name: string } }).tag?.name || '').filter(Boolean);
+
   const fav = isFavorite(article.id);
 
-  const formattedDate = format(new Date(article.publishedAt), 'd MMMM yyyy, HH:mm', { locale: ru });
-  const formattedUpdate = format(new Date(article.updatedAt), 'd MMMM yyyy, HH:mm', { locale: ru });
+  const formattedDate = article.publishedAt ? format(new Date(article.publishedAt), 'd MMMM yyyy, HH:mm', { locale: ru }) : '';
+  const formattedUpdate = article.updatedAt ? format(new Date(article.updatedAt), 'd MMMM yyyy, HH:mm', { locale: ru }) : '';
   const showUpdated = article.updatedAt !== article.publishedAt;
 
   const breadcrumbSchema = {
@@ -120,8 +168,8 @@ export default function ArticlePage({ id }: { id?: string }) {
       {
         '@type': 'ListItem',
         position: 2,
-        name: article.category.name,
-        item: `${baseUrl}/category/${article.category.slug}`,
+        name: article.category?.name || '',
+        item: `${baseUrl}/category/${article.category?.slug || ''}`,
       },
       { '@type': 'ListItem', position: 3, name: article.title, item: `${baseUrl}/news/${article.slug}` },
     ],
@@ -137,14 +185,14 @@ export default function ArticlePage({ id }: { id?: string }) {
     dateModified: article.updatedAt,
     author: {
       '@type': 'Person',
-      name: article.author.name,
+      name: article.author?.name || '',
     },
     publisher: {
       '@type': 'Organization',
       name: 'Sakhcom',
       logo: `${baseUrl}/logo.png`,
     },
-    articleSection: article.category.name,
+    articleSection: article.category?.name || '',
     about: {
       '@type': 'Place',
       name: article.city,
@@ -196,10 +244,10 @@ export default function ArticlePage({ id }: { id?: string }) {
                 </li>
                 <li>
                   <Link
-                    to={`/category/${article.category.slug}`}
+                    to={`/category/${article.category?.slug}`}
                     className="transition-colors hover:text-[var(--accent-ocean)]"
                   >
-                    {article.category.name}
+                    {article.category?.name}
                   </Link>
                 </li>
                 <li className="flex items-center">
@@ -217,10 +265,10 @@ export default function ArticlePage({ id }: { id?: string }) {
               <header className="mb-8">
                 <div className="flex items-center gap-3 mb-4 flex-wrap">
                   <Link
-                    to={`/category/${article.category.slug}`}
+                    to={`/category/${article.category?.slug}`}
                     className="sakh-tag sakh-tag--accent hover:bg-[var(--accent-ocean)] hover:text-[var(--bg-primary)] transition-colors"
                   >
-                    {article.category.name}
+                    {article.category?.name}
                   </Link>
                   {article.isUrgent && (
                     <span className="sakh-tag sakh-tag--sunset">Срочно</span>
@@ -239,14 +287,14 @@ export default function ArticlePage({ id }: { id?: string }) {
                 <div className="flex items-center justify-between flex-wrap gap-4 py-4 border-b border-[var(--border-color)]">
                   <address className="flex items-center gap-3 not-italic">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-mono uppercase bg-[var(--bg-surface)] text-[var(--accent-ocean)] shrink-0">
-                      {article.author.name.charAt(0)}
+                      {article.author?.name?.charAt(0) || '?'}
                     </div>
                     <div>
                       <div className="text-sm font-medium text-[var(--text-primary)]">
-                        {article.author.name}
+                        {article.author?.name || ''}
                       </div>
                       <div className="text-xs font-mono text-[var(--text-muted)]">
-                        {article.author.role}
+                        {article.author?.role || ''}
                       </div>
                     </div>
                   </address>
@@ -254,7 +302,7 @@ export default function ArticlePage({ id }: { id?: string }) {
                   <div className="flex items-center gap-4">
                     <span className="sakh-meta sakh-meta--with-icon">
                       <Eye size={12} />
-                      {article.views.toLocaleString('ru-RU')}
+                      {(article.views || 0).toLocaleString('ru-RU')}
                     </span>
                     <span className="sakh-meta sakh-meta--with-icon">
                       <MessageSquare size={12} />
@@ -264,10 +312,12 @@ export default function ArticlePage({ id }: { id?: string }) {
                       <Clock size={12} />
                       {article.readingTimeMinutes} мин
                     </span>
-                    <time dateTime={article.publishedAt} className="sakh-meta sakh-meta--with-icon">
-                      <Calendar size={12} />
-                      {formattedDate}
-                    </time>
+                    {article.publishedAt && (
+                      <time dateTime={article.publishedAt} className="sakh-meta sakh-meta--with-icon">
+                        <Calendar size={12} />
+                        {formattedDate}
+                      </time>
+                    )}
                     <motion.button
                       onClick={() => toggleFavorite(article.id)}
                       whileTap={{ scale: 0.8 }}
@@ -365,9 +415,9 @@ export default function ArticlePage({ id }: { id?: string }) {
               </aside>
 
               {/* Tags */}
-              {article.tags.length > 0 && (
+              {tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-8">
-                  {article.tags.map((tag) => (
+                  {tags.map((tag) => (
                     <span
                       key={tag}
                       className="sakh-tag sakh-tag--outline hover:border-[var(--accent-ocean)] hover:text-[var(--accent-ocean)] transition-colors cursor-pointer"
@@ -379,7 +429,7 @@ export default function ArticlePage({ id }: { id?: string }) {
               )}
 
               {/* Updated */}
-              {showUpdated && (
+              {showUpdated && article.updatedAt && (
                 <p className="sakh-caption mb-8">
                   Обновлено: <time dateTime={article.updatedAt}>{formattedUpdate}</time>
                 </p>

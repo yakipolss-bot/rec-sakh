@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -11,7 +11,8 @@ import type { BentoItem } from '@/components/BentoGrid';
 import WeatherWidget from '@/components/WeatherWidget';
 import CurrencyWidget from '@/components/CurrencyWidget';
 import EventsWidget from '@/components/EventsWidget';
-import { newsArticles } from '@/data/mock';
+import { newsService } from '@/services/news.service';
+import type { NewsArticle } from '@/types';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -36,20 +37,35 @@ const pollData = {
   ],
 };
 
-const themeData = {
-  tag: 'Городская среда',
-  articles: newsArticles.filter(a => ['n2', 'n8', 'n12'].includes(a.id)),
-};
-
 export default function HomePage() {
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      try {
+        const res = await newsService.getNews({ status: 'published' });
+        if (!cancelled) setNewsArticles(res.data || []);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
+
   const heroArticles = newsArticles.slice(0, 3);
   const bentoNews = newsArticles.slice(3, 11);
   const popularNews = useMemo(
     () => [...newsArticles].sort((a, b) => b.views - a.views).slice(0, 5),
-    [],
+    [newsArticles],
   );
   const videoArticle = newsArticles[0];
-  const photoArticle = newsArticles[4];
+  const photoArticle = newsArticles.length > 4 ? newsArticles[4] : newsArticles[0];
+  const themeArticles = newsArticles.filter(a => ['n2', 'n8', 'n12'].includes(a.id));
 
   const [pollVoted, setPollVoted] = useState(false);
   const [pollSelected, setPollSelected] = useState<string | null>(null);
@@ -69,6 +85,24 @@ export default function HomePage() {
     type: i === 0 ? 'wide' : 'default',
     content: <NewsCard key={article.id} article={article} index={i} />,
   }));
+
+  if (loading) {
+    return (
+      <div className="pt-24 pb-8 flex justify-center">
+        <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!newsArticles.length) {
+    return (
+      <div className="pt-24 pb-8">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
+          <p className="text-[var(--text-secondary)] text-center py-12">Новости пока не опубликованы</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-20 pb-8">
@@ -100,7 +134,7 @@ export default function HomePage() {
                   </div>
                   <div className="p-5 flex flex-col flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="sakh-meta sakh-meta--accent">{heroArticles[0].category.name}</span>
+                      <span className="sakh-meta sakh-meta--accent">{heroArticles[0].category?.name}</span>
                       <span className="sakh-meta">{heroArticles[0].city}</span>
                     </div>
                     <h1 className="sakh-display mb-3 line-clamp-3">{heroArticles[0].title}</h1>
@@ -108,7 +142,7 @@ export default function HomePage() {
                     <div className="mt-auto flex items-center gap-4">
                       <span className="sakh-meta sakh-meta--with-icon">
                         <Eye size={12} />
-                        {heroArticles[0].views.toLocaleString('ru-RU')}
+                        {(heroArticles[0].views || 0).toLocaleString('ru-RU')}
                       </span>
                       <span className="sakh-meta sakh-meta--with-icon">
                         <MessageSquare size={12} />
@@ -141,7 +175,7 @@ export default function HomePage() {
                     </div>
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="sakh-meta sakh-meta--accent">{article.category.name}</span>
+                        <span className="sakh-meta sakh-meta--accent">{article.category?.name}</span>
                       </div>
                       <h3 className="text-base font-medium leading-snug line-clamp-3 mb-2 flex-1 text-[var(--text-primary)]">
                         {article.title}
@@ -149,7 +183,7 @@ export default function HomePage() {
                       <div className="flex items-center gap-3 mt-auto">
                         <span className="sakh-meta sakh-meta--with-icon">
                           <Eye size={10} />
-                          {article.views.toLocaleString('ru-RU')}
+                          {(article.views || 0).toLocaleString('ru-RU')}
                         </span>
                         <span className="sakh-meta sakh-meta--with-icon">
                           <MessageSquare size={10} />
@@ -206,7 +240,7 @@ export default function HomePage() {
                       <h4 className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-[var(--accent-ocean)] transition-colors text-[var(--text-primary)]">
                         {article.title}
                       </h4>
-                      <span className="sakh-meta">{article.views.toLocaleString('ru-RU')} просмотров</span>
+                      <span className="sakh-meta">{(article.views || 0).toLocaleString('ru-RU')} просмотров</span>
                     </div>
                   </Link>
                 ))}
@@ -278,8 +312,8 @@ export default function HomePage() {
                 <h3 className="sakh-title mb-2">{photoArticle.title}</h3>
                 <div className="flex items-center gap-4 sakh-meta">
                   <span>{photoArticle.city}</span>
-                  <span>{photoArticle.author.name}</span>
-                  <span>{new Date(photoArticle.publishedAt).toLocaleDateString('ru-RU')}</span>
+                  <span>{photoArticle.author?.name}</span>
+                  <span>{photoArticle.publishedAt ? new Date(photoArticle.publishedAt).toLocaleDateString('ru-RU') : ''}</span>
                 </div>
               </div>
             </Link>
@@ -388,10 +422,10 @@ export default function HomePage() {
             <h2 className="sakh-heading">Тема дня</h2>
           </div>
           <div className="flex items-center gap-2 mb-4">
-            <span className="sakh-tag sakh-tag--accent">{themeData.tag}</span>
+            <span className="sakh-tag sakh-tag--accent">Городская среда</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {themeData.articles.map((article, i) => (
+            {themeArticles.map((article, i) => (
               <NewsCard key={article.id} article={article} variant="compact" index={i} />
             ))}
           </div>

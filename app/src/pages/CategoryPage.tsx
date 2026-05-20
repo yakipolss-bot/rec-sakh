@@ -1,12 +1,15 @@
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Grid3X3, List, RotateCcw, TrendingUp, MapPin, Calendar } from 'lucide-react';
-import { useMemo, useRef, useEffect } from 'react';
 import NewsCard from '@/components/NewsCard';
 import FilterBar from '@/components/FilterBar';
 import Pagination from '@/components/Pagination';
 import EmptyState from '@/components/EmptyState';
-import { categories, getNewsByCategory, newsArticles } from '@/data/mock';
+import { newsService } from '@/services/news.service';
+import { categoriesService } from '@/services/categories.service';
+import type { NewsArticle } from '@/types';
+import type { Category } from '@/types';
 
 const SORT_OPTIONS = [
   { value: 'date', label: 'По дате' },
@@ -91,6 +94,32 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [baseArticles, setBaseArticles] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      setLoading(true);
+      try {
+        const [catsData, newsData] = await Promise.all([
+          categoriesService.getCategories(),
+          slug ? newsService.getNews({ category: slug }) : newsService.getNews({ status: 'published' }),
+        ]);
+        if (cancelled) return;
+        setCategories(catsData);
+        setBaseArticles(newsData.data || []);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, [slug]);
+
   const sortBy = searchParams.get('sort') || 'date';
   const city = searchParams.get('city') || 'all';
   const dateRange = searchParams.get('date') || 'all';
@@ -98,8 +127,6 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
   const page = parseInt(searchParams.get('page') || '1');
 
   const category = categories.find(c => c.slug === slug);
-
-  const baseArticles = slug ? getNewsByCategory(slug) : newsArticles;
 
   const filteredArticles = useMemo(() => {
     let result = [...baseArticles];
@@ -110,21 +137,21 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
     }
 
     if (dateRange !== 'all') {
-      result = result.filter(a => isWithinDateRange(a.publishedAt, dateRange));
+      result = result.filter(a => isWithinDateRange(a.publishedAt || '', dateRange));
     }
 
     switch (sortBy) {
       case 'views':
-        result.sort((a, b) => b.views - a.views);
+        result.sort((a, b) => (b.views || 0) - (a.views || 0));
         break;
       case 'comments':
         result.sort((a, b) => b.commentsCount - a.commentsCount);
         break;
       case 'popularity':
-        result.sort((a, b) => (b.views * 1 + b.commentsCount * 3 + (b.viewsCount || 0) * 2) - (a.views * 1 + a.commentsCount * 3 + (a.viewsCount || 0) * 2));
+        result.sort((a, b) => ((b.views || 0) * 1 + b.commentsCount * 3 + (b.viewsCount || 0) * 2) - ((a.views || 0) * 1 + a.commentsCount * 3 + (a.viewsCount || 0) * 2));
         break;
       default:
-        result.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        result.sort((a, b) => new Date(b.publishedAt || '').getTime() - new Date(a.publishedAt || '').getTime());
     }
 
     return result;
@@ -136,7 +163,7 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
 
   const popularInCategory = useMemo(() => {
     return [...baseArticles]
-      .sort((a, b) => b.views - a.views)
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
       .slice(0, 5);
   }, [baseArticles]);
 
@@ -174,6 +201,25 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
       contentRef.current.focus();
     }
   }, [clampedPage]);
+
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    baseArticles.forEach(a => {
+      const tags = (a.tags || []).map(t => typeof t === 'string' ? t : (t as { tag: { name: string } }).tag?.name || '');
+      tags.forEach(t => { if (t) tagSet.add(t); });
+    });
+    return Array.from(tagSet).slice(0, 12);
+  }, [baseArticles]);
+
+  if (loading) {
+    return (
+      <div className="pt-24 pb-8 max-w-[1440px] mx-auto px-4 sm:px-6">
+        <div className="flex justify-center py-12">
+          <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-20 pb-8">
@@ -383,7 +429,7 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
                         {article.title}
                       </p>
                       <span className="sakh-meta mt-1 block">
-                        {article.views.toLocaleString('ru-RU')} просмотров
+                        {(article.views || 0).toLocaleString('ru-RU')} просмотров
                       </span>
                     </div>
                   </Link>
@@ -391,13 +437,13 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
               </div>
             </div>
 
-            {category && (
+            {allTags.length > 0 && (
               <div className="sakh-card p-4">
                 <h3 className="sakh-caption mb-3 text-[var(--text-secondary)]">
                   Теги
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {[...new Set(baseArticles.flatMap(a => a.tags))].slice(0, 12).map((tag) => (
+                  {allTags.map((tag) => (
                     <Link
                       key={tag}
                       to={`/search?q=${encodeURIComponent(tag)}`}
