@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, CalendarDays, Clock, Tag } from 'lucide-react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { eventsService } from '@/services/events.service';
 import type { ArticleEvent } from '@/services/events.service';
 
@@ -31,8 +33,7 @@ const cardVariants = {
 export default function EventsPage() {
   const [events, setEvents] = useState<ArticleEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const view = searchParams.get('view') || 'list';
+  const [view, setView] = useState('list');
 
   useEffect(() => {
     let cancelled = false;
@@ -50,14 +51,13 @@ export default function EventsPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const setView = (v: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('view', v);
-    setSearchParams(next);
-  };
-
-  const now = new Date();
-  const filtered = events.filter(e => new Date(e.startDate) >= now).slice(0, 30);
+  const filtered = useMemo(
+    () => {
+      const now = new Date();
+      return events.filter(e => new Date(e.startDate) >= now).slice(0, 30);
+    },
+    [events],
+  );
 
   return (
     <div className="pt-20 pb-8">
@@ -134,10 +134,7 @@ export default function EventsPage() {
                   <div className="flex flex-col gap-1.5 mt-auto">
                     <span className="sakh-meta sakh-meta--with-icon">
                       <CalendarDays size={12} />
-                      {new Date(event.startDate).toLocaleDateString('ru-RU', {
-                        day: 'numeric', month: 'long', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit',
-                      })}
+                      {format(new Date(event.startDate), 'd MMMM yyyy, HH:mm', { locale: ru })}
                     </span>
                     {event.venueName && (
                       <span className="sakh-meta sakh-meta--with-icon">

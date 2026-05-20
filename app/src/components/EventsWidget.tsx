@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, MapPin } from 'lucide-react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { eventsService } from '@/services/events.service';
 import type { ArticleEvent } from '@/services/events.service';
 
@@ -60,7 +62,7 @@ export default function EventsWidget() {
                 {event.title}
               </div>
               <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                <span>{new Date(event.startDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>
+                <span>{format(new Date(event.startDate), 'd MMM', { locale: ru })}</span>
                 {event.city && (
                   <>
                     <span>·</span>

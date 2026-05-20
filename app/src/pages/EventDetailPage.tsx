@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, CalendarDays, Clock, Tag } from 'lucide-react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { eventsService } from '@/services/events.service';
 import type { ArticleEvent } from '@/services/events.service';
 
@@ -106,13 +108,8 @@ export default function EventDetailPage() {
         <div className="flex flex-col gap-3 mb-8">
           <span className="sakh-meta sakh-meta--with-icon">
             <CalendarDays size={16} />
-            {new Date(event.startDate).toLocaleDateString('ru-RU', {
-              day: 'numeric', month: 'long', year: 'numeric',
-              hour: '2-digit', minute: '2-digit',
-            })}
-            {event.endDate && ` — ${new Date(event.endDate).toLocaleDateString('ru-RU', {
-              day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
-            })}`}
+            {format(new Date(event.startDate), 'd MMMM yyyy, HH:mm', { locale: ru })}
+            {event.endDate && ` — ${format(new Date(event.endDate), 'd MMMM yyyy, HH:mm', { locale: ru })}`}
           </span>
           {event.venueName && (
             <span className="sakh-meta sakh-meta--with-icon">
