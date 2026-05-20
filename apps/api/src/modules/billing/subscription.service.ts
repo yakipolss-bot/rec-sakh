@@ -100,7 +100,7 @@ export class SubscriptionService {
   async activateSubscription(
     userId: string,
     tariffId: string,
-    transactionId: string,
+    _transactionId: string,
   ): Promise<void> {
     const tariff = await this.tariffService.getTariffById(tariffId);
     const periodEnd = this.calculatePeriodEnd(tariff.interval);

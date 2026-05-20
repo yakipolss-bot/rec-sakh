@@ -14,33 +14,6 @@ function pickRandom<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-interface CurrentWeatherRow {
-  cityCode: string;
-  temp: number;
-  feelsLike: number | null;
-  condition: string;
-  humidity: number | null;
-  windSpeed: number | null;
-  windDir: string | null;
-  pressure: number | null;
-  sunrise: string | null;
-  sunset: string | null;
-  icon: string | null;
-}
-
-interface ForecastRow {
-  cityCode: string;
-  date: Date;
-  tempDay: number;
-  tempNight: number;
-  condition: string;
-  humidity: number | null;
-  windSpeed: number | null;
-  windDir: string | null;
-  pressure: number | null;
-  icon: string | null;
-}
-
 @Injectable()
 export class WeatherService {
   private readonly logger = new Logger(WeatherService.name);

@@ -1,8 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
-  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';

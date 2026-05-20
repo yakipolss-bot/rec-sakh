@@ -13,7 +13,7 @@ export class WeatherController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Текущая погода для всех городов' })
-  async findAll(@Query() query: WeatherQueryDto) {
+  async findAll(@Query() _query: WeatherQueryDto) {
     return this.weatherService.findAll();
   }
 

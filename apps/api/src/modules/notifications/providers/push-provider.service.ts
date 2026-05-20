@@ -25,11 +25,6 @@ export class PushProviderService implements NotificationChannel {
         return false;
       }
 
-      // VAPID keys из env
-      const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-      const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-      const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:noreply@sakh.com';
-
       // TODO: Реальная отправка через web-push
       // const webpush = await import('web-push');
       // webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);

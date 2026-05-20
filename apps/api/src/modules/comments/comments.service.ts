@@ -248,11 +248,6 @@ export class CommentsService {
       });
     }
 
-    const agg = await this.prisma.commentVote.aggregate({
-      where: { commentId: id },
-      _sum: { vote: true },
-    });
-
     const likes = await this.prisma.commentVote.count({
       where: { commentId: id, vote: 1 },
     });

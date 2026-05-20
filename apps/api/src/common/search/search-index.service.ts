@@ -60,7 +60,7 @@ export class SearchIndexService implements OnModuleInit {
     if (!this.enabled) return;
     try {
       await this.createCollections();
-    } catch (e) {
+    } catch {
       this.logger.warn('Typesense not available, using Prisma fallback');
       this.enabled = false;
     }

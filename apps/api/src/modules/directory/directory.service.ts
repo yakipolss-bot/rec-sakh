@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { CreateDirectoryDto } from './dto/create-directory.dto.js';
@@ -91,7 +90,7 @@ export class DirectoryService {
     return org;
   }
 
-  async create(dto: CreateDirectoryDto, userId: string) {
+  async create(dto: CreateDirectoryDto, _userId: string) {
     return this.prisma.directoryOrganization.create({
       data: {
         name: dto.name,

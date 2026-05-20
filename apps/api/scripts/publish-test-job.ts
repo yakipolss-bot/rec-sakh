@@ -39,7 +39,7 @@ require('dotenv').config();
     console.error('Publisher error', e);
     process.exitCode = 2;
   } finally {
-    try { await boss.stop(); } catch {}
+    try { await boss.stop(); } catch { /* noop */ }
     process.exit();
   }
 })();

@@ -478,7 +478,7 @@ export class RecommendationsService {
   private async scoreCandidates(
     candidates: CandidateItem[],
     profile: UserProfile,
-    query: any,
+    _query: any,
   ): Promise<ScoredItem[]> {
     if (candidates.length === 0) return [];
 

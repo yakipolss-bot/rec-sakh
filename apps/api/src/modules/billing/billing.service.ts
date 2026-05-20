@@ -17,7 +17,7 @@ import { PromotionPaymentService } from './promotion-payment.service.js';
 import { CreatePaymentDto } from './dto/create-payment.dto.js';
 import { BillingQueryDto } from './dto/billing-query.dto.js';
 import { PaymentGateway } from './providers/payment-gateway.interface.js';
-import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { PaymentMethod } from '@prisma/client';
 
 export interface BillingStats {
   totalRevenue: number;

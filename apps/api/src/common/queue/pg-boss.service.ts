@@ -18,7 +18,7 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
       PgBossCtor = pkg.PgBoss ?? pkg.default ?? pkg;
       this.logger.log(`pg-boss module keys: ${Object.keys(pkg).join(', ')}`);
       this.logger.log(`pg-boss default present: ${!!pkg.default} typeof default: ${typeof pkg.default}`);
-    } catch (err) {
+    } catch {
       this.logger.warn('Failed to import pg-boss; queue disabled');
       return;
     }
@@ -30,7 +30,7 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
 
     try {
       this.boss = new PgBossCtor({ connectionString });
-    } catch (err) {
+    } catch {
       this.logger.warn('Failed to construct PgBoss instance — queue disabled');
       this.boss = null;
       return;
