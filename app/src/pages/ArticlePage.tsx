@@ -199,7 +199,7 @@ export default function ArticlePage({ id }: { id?: string }) {
     },
   };
 
-  const shareUrl = useMemo(() => typeof window !== 'undefined' ? window.location.href : `${baseUrl}/news/${article.slug}`, [baseUrl, article?.slug]);
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${baseUrl}/news/${article.slug}`;
   const shareTitle = encodeURIComponent(article.title);
 
   return (

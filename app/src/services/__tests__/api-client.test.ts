@@ -58,7 +58,7 @@ describe('api-client', () => {
       config: { headers: {} as Record<string, string>, _retry: false },
     };
 
-    // Get the response error handler
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handlers = (apiClient.interceptors.response as any).handlers;
     const errorHandler = handlers?.[0]?.rejected;
     if (errorHandler) {
@@ -70,9 +70,7 @@ describe('api-client', () => {
 
   it('should queue requests while token is refreshing', async () => {
     const apiClient = (await import('../api-client')).default;
-    const isRefreshing = (apiClient as any).__isRefreshing;
-
-    // Verify the interceptor exists and queuing mechanism is defined
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handlers = (apiClient.interceptors.response as any).handlers;
     expect(handlers?.length).toBeGreaterThan(0);
   });

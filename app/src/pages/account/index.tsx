@@ -21,8 +21,8 @@ const activityIcons: Record<string, React.ReactNode> = {
 
 export default function AccountDashboard() {
   const { user, isLoading: userLoading, error: userError } = useUser();
-  const { activity, isLoading: activityLoading, error: activityError } = useUserActivity();
-  const { subscriptions, isLoading: subsLoading, error: subsError } = useUserSubscriptions();
+  const { activity } = useUserActivity();
+  const { subscriptions } = useUserSubscriptions();
 
   if (userError) {
     return (
