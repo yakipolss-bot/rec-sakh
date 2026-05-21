@@ -1,5 +1,5 @@
 import React from 'react';
-import { hydrateRoot, createRoot, type Root } from 'react-dom/client';
+import { hydrateRoot, type Root } from 'react-dom/client';
 import { PageContextProvider } from 'vike-react/usePageContext';
 import type { PageContextClient } from 'vike/types';
 import { BrowserRouter } from 'react-router-dom';

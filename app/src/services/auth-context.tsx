@@ -136,7 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     init();
 
-    const sub = authService.onAuthStateChange((_event, session) => {
+    const sub = authService.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') {
+        return;
+      }
       if (session) {
         setUser(session.user);
       } else {

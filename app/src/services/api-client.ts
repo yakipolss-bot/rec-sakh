@@ -77,7 +77,6 @@ apiClient.interceptors.response.use(
       if (!refreshToken) {
         removeLocalStorage('accessToken');
         removeLocalStorage('refreshToken');
-        if (typeof window !== 'undefined') window.location.href = '/login';
         return Promise.reject(error);
       }
 
@@ -99,7 +98,6 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         removeLocalStorage('accessToken');
         removeLocalStorage('refreshToken');
-        if (typeof window !== 'undefined') window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
