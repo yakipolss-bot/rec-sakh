@@ -43,8 +43,12 @@ export class EventsSyncService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.ensureEventCategories();
-    await this.seedInitialEvents();
+    try {
+      await this.ensureEventCategories();
+      await this.seedInitialEvents();
+    } catch (err) {
+      this.logger.warn(`EventsSync init skipped: ${(err as Error).message}`);
+    }
   }
 
   private async ensureEventCategories() {
