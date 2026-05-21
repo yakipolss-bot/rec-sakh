@@ -109,7 +109,7 @@ export default function AuthPage() {
     try {
       await authService.login(email, password);
       setSuccess('Вход выполнен!');
-      setTimeout(() => navigate('/'), 1000);
+      setTimeout(() => navigate('/account'), 1000);
     } catch (err: unknown) {
       setErrors({ form: err instanceof Error ? err.message : 'Ошибка входа' });
     } finally {

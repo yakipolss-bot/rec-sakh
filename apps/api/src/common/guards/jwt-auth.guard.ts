@@ -33,6 +33,12 @@ export class JwtAuthGuard {
     });
 
     if (!user) {
+      user = await this.prisma.user.findUnique({
+        where: { email: supabaseUser.email },
+      });
+    }
+
+    if (!user) {
       user = await this.prisma.user.create({
         data: {
           id: supabaseUser.id,

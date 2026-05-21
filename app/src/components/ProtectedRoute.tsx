@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { authService } from '@/services/auth.service';
+import { usersService } from '@/services/users.service';
 
 interface ProtectedRouteProps {
   allowedRoles?: string[];
@@ -26,47 +27,57 @@ function removeLocalStorage(key: string): void {
 }
 
 export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
-  const token = getLocalStorage('accessToken');
-
-  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>(() => {
-    if (!token) return 'unauthenticated';
-    const payload = parseJwt(token);
-    if (payload && payload.exp && (payload.exp as number) * 1000 >= Date.now()) {
-      return 'authenticated';
-    }
-    return 'loading';
-  });
-
-  const [role, setRole] = useState<string | null>(() => {
-    if (!token) return null;
-    const payload = parseJwt(token);
-    if (payload && payload.exp && (payload.exp as number) * 1000 >= Date.now()) {
-      return (payload.role as string) || null;
-    }
-    return null;
-  });
+  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = getLocalStorage('accessToken');
-    if (!stored) return;
-    const payload = parseJwt(stored);
-    if (payload && payload.exp && (payload.exp as number) * 1000 >= Date.now()) return;
+    const check = async () => {
+      const token = getLocalStorage('accessToken');
 
-    authService
-      .getSession()
-      .then((session) => {
+      if (!token) {
+        setStatus('unauthenticated');
+        return;
+      }
+
+      const payload = parseJwt(token);
+      if (payload && payload.exp && (payload.exp as number) * 1000 >= Date.now()) {
+        setStatus('authenticated');
+        try {
+          const profile = await usersService.getMe();
+          if (profile?.role) {
+            setRole(profile.role);
+            return;
+          }
+        } catch {
+        }
+        setRole((payload.role as string) || 'authenticated');
+        return;
+      }
+
+      try {
+        const session = await authService.getSession();
         if (session) {
-          setRole(session.user.role || 'authenticated');
           setStatus('authenticated');
+          try {
+            const profile = await usersService.getMe();
+            if (profile?.role) {
+              setRole(profile.role);
+              return;
+            }
+          } catch {
+          }
+          setRole(session.user.role || 'authenticated');
         } else {
           setStatus('unauthenticated');
         }
-      })
-      .catch(() => {
+      } catch {
         removeLocalStorage('accessToken');
         removeLocalStorage('refreshToken');
         setStatus('unauthenticated');
-      });
+      }
+    };
+
+    check();
   }, []);
 
   if (status === 'loading') {

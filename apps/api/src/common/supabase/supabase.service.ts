@@ -9,6 +9,14 @@ interface SupabaseUser {
   created_at: string;
 }
 
+interface SupabaseTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token: string;
+  user: SupabaseUser;
+}
+
 @Injectable()
 export class SupabaseService {
   private readonly supabaseUrl: string =
@@ -35,6 +43,31 @@ export class SupabaseService {
     } catch (err) {
       if (err instanceof UnauthorizedException) throw err;
       throw new UnauthorizedException('Token verification failed');
+    }
+  }
+
+  async refreshToken(refreshToken: string): Promise<SupabaseTokenResponse> {
+    try {
+      const { data, status } = await axios.post<SupabaseTokenResponse>(
+        `${this.supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+        { refresh_token: refreshToken },
+        {
+          headers: {
+            apikey: process.env.SUPABASE_ANON_KEY || '',
+            'Content-Type': 'application/json',
+          },
+          validateStatus: (s) => s < 500,
+        },
+      );
+
+      if (status !== 200 || !data?.access_token) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      return data;
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      throw new UnauthorizedException('Token refresh failed');
     }
   }
 }
