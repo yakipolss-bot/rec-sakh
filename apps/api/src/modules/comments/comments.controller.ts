@@ -165,10 +165,9 @@ export class CommentsController {
   @Roles('moderator', 'admin', 'superadmin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Модерация: одобрить/отклонить' })
-  @ApiQuery({ name: 'status', required: true, type: String })
   async moderate(
     @Param('id') id: string,
-    @Query('status') status: string,
+    @Body('status') status: string,
   ) {
     return this.commentsService.moderate(id, status);
   }
@@ -197,9 +196,8 @@ export class CommentsController {
   @Roles('moderator', 'admin', 'superadmin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Добавить слово в чёрный список' })
-  @ApiQuery({ name: 'word', required: true, type: String })
   async addBlacklistWord(
-    @Query('word') word: string,
+    @Body('word') word: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.commentsService.addBlacklistWord(word, userId);

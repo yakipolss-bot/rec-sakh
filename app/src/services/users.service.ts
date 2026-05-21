@@ -50,7 +50,7 @@ export const usersService = {
   },
 
   async updateProfile(profile: Partial<UserProfile>): Promise<UserProfile> {
-    const { data } = await apiClient.put('/users/me', profile);
+    const { data } = await apiClient.patch('/users/me', profile);
     return (data.data || data) as UserProfile;
   },
 
