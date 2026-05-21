@@ -19,6 +19,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  ssr: {
+    noExternal: ['react-router-dom'],
+  },
   build: {
     rollupOptions: {
       output: {
