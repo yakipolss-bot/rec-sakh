@@ -6,24 +6,28 @@ async function main() {
   console.log('Seeding database...');
 
   // 1. Admin user (password managed by Supabase Auth)
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@rec-sakh.ru' },
-    update: {},
-    create: {
-      email: 'admin@rec-sakh.ru',
-      name: 'Администратор',
-      role: UserRole.admin,
-      isEmailVerified: true,
-    },
-  });
+  const adminEmails = ['from0lake@gmail.com', 'admin@rec-sakh.ru'];
+  let admin = null;
+  for (const email of adminEmails) {
+    admin = await prisma.user.upsert({
+      where: { email },
+      update: { role: UserRole.admin, isEmailVerified: true },
+      create: {
+        email,
+        name: email === 'from0lake@gmail.com' ? 'Владимир' : 'Администратор',
+        role: UserRole.admin,
+        isEmailVerified: true,
+      },
+    });
 
-  await prisma.userSetting.upsert({
-    where: { userId: admin.id },
-    update: {},
-    create: { userId: admin.id },
-  });
+    await prisma.userSetting.upsert({
+      where: { userId: admin.id },
+      update: {},
+      create: { userId: admin.id },
+    });
 
-  console.log('Admin user created:', admin.email);
+    console.log('Admin user ready:', admin.email);
+  }
 
   // 2. Cities
   const cities = [
