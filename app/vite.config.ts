@@ -20,7 +20,7 @@ export default defineConfig({
     },
   },
   ssr: {
-    noExternal: ['react-router-dom'],
+    noExternal: true,
   },
   build: {
     rollupOptions: {
