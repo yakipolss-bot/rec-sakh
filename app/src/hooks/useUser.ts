@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { usersService, type UserProfile } from '@/services/users.service';
+import { authService } from '@/services/auth.service';
 
 interface UseUserOptions {
   enabled?: boolean;
@@ -27,9 +28,27 @@ export function useUser(options: UseUserOptions = {}) {
         if (mounted) {
           setUser(profile);
         }
-      } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err : new Error('Failed to fetch user'));
+      } catch {
+        try {
+          const fallback = await authService.getProfile();
+          if (mounted) {
+            setUser({
+              id: fallback.id,
+              email: fallback.email,
+              name: fallback.name,
+              role: fallback.role || 'authenticated',
+              avatarUrl: fallback.avatarUrl,
+              karma: 0,
+              level: 'user',
+              registeredAt: new Date().toISOString(),
+              commentsCount: 0,
+              adsCount: 0,
+            });
+          }
+        } catch {
+          if (mounted) {
+            setError(new Error('Failed to fetch user'));
+          }
         }
       } finally {
         if (mounted) {

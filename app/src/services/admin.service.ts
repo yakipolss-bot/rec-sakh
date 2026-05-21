@@ -574,17 +574,17 @@ export const adminService = {
 
   // ── Newsletters ──
 
-  async getNewsletters(): Promise<any[]> {
+  async getNewsletters(): Promise<Record<string, unknown>[]> {
     const { data } = await apiClient.get('/notifications/newsletter');
     return Array.isArray(data) ? data : data?.data || [];
   },
 
-  async getNewsletter(id: string): Promise<any> {
+  async getNewsletter(id: string): Promise<Record<string, unknown>> {
     const { data } = await apiClient.get(`/notifications/newsletter/${id}`);
     return data?.data || data;
   },
 
-  async createNewsletter(dto: { title: string; content: string; type?: string }): Promise<any> {
+  async createNewsletter(dto: { title: string; content: string; type?: string }): Promise<Record<string, unknown>> {
     const { data } = await apiClient.post('/notifications/newsletter', dto);
     return data?.data || data;
   },
@@ -593,19 +593,19 @@ export const adminService = {
     await apiClient.post(`/notifications/newsletter/${id}/send`);
   },
 
-  async getNewsletterStats(id: string): Promise<any> {
+  async getNewsletterStats(id: string): Promise<Record<string, unknown>> {
     const { data } = await apiClient.get(`/notifications/newsletter/${id}/stats`);
     return data?.data || data;
   },
 
   // ── SEO ──
 
-  async getRedirects(): Promise<any[]> {
+  async getRedirects(): Promise<Record<string, unknown>[]> {
     const { data } = await apiClient.get('/admin/seo/redirects');
     return Array.isArray(data) ? data : data?.data || [];
   },
 
-  async createRedirect(dto: { source: string; target: string; type?: number }): Promise<any> {
+  async createRedirect(dto: { source: string; target: string; type?: number }): Promise<Record<string, unknown>> {
     const { data } = await apiClient.post('/admin/seo/redirects', dto);
     return data?.data || data;
   },
@@ -619,12 +619,12 @@ export const adminService = {
     return data?.url || '';
   },
 
-  async checkBrokenLinks(): Promise<any[]> {
+  async checkBrokenLinks(): Promise<Record<string, unknown>[]> {
     const { data } = await apiClient.post('/admin/seo/broken-links/check');
     return data?.data || [];
   },
 
-  async getBrokenLinks(): Promise<any[]> {
+  async getBrokenLinks(): Promise<Record<string, unknown>[]> {
     const { data } = await apiClient.get('/admin/seo/broken-links');
     return Array.isArray(data) ? data : data?.data || [];
   },

@@ -194,7 +194,7 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
       }
       setSearchParams(next, { replace: true });
     }
-  }, []);
+  }, [clampedPage, page, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (contentRef.current) {

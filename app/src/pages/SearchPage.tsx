@@ -125,7 +125,6 @@ function computeFacetCount(
   city: string,
   dateRange: string,
   type: string,
-  sort: 'relevance' | 'date' | 'popularity',
   overrideCategory: string,
 ): number {
   return articles.filter(a => {
@@ -163,7 +162,6 @@ function computeCityCount(
   city: string,
   dateRange: string,
   type: string,
-  sort: 'relevance' | 'date' | 'popularity',
   overrideCity: string,
 ): number {
   return articles.filter(a => {
@@ -275,11 +273,11 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
     for (const cat of categories) {
       counts[cat.slug] = computeFacetCount(
         newsArticles, debouncedQuery, selectedCategory, selectedCity,
-        selectedDateRange, selectedType, sortBy, cat.slug,
+        selectedDateRange, selectedType, cat.slug,
       );
     }
     return counts;
-  }, [newsArticles, categories, debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy]);
+  }, [newsArticles, categories, debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, results.length]);
 
   const cityCounts = useMemo(() => {
     const counts: Record<string, number> = { 'Все': results.length };
@@ -287,11 +285,11 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
       if (city === 'Все') continue;
       counts[city] = computeCityCount(
         newsArticles, debouncedQuery, selectedCategory, selectedCity,
-        selectedDateRange, selectedType, sortBy, city,
+        selectedDateRange, selectedType, city,
       );
     }
     return counts;
-  }, [newsArticles, debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, sortBy, allCities]);
+  }, [newsArticles, debouncedQuery, selectedCategory, selectedCity, selectedDateRange, selectedType, allCities, results.length]);
 
   const suggestions = useMemo(() => {
     if (query.length < 2) return { news: [] as { text: string; slug: string }[], tags: [] as string[] };

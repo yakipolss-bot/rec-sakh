@@ -4,6 +4,15 @@ import { Send, Plus, Mail, RefreshCw, BarChart3, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
 
+interface NewsletterData {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  stats?: { sentCount: number; openedCount: number };
+  createdAt: string;
+}
+
 const typeLabels: Record<string, string> = {
   digest: 'Дайджест',
   urgent: 'Экстренная',
@@ -19,14 +28,14 @@ const statusColors: Record<string, string> = {
 };
 
 export default function EditorialNewsletters() {
-  const [newsletters, setNewsletters] = useState<any[]>([]);
+  const [newsletters, setNewsletters] = useState<NewsletterData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [subject, setSubject] = useState('');
   const [type, setType] = useState<'digest' | 'urgent' | 'thematic'>('digest');
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
-  const [selected, setSelected] = useState<any | null>(null);
+  const [selected, setSelected] = useState<NewsletterData | null>(null);
 
   const fetch = useCallback(async () => {
     try {
@@ -55,8 +64,8 @@ export default function EditorialNewsletters() {
       setContent('');
       setType('digest');
       fetch();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Ошибка создания');
+    } catch (e) {
+      toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка создания');
     } finally {
       setSending(false);
     }
@@ -67,8 +76,8 @@ export default function EditorialNewsletters() {
       await adminService.sendNewsletter(id);
       toast.success('Рассылка отправлена');
       fetch();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Ошибка отправки');
+    } catch (e) {
+      toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка отправки');
     }
   };
 
@@ -170,7 +179,7 @@ export default function EditorialNewsletters() {
               </tr>
             </thead>
             <tbody>
-              {newsletters.map((n: any) => (
+              {newsletters.map((n: NewsletterData) => (
                 <tr key={n.id} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-elevated)]">
                   <td className="px-3 py-2 font-medium text-[var(--text-primary)]">{n.title}</td>
                   <td className="px-3 py-2">{typeLabels[n.type] || n.type}</td>

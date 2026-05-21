@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -115,7 +115,19 @@ export default function ArticlePage({ id }: { id?: string }) {
 
   const [toast, setToast] = useState<string | null>(null);
 
-  const baseUrl = useMemo(() => typeof window !== 'undefined' ? window.location.origin : 'https://rec-sakh.ru', []);
+  const [baseUrl, setBaseUrl] = useState('https://rec-sakh.ru');
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin);
+  }, []);
+
+  const [clientShareUrl, setClientShareUrl] = useState('');
+
+  useEffect(() => {
+    if (article) {
+      setClientShareUrl(window.location.href);
+    }
+  }, [article]);
 
   const copyLink = useCallback(async () => {
     try {
@@ -160,6 +172,9 @@ export default function ArticlePage({ id }: { id?: string }) {
   const formattedUpdate = article.updatedAt ? format(new Date(article.updatedAt), 'd MMMM yyyy, HH:mm', { locale: ru }) : '';
   const showUpdated = article.updatedAt !== article.publishedAt;
 
+  const effectiveShareUrl = clientShareUrl || `${baseUrl}/news/${article.slug}`;
+  const shareTitle = encodeURIComponent(article.title);
+
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -198,9 +213,6 @@ export default function ArticlePage({ id }: { id?: string }) {
       name: article.city,
     },
   };
-
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `${baseUrl}/news/${article.slug}`;
-  const shareTitle = encodeURIComponent(article.title);
 
   return (
     <div className="pt-20 pb-8">
@@ -366,7 +378,7 @@ export default function ArticlePage({ id }: { id?: string }) {
                   variants={shareVariants}
                   initial="hidden"
                   whileHover="hover"
-                  href={`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${shareTitle}`}
+                  href={`https://t.me/share/url?url=${encodeURIComponent(effectiveShareUrl)}&text=${shareTitle}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="sakh-btn sakh-btn--sm sakh-btn--secondary"
@@ -379,7 +391,7 @@ export default function ArticlePage({ id }: { id?: string }) {
                   variants={shareVariants}
                   initial="hidden"
                   whileHover="hover"
-                  href={`https://vk.com/share.php?url=${encodeURIComponent(shareUrl)}&title=${shareTitle}`}
+                  href={`https://vk.com/share.php?url=${encodeURIComponent(effectiveShareUrl)}&title=${shareTitle}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="sakh-btn sakh-btn--sm sakh-btn--secondary"
@@ -392,7 +404,7 @@ export default function ArticlePage({ id }: { id?: string }) {
                   variants={shareVariants}
                   initial="hidden"
                   whileHover="hover"
-                  href={`https://wa.me/?text=${shareTitle}%20${encodeURIComponent(shareUrl)}`}
+                  href={`https://wa.me/?text=${shareTitle}%20${encodeURIComponent(effectiveShareUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="sakh-btn sakh-btn--sm sakh-btn--secondary"

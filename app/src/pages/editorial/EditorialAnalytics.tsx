@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 
 type Tab = 'traffic' | 'content' | 'authors' | 'search' | 'online';
 
+interface TopCategory { id: number; name: string; views: number }
+interface ArticleSummary { id: number; title: string; viewsCount: number; author?: { id: string; name: string } }
+
 const tabs: { value: Tab; label: string }[] = [
   { value: 'traffic', label: 'Трафик' },
   { value: 'content', label: 'Контент' },
@@ -19,9 +22,9 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialAnalytics() {
   const [activeTab, setActiveTab] = useState<Tab>('traffic');
-  const [traffic, setTraffic] = useState<any>(null);
-  const [content, setContent] = useState<any>(null);
-  const [realtime, setRealtime] = useState<any>(null);
+  const [traffic, setTraffic] = useState<Record<string, unknown> | null>(null);
+  const [content, setContent] = useState<Record<string, unknown> | null>(null);
+  const [realtime, setRealtime] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function EditorialAnalytics() {
             {traffic?.topCategories?.length > 0 && (
               <div className="sakh-card p-4">
                 <h3 className="sakh-caption text-[var(--text-secondary)] mb-3">Топ категорий по просмотрам</h3>
-                {traffic.topCategories.map((cat: any, i: number) => (
+                {traffic.topCategories.map((cat: TopCategory, i: number) => (
                   <div key={cat.id || i} className="flex items-center justify-between py-1.5 border-b border-[var(--border-color)] last:border-0">
                     <span className="text-sm text-[var(--text-primary)]">{cat.name}</span>
                     <span className="font-mono text-xs text-[var(--text-muted)]">{cat.views?.toLocaleString('ru-RU')}</span>
@@ -99,7 +102,7 @@ export default function EditorialAnalytics() {
           <div className="sakh-card p-4">
             <h3 className="sakh-caption text-[var(--text-secondary)] mb-4">Топ материалов</h3>
             {content?.data?.length > 0 ? (
-              content.data.slice(0, 10).map((article: any, i: number) => (
+              content.data.slice(0, 10).map((article: ArticleSummary, i: number) => (
                 <div key={article.id} className="flex items-center gap-3 py-2 border-b border-[var(--border-color)] last:border-0">
                   <span className="sakh-meta sakh-meta--accent font-bold w-5">{String(i + 1).padStart(2, '0')}</span>
                   <span className="flex-1 text-sm text-[var(--text-primary)] truncate">{article.title}</span>
@@ -126,14 +129,14 @@ export default function EditorialAnalytics() {
               <tbody>
                 {content?.data?.length > 0 ? (
                   Object.entries(
-                    content.data.reduce((acc: any, a: any) => {
+                    content.data.reduce((acc: Record<string, { name: string; count: number; views: number }>, a: ArticleSummary) => {
                       const key = a.author?.id || 'unknown';
                       if (!acc[key]) acc[key] = { name: a.author?.name || '—', count: 0, views: 0 };
                       acc[key].count++;
                       acc[key].views += a.viewsCount || 0;
                       return acc;
                     }, {} as Record<string, { name: string; count: number; views: number }>)
-                  ).map(([_, author]: [string, any]) => (
+                  ).map(([_, author]: [string, { name: string; count: number; views: number }]) => (
                     <tr key={_}>
                       <td className="px-3 py-2 text-[var(--text-primary)]">{author.name}</td>
                       <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{author.count}</td>

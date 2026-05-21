@@ -6,6 +6,22 @@ import { adminService } from '@/services';
 
 type Tab = 'redirects' | 'broken' | 'sitemap' | 'schema';
 
+interface RedirectData {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  isActive: boolean;
+  createdAt: string;
+}
+interface BrokenLinkData {
+  id: string;
+  url: string;
+  status: number | null;
+  error: string | null;
+  checkedAt: string;
+}
+
 const tabs: { value: Tab; label: string }[] = [
   { value: 'redirects', label: 'Редиректы' },
   { value: 'broken', label: 'Битые ссылки' },
@@ -15,14 +31,14 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialSeo() {
   const [activeTab, setActiveTab] = useState<Tab>('redirects');
-  const [redirects, setRedirects] = useState<any[]>([]);
+  const [redirects, setRedirects] = useState<RedirectData[]>([]);
   const [redirectLoading, setRedirectLoading] = useState(true);
   const [showAddRedirect, setShowAddRedirect] = useState(false);
   const [newSource, setNewSource] = useState('');
   const [newTarget, setNewTarget] = useState('');
   const [sitemapUrl, setSitemapUrl] = useState('/sitemap.xml');
   const [sitemapLoading, setSitemapLoading] = useState(false);
-  const [brokenLinks, setBrokenLinks] = useState<any[]>([]);
+  const [brokenLinks, setBrokenLinks] = useState<BrokenLinkData[]>([]);
   const [brokenLoading, setBrokenLoading] = useState(false);
   const [brokenChecking, setBrokenChecking] = useState(false);
 
@@ -61,8 +77,8 @@ export default function EditorialSeo() {
       setNewSource('');
       setNewTarget('');
       fetchRedirects();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Ошибка создания редиректа');
+    } catch (e) {
+      toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка создания редиректа');
     }
   };
 
@@ -71,8 +87,8 @@ export default function EditorialSeo() {
       await adminService.deleteRedirect(id);
       toast.success('Редирект удалён');
       fetchRedirects();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Ошибка удаления');
+    } catch (e) {
+      toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка удаления');
     }
   };
 
@@ -82,8 +98,8 @@ export default function EditorialSeo() {
       const url = await adminService.generateSitemap();
       setSitemapUrl(url);
       toast.success('Sitemap сгенерирован');
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Ошибка генерации sitemap');
+    } catch (e) {
+      toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка генерации sitemap');
     } finally {
       setSitemapLoading(false);
     }
@@ -92,14 +108,14 @@ export default function EditorialSeo() {
   const handleCheckBrokenLinks = async () => {
     setBrokenChecking(true);
     try {
-      const results = await adminService.checkBrokenLinks();
-      const ok = results.filter((r: any) => r.status === 200).length;
-      const bad = results.filter((r: any) => r.status !== 200 && r.status !== null).length;
-      const err = results.filter((r: any) => r.error && r.status === null).length;
+      const results: BrokenLinkData[] = await adminService.checkBrokenLinks() as BrokenLinkData[];
+      const ok = results.filter((r) => r.status === 200).length;
+      const bad = results.filter((r) => r.status !== 200 && r.status !== null).length;
+      const err = results.filter((r) => r.error && r.status === null).length;
       toast.success(`Проверка завершена: ${ok} OK, ${bad} битых, ${err} ошибок`);
       fetchBrokenLinks();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Ошибка проверки');
+    } catch (e) {
+      toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка проверки');
     } finally {
       setBrokenChecking(false);
     }
@@ -180,7 +196,7 @@ export default function EditorialSeo() {
                   </tr>
                 </thead>
                 <tbody>
-                  {redirects.map((r: any) => (
+                  {redirects.map((r: RedirectData) => (
                     <tr key={r.id} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-elevated)]">
                       <td className="px-3 py-2 font-mono text-xs text-[var(--accent-ocean)]">{r.source}</td>
                       <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{r.target}</td>
@@ -241,7 +257,7 @@ export default function EditorialSeo() {
                   </tr>
                 </thead>
                 <tbody>
-                  {brokenLinks.map((b: any) => (
+                  {brokenLinks.map((b: BrokenLinkData) => (
                     <tr key={b.id} className="border-b border-[var(--border-color)]">
                       <td className="px-3 py-2 font-mono text-xs">{b.url}</td>
                       <td className="px-3 py-2">

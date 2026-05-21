@@ -29,7 +29,7 @@ async function onRenderHtml(pageContext: PageContextServer) {
   const seo: SeoData | undefined = pageContext.seo;
 
   const url = pageContext.urlParsed
-    ? (pageContext.urlParsed.pathname ?? '/') + (pageContext.urlParsed.search ?? '')
+    ? (pageContext.urlParsed.pathname ?? '/') + (pageContext.urlParsed.searchString ?? '')
     : '/'
   let pageHtml: string;
   try {
