@@ -4,7 +4,7 @@ import { FavoritesProvider } from '../src/hooks/useFavorites';
 import Navbar from '../src/components/Navbar';
 import Footer from '../src/components/Footer';
 import ScrollProgress from '../src/components/ScrollProgress';
-import { authService } from '../src/services/auth.service';
+import { authService, AuthProvider } from '../src/services/auth-context';
 import '../src/index.css';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
+    <AuthProvider>
     <ThemeProvider>
       <FavoritesProvider>
         <ScrollProgress />
@@ -23,5 +24,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Footer />
       </FavoritesProvider>
     </ThemeProvider>
+    </AuthProvider>
   );
 }
