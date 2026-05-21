@@ -3,6 +3,20 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Sun, Moon, Focus, User, Menu, X, ChevronDown, MapPin } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { AnimatePresence, motion } from 'framer-motion';
+import { usersService } from '@/services/users.service';
+
+function getLocalStorage(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key);
+}
+
+function parseJwt(token: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
 
 const mainCategories = [
   { label: 'ОБЩЕСТВО', href: '/category/obshchestvo' },
@@ -247,8 +261,23 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const token = getLocalStorage('accessToken');
+    if (token) {
+      setIsAuthenticated(true);
+      usersService.getMe()
+        .then(p => setUserRole(p.role))
+        .catch(() => {
+          const payload = parseJwt(token);
+          setUserRole((payload?.role as string) || null);
+        });
+    }
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -463,39 +492,49 @@ export default function Navbar() {
                         border: '1px solid var(--border-color)',
                       }}
                     >
-                      <Link
-                        to="/login"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm transition-colors"
-                        style={{ color: 'var(--text-secondary)' }}
-                      >
-                        Войти
-                      </Link>
-                      <Link
-                        to="/account"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm transition-colors"
-                        style={{ color: 'var(--text-secondary)' }}
-                      >
-                        Личный кабинет
-                      </Link>
-                      <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
-                      <Link
-                        to="/editorial"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm transition-colors"
-                        style={{ color: 'var(--text-muted)' }}
-                      >
-                        Редакция
-                      </Link>
-                      <Link
-                        to="/admin"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm transition-colors"
-                        style={{ color: 'var(--text-muted)' }}
-                      >
-                        Админка
-                      </Link>
+                      {!isAuthenticated && (
+                        <Link
+                          to="/login"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="block px-4 py-2 text-sm transition-colors"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          Войти
+                        </Link>
+                      )}
+                      {isAuthenticated && (
+                        <Link
+                          to="/account"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="block px-4 py-2 text-sm transition-colors"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          Личный кабинет
+                        </Link>
+                      )}
+                      {isAuthenticated && (userRole === 'editor' || userRole === 'admin' || userRole === 'superadmin') && (
+                        <>
+                          <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
+                          <Link
+                            to="/editorial"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="block px-4 py-2 text-sm transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
+                            Редакция
+                          </Link>
+                        </>
+                      )}
+                      {isAuthenticated && (userRole === 'admin' || userRole === 'superadmin') && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="block px-4 py-2 text-sm transition-colors"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          Админка
+                        </Link>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
