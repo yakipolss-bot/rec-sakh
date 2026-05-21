@@ -46,6 +46,25 @@ export class SupabaseService {
     }
   }
 
+  async updatePassword(accessToken: string, newPassword: string): Promise<void> {
+    try {
+      await axios.put(
+        `${this.supabaseUrl}/auth/v1/user`,
+        { password: newPassword },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            apikey: process.env.SUPABASE_ANON_KEY || '',
+            'Content-Type': 'application/json',
+          },
+          validateStatus: (s) => s < 500,
+        },
+      );
+    } catch {
+      throw new UnauthorizedException('Failed to update password');
+    }
+  }
+
   async refreshToken(refreshToken: string): Promise<SupabaseTokenResponse> {
     try {
       const { data, status } = await axios.post<SupabaseTokenResponse>(

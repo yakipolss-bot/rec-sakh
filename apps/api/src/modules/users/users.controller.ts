@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
+import type { FastifyRequest } from 'fastify';
 
 @ApiTags('Users')
 @Controller('users')
@@ -85,5 +87,74 @@ export class UsersController {
   ) {
     console.log(`[IMPERSONATE] Admin ${adminId} → User ${id} at ${new Date().toISOString()}`);
     return this.usersService.impersonate(id, adminId);
+  }
+
+  // ---- User profile sub-endpoints ----
+
+  @Get('me/activity')
+  @ApiOperation({ summary: 'История активности' })
+  async getActivity(@CurrentUser('id') userId: string) {
+    return this.usersService.getActivity(userId);
+  }
+
+  @Get('me/billing')
+  @ApiOperation({ summary: 'История платежей' })
+  async getBilling(@CurrentUser('id') userId: string) {
+    return this.usersService.getBilling(userId);
+  }
+
+  @Get('me/subscriptions')
+  @ApiOperation({ summary: 'Мои подписки (контент)' })
+  async getSubscriptions(@CurrentUser('id') userId: string) {
+    return this.usersService.getSubscriptions(userId);
+  }
+
+  @Post('me/subscriptions')
+  @ApiOperation({ summary: 'Добавить подписку на контент' })
+  async addSubscription(
+    @CurrentUser('id') userId: string,
+    @Body('type') type: string,
+    @Body('value') value: string,
+  ) {
+    return this.usersService.addSubscription(userId, type, value);
+  }
+
+  @Delete('me/subscriptions/:id')
+  @ApiOperation({ summary: 'Удалить подписку на контент' })
+  async removeSubscription(
+    @CurrentUser('id') userId: string,
+    @Param('id') subscriptionId: string,
+  ) {
+    await this.usersService.removeSubscription(userId, subscriptionId);
+  }
+
+  @Post('me/change-password')
+  @ApiOperation({ summary: 'Сменить пароль' })
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Req() req: FastifyRequest,
+    @Body('oldPassword') oldPassword: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
+    await this.usersService.changePassword(userId, token, oldPassword, newPassword);
+  }
+
+  @Post('me/avatar')
+  @ApiOperation({ summary: 'Загрузить аватар' })
+  async uploadAvatar(
+    @CurrentUser('id') userId: string,
+    @Req() req: FastifyRequest,
+  ) {
+    const file = await req.file();
+    if (!file) throw new Error('No file uploaded');
+    const chunks: Buffer[] = [];
+    for await (const chunk of file.file) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    const ext = file.filename.includes('.') ? '.' + file.filename.split('.').pop() : '.jpg';
+    const url = await this.usersService.uploadAvatar(userId, buffer, file.mimetype, ext);
+    return { data: { url } };
   }
 }

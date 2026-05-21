@@ -251,6 +251,7 @@ model User {
   notifications          Notification[]
   pushSubscriptions      PushSubscription[]
   newsletters            Newsletter[]
+  contentSubscriptions   UserContentSubscription[]
   moderationQueueReports ModerationQueue[]     @relation("ModerationReporter")
   moderationQueueReviews ModerationQueue[]     @relation("ModerationReviewer")
   moderationRules        ModerationRule[]
@@ -1180,4 +1181,17 @@ model StaffMember {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("staff_members")
+}
+
+model UserContentSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   @db.VarChar(20)
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, value])
+  @@map("user_content_subscriptions")
 }

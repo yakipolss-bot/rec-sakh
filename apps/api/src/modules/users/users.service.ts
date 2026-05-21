@@ -1,14 +1,21 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
+import { SupabaseService } from '../../common/supabase/supabase.service.js';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class UsersService {
   constructor(
     private prisma: PrismaService,
+    private supabase: SupabaseService,
   ) {}
 
   async getProfile(userId: string) {
@@ -213,5 +220,102 @@ export class UsersService {
         role: target.role,
       },
     };
+  }
+
+  async getActivity(userId: string) {
+    const logs = await this.prisma.auditLog.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return logs.map((log) => ({
+      id: log.id,
+      type: this.mapActionToActivityType(log.action),
+      description: `${log.action} ${log.entityType}`,
+      date: log.createdAt,
+      link: log.entityId ? `/${log.entityType}/${log.entityId}` : undefined,
+    }));
+  }
+
+  private mapActionToActivityType(action: string): string {
+    const map: Record<string, string> = {
+      create: 'comment',
+      comment: 'comment',
+      login: 'login',
+      subscribe: 'subscription',
+      favorite: 'favorite',
+      ad_create: 'ad',
+    };
+    return map[action] || 'comment';
+  }
+
+  async getBilling(userId: string) {
+    const transactions = await this.prisma.billingTransaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return transactions.map((tx) => ({
+      id: tx.id,
+      type: tx.type,
+      method: tx.method || 'card',
+      amount: Number(tx.amount),
+      status: tx.status,
+      date: tx.createdAt,
+      description: tx.description || `${tx.type} transaction`,
+    }));
+  }
+
+  async getSubscriptions(userId: string) {
+    return this.prisma.userContentSubscription.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async addSubscription(userId: string, type: string, value: string) {
+    const existing = await this.prisma.userContentSubscription.findUnique({
+      where: { userId_type_value: { userId, type, value } },
+    });
+    if (existing) {
+      throw new BadRequestException('Subscription already exists');
+    }
+    return this.prisma.userContentSubscription.create({
+      data: { userId, type, value },
+    });
+  }
+
+  async removeSubscription(userId: string, subscriptionId: string) {
+    const sub = await this.prisma.userContentSubscription.findFirst({
+      where: { id: subscriptionId, userId },
+    });
+    if (!sub) {
+      throw new NotFoundException('Subscription not found');
+    }
+    await this.prisma.userContentSubscription.delete({
+      where: { id: subscriptionId },
+    });
+  }
+
+  async changePassword(userId: string, accessToken: string, oldPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    try {
+      await this.supabase.updatePassword(accessToken, newPassword);
+    } catch {
+      throw new BadRequestException('Failed to change password');
+    }
+  }
+
+  async uploadAvatar(userId: string, fileBuffer: Buffer, mimeType: string, extension: string): Promise<string> {
+    const filename = `${randomUUID()}${extension}`;
+    const filepath = join(process.cwd(), 'uploads', 'avatars', filename);
+    await writeFile(filepath, fileBuffer);
+    const url = `/uploads/avatars/${filename}`;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: url },
+    });
+    return url;
   }
 }
