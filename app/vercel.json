@@ -7,7 +7,7 @@
       "includeFiles": "dist/**"
     }
   },
-  "buildCommand": "npm run build",
+  "buildCommand": "NODE_ENV=production npm run build",
   "installCommand": "npm install",
   "outputDirectory": "dist/client",
   "framework": null
