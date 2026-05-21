@@ -4,10 +4,15 @@ import vike from "vike/plugin"
 import { defineConfig } from "vite"
 import { inspectAttr } from 'kimi-plugin-inspect-react'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: '/',
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(
+      process.env.NODE_ENV || (command === 'build' ? 'production' : 'development'),
+    ),
+  },
   plugins: [
-    process.env.NODE_ENV === 'development' ? inspectAttr() : null,
+    (process.env.NODE_ENV || command) === 'development' ? inspectAttr() : null,
     react(),
     vike(),
   ].filter(Boolean),
@@ -23,6 +28,7 @@ export default defineConfig({
     noExternal: true,
   },
   build: {
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks(id: string) {
@@ -33,4 +39,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
