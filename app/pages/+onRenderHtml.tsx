@@ -51,7 +51,7 @@ async function onRenderHtml(pageContext: PageContextServer) {
   const defaultTitle = 'Sakhcom — Новости Сахалина';
   const defaultDescription = 'Новости Сахалина и Курильских островов. Актуальные события, происшествия, экономика, спорт, культура.';
   const defaultImage = '/og-default.jpg';
-  const siteUrl = 'https://rec-sakh.ru';
+  const siteUrl = 'https://rec-sakh.vercel.app';
 
   const pageTitle = seo?.title
     ? `${seo.title} — Sakhcom`

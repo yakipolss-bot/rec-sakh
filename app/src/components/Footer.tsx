@@ -15,21 +15,21 @@ const footerLinks = [
   {
     title: 'Сервисы',
     links: [
-      { label: 'Погода', href: '#' },
-      { label: 'Курсы валют', href: '#' },
-      { label: 'Расписание транспорта', href: '#' },
-      { label: 'Афиша', href: '#' },
-      { label: 'Работа', href: '#' },
+      { label: 'Погода', href: '/weather' },
+      { label: 'Курсы валют', href: '/currency' },
+      { label: 'Расписание транспорта', href: '/transport' },
+      { label: 'Афиша', href: '/events' },
+      { label: 'Работа', href: '/jobs' },
     ],
   },
   {
     title: 'О проекте',
     links: [
-      { label: 'О портале', href: '#' },
-      { label: 'Реклама', href: '#' },
-      { label: 'Контакты', href: '#' },
-      { label: 'Пользовательское соглашение', href: '#' },
-      { label: 'Политика конфиденциальности', href: '#' },
+      { label: 'О портале', href: '/about' },
+      { label: 'Реклама', href: '/advertising' },
+      { label: 'Контакты', href: '/contacts' },
+      { label: 'Пользовательское соглашение', href: '/agreement' },
+      { label: 'Политика конфиденциальности', href: '/privacy' },
     ],
   },
 ];

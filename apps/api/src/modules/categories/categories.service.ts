@@ -3,6 +3,8 @@ import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
 
+const VALID_CATEGORY_TYPES = ['news', 'events', 'ads', 'directory'] as const;
+
 @Injectable()
 export class CategoriesService {
   constructor(private prisma: PrismaService) {}
@@ -10,6 +12,9 @@ export class CategoriesService {
   async findAll(type?: string) {
     const where: any = {};
     if (type) {
+      if (!VALID_CATEGORY_TYPES.includes(type as any)) {
+        return [];
+      }
       where.type = type;
     }
 
