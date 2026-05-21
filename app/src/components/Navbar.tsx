@@ -3,20 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Sun, Moon, Focus, User, Menu, X, ChevronDown, MapPin } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { AnimatePresence, motion } from 'framer-motion';
-import { usersService } from '@/services/users.service';
-
-function getLocalStorage(key: string): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(key);
-}
-
-function parseJwt(token: string): Record<string, unknown> | null {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch {
-    return null;
-  }
-}
+import { useAuth } from '@/services/auth-context';
 
 const mainCategories = [
   { label: 'ОБЩЕСТВО', href: '/category/obshchestvo' },
@@ -257,27 +244,13 @@ function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void })
 export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
+  const { user, isAuthenticated } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const token = getLocalStorage('accessToken');
-    if (token) {
-      setIsAuthenticated(true);
-      usersService.getMe()
-        .then(p => setUserRole(p.role))
-        .catch(() => {
-          const payload = parseJwt(token);
-          setUserRole((payload?.role as string) || null);
-        });
-    }
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -512,7 +485,7 @@ export default function Navbar() {
                           Личный кабинет
                         </Link>
                       )}
-                      {isAuthenticated && (userRole === 'editor' || userRole === 'admin' || userRole === 'superadmin') && (
+                      {isAuthenticated && (user?.role === 'editor' || user?.role === 'admin' || user?.role === 'superadmin') && (
                         <>
                           <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
                           <Link
@@ -525,7 +498,7 @@ export default function Navbar() {
                           </Link>
                         </>
                       )}
-                      {isAuthenticated && (userRole === 'admin' || userRole === 'superadmin') && (
+                      {isAuthenticated && (user?.role === 'admin' || user?.role === 'superadmin') && (
                         <Link
                           to="/admin"
                           onClick={() => setUserMenuOpen(false)}

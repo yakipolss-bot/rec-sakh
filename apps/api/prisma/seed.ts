@@ -637,6 +637,139 @@ async function main() {
   }
 
   console.log(`${placements.length} advertising placements created`);
+
+  // 6. CASL Permissions
+  const permDefs = [
+    { action: 'manage', subject: 'all' },
+    { action: 'read', subject: 'User' },
+    { action: 'update', subject: 'User' },
+    { action: 'create', subject: 'News' },
+    { action: 'read', subject: 'News' },
+    { action: 'update', subject: 'News' },
+    { action: 'delete', subject: 'News' },
+    { action: 'create', subject: 'Comment' },
+    { action: 'read', subject: 'Comment' },
+    { action: 'update', subject: 'Comment' },
+    { action: 'delete', subject: 'Comment' },
+    { action: 'create', subject: 'Category' },
+    { action: 'read', subject: 'Category' },
+    { action: 'update', subject: 'Category' },
+    { action: 'delete', subject: 'Category' },
+    { action: 'create', subject: 'Tag' },
+    { action: 'read', subject: 'Tag' },
+    { action: 'update', subject: 'Tag' },
+    { action: 'delete', subject: 'Tag' },
+    { action: 'create', subject: 'Event' },
+    { action: 'read', subject: 'Event' },
+    { action: 'update', subject: 'Event' },
+    { action: 'delete', subject: 'Event' },
+    { action: 'create', subject: 'Ad' },
+    { action: 'read', subject: 'Ad' },
+    { action: 'update', subject: 'Ad' },
+    { action: 'delete', subject: 'Ad' },
+    { action: 'create', subject: 'Job' },
+    { action: 'read', subject: 'Job' },
+    { action: 'update', subject: 'Job' },
+    { action: 'delete', subject: 'Job' },
+    { action: 'create', subject: 'Realty' },
+    { action: 'read', subject: 'Realty' },
+    { action: 'update', subject: 'Realty' },
+    { action: 'delete', subject: 'Realty' },
+    { action: 'create', subject: 'Media' },
+    { action: 'read', subject: 'Media' },
+    { action: 'update', subject: 'Media' },
+    { action: 'delete', subject: 'Media' },
+    { action: 'read', subject: 'Billing' },
+    { action: 'update', subject: 'Billing' },
+    { action: 'read', subject: 'Settings' },
+    { action: 'update', subject: 'Settings' },
+    { action: 'create', subject: 'Staff' },
+    { action: 'read', subject: 'Staff' },
+    { action: 'update', subject: 'Staff' },
+    { action: 'delete', subject: 'Staff' },
+  ];
+
+  const permMap: Record<string, string> = {};
+  for (const p of permDefs) {
+    const created = await prisma.permission.upsert({
+      where: { action_subject: { action: p.action, subject: p.subject } },
+      update: {},
+      create: p,
+    });
+    permMap[`${p.action}:${p.subject}`] = created.id;
+  }
+
+  const p = (action: string, subject: string) => permMap[`${action}:${subject}`];
+
+  const guestPerms = [
+    p('read', 'News'), p('read', 'Comment'), p('read', 'Event'),
+    p('read', 'Ad'), p('read', 'Job'), p('read', 'Realty'),
+    p('read', 'Category'), p('read', 'Tag'),
+  ];
+  const userPerms = [
+    ...guestPerms,
+    p('read', 'User'), p('update', 'User'),
+    p('create', 'Comment'), p('create', 'Event'),
+    p('create', 'Ad'), p('create', 'Job'), p('create', 'Realty'),
+    p('create', 'Media'), p('read', 'Media'),
+  ];
+  const journalistPerms = [
+    ...userPerms,
+    p('create', 'News'), p('update', 'News'), p('delete', 'News'),
+  ];
+  const proofreaderPerms = [
+    ...userPerms,
+    p('read', 'News'), p('update', 'News'), p('read', 'Billing'),
+  ];
+  const editorPerms = [
+    ...journalistPerms,
+    p('create', 'Category'), p('update', 'Category'), p('delete', 'Category'),
+    p('create', 'Tag'), p('update', 'Tag'), p('delete', 'Tag'),
+    p('update', 'Comment'), p('delete', 'Comment'),
+    p('update', 'Media'), p('delete', 'Media'),
+  ];
+  const chiefEditorPerms = [
+    ...editorPerms,
+    p('create', 'Staff'), p('read', 'Staff'), p('update', 'Staff'), p('delete', 'Staff'),
+    p('read', 'Settings'),
+  ];
+  const moderatorPerms = [
+    ...userPerms,
+    p('update', 'Comment'), p('delete', 'Comment'),
+    p('read', 'User'), p('read', 'Billing'),
+  ];
+  const adminPerms = [p('manage', 'all')];
+  const superadminPerms = [
+    p('manage', 'all'),
+    p('create', 'Staff'), p('read', 'Staff'), p('update', 'Staff'), p('delete', 'Staff'),
+    p('read', 'Settings'), p('update', 'Settings'),
+    p('read', 'Billing'), p('update', 'Billing'),
+  ];
+
+  const rolePerms: { role: UserRole; permissionIds: string[] }[] = [
+    { role: UserRole.guest, permissionIds: guestPerms },
+    { role: UserRole.user, permissionIds: userPerms },
+    { role: UserRole.journalist, permissionIds: journalistPerms },
+    { role: UserRole.proofreader, permissionIds: proofreaderPerms },
+    { role: UserRole.editor, permissionIds: editorPerms },
+    { role: UserRole.chief_editor, permissionIds: chiefEditorPerms },
+    { role: UserRole.moderator, permissionIds: moderatorPerms },
+    { role: UserRole.admin, permissionIds: adminPerms },
+    { role: UserRole.superadmin, permissionIds: superadminPerms },
+  ];
+
+  for (const rp of rolePerms) {
+    await prisma.rolePermission.deleteMany({ where: { role: rp.role } });
+    for (const permId of rp.permissionIds) {
+      await prisma.rolePermission.upsert({
+        where: { role_permissionId: { role: rp.role, permissionId: permId } },
+        update: {},
+        create: { role: rp.role, permissionId: permId },
+      });
+    }
+  }
+
+  console.log(`${permDefs.length} permissions and ${rolePerms.length} role mappings created`);
   console.log('Seeding complete!');
 }
 

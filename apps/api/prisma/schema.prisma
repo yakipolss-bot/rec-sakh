@@ -1195,3 +1195,27 @@ model UserContentSubscription {
   @@unique([userId, type, value])
   @@map("user_content_subscriptions")
 }
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  action      String   @db.VarChar(20)
+  subject     String   @db.VarChar(50)
+  conditions  Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+
+  @@unique([action, subject])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid()) @db.Uuid
+  role         String   @db.VarChar(20)
+  permissionId String   @map("permission_id") @db.Uuid
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@map("role_permissions")
+}
