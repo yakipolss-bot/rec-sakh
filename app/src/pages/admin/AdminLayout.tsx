@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from '../../services/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Briefcase, Shield, FileText,
@@ -29,10 +30,16 @@ export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const { user: authUser, isLoading } = useAuth();
 
   useEffect(() => {
     usersService.getMe().then(setUser).catch(() => setUser(null));
   }, []);
+
+  if (isLoading) return null;
+  if (!authUser || (authUser.role !== 'admin' && authUser.role !== 'superadmin')) {
+    return <Navigate to="/" replace />;
+  }
 
   const isActive = (item: typeof navItems[number]) => {
     if (item.exact) return location.pathname === item.path;

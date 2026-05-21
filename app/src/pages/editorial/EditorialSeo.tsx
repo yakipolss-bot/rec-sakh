@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { FileText, RefreshCw, Download, AlertTriangle, Info } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, RefreshCw, Download, AlertTriangle, Info, Plus, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { AuditLogEntry } from '@/services/admin.service';
 
 type Tab = 'redirects' | 'broken' | 'sitemap' | 'schema';
 
@@ -15,19 +15,95 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialSeo() {
   const [activeTab, setActiveTab] = useState<Tab>('redirects');
-  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [redirects, setRedirects] = useState<any[]>([]);
+  const [redirectLoading, setRedirectLoading] = useState(true);
+  const [showAddRedirect, setShowAddRedirect] = useState(false);
+  const [newSource, setNewSource] = useState('');
+  const [newTarget, setNewTarget] = useState('');
+  const [sitemapUrl, setSitemapUrl] = useState('/sitemap.xml');
+  const [sitemapLoading, setSitemapLoading] = useState(false);
+  const [brokenLinks, setBrokenLinks] = useState<any[]>([]);
+  const [brokenLoading, setBrokenLoading] = useState(false);
+  const [brokenChecking, setBrokenChecking] = useState(false);
 
-  useEffect(() => {
-    adminService.getAuditLog()
-      .then((res) => setAuditLog(res.data || []))
-      .catch(() => setAuditLog([]))
-      .finally(() => setLoading(false));
+  const fetchRedirects = useCallback(async () => {
+    setRedirectLoading(true);
+    try {
+      const data = await adminService.getRedirects();
+      setRedirects(data);
+    } catch { setRedirects([]); }
+    finally { setRedirectLoading(false); }
   }, []);
 
-  const filteredRedirects = auditLog.filter(
-    (e) => e.action?.toLowerCase().includes('redirect') || e.action?.toLowerCase().includes('move'),
-  );
+  const fetchBrokenLinks = useCallback(async () => {
+    setBrokenLoading(true);
+    try {
+      const data = await adminService.getBrokenLinks();
+      setBrokenLinks(data || []);
+    } catch { setBrokenLinks([]); }
+    finally { setBrokenLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'redirects') fetchRedirects();
+    if (activeTab === 'broken') fetchBrokenLinks();
+  }, [activeTab, fetchRedirects, fetchBrokenLinks]);
+
+  const handleAddRedirect = async () => {
+    if (!newSource.trim() || !newTarget.trim()) {
+      toast.error('Заполните source и target');
+      return;
+    }
+    try {
+      await adminService.createRedirect({ source: newSource, target: newTarget });
+      toast.success('Редирект создан');
+      setShowAddRedirect(false);
+      setNewSource('');
+      setNewTarget('');
+      fetchRedirects();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Ошибка создания редиректа');
+    }
+  };
+
+  const handleDeleteRedirect = async (id: string) => {
+    try {
+      await adminService.deleteRedirect(id);
+      toast.success('Редирект удалён');
+      fetchRedirects();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Ошибка удаления');
+    }
+  };
+
+  const handleGenerateSitemap = async () => {
+    setSitemapLoading(true);
+    try {
+      const url = await adminService.generateSitemap();
+      setSitemapUrl(url);
+      toast.success('Sitemap сгенерирован');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Ошибка генерации sitemap');
+    } finally {
+      setSitemapLoading(false);
+    }
+  };
+
+  const handleCheckBrokenLinks = async () => {
+    setBrokenChecking(true);
+    try {
+      const results = await adminService.checkBrokenLinks();
+      const ok = results.filter((r: any) => r.status === 200).length;
+      const bad = results.filter((r: any) => r.status !== 200 && r.status !== null).length;
+      const err = results.filter((r: any) => r.error && r.status === null).length;
+      toast.success(`Проверка завершена: ${ok} OK, ${bad} битых, ${err} ошибок`);
+      fetchBrokenLinks();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Ошибка проверки');
+    } finally {
+      setBrokenChecking(false);
+    }
+  };
 
   return (
     <div>
@@ -49,44 +125,82 @@ export default function EditorialSeo() {
       {activeTab === 'redirects' && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="sakh-meta">Управление редиректами</p>
-            <button className="sakh-btn sakh-btn--primary sakh-btn--sm">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Добавить редирект
+            <p className="sakh-meta">{redirects.length} редиректов</p>
+            <button
+              onClick={() => setShowAddRedirect(true)}
+              className="sakh-btn sakh-btn--primary sakh-btn--sm"
+            >
+              <Plus size={14} /> Добавить редирект
             </button>
           </div>
-          {loading ? (
-            <p className="sakh-meta text-center py-8">Загрузка...</p>
-          ) : filteredRedirects.length > 0 ? (
+
+          <AnimatePresence>
+            {showAddRedirect && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="sakh-card p-4 mb-4"
+              >
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <label className="sakh-caption block mb-1">Откуда</label>
+                    <input value={newSource} onChange={(e) => setNewSource(e.target.value)} placeholder="/old-page" className="sakh-input" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="sakh-caption block mb-1">Куда</label>
+                    <input value={newTarget} onChange={(e) => setNewTarget(e.target.value)} placeholder="/new-page" className="sakh-input" />
+                  </div>
+                  <button onClick={handleAddRedirect} className="sakh-btn sakh-btn--primary sakh-btn--md">Добавить</button>
+                  <button onClick={() => setShowAddRedirect(false)} className="sakh-btn sakh-btn--ghost sakh-btn--md">Отмена</button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {redirectLoading ? (
+            <div className="flex justify-center py-8"><Loader2 size={24} className="animate-spin text-[var(--text-muted)]" /></div>
+          ) : redirects.length === 0 ? (
+            <div className="sakh-card p-8 text-center">
+              <Info size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
+              <h3 className="sakh-title mb-2">Редиректов пока нет</h3>
+              <p className="sakh-body text-sm text-[var(--text-secondary)]">Добавьте первый редирект.</p>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border-color)]">
-                    <th className="px-3 py-2 text-left sakh-caption">Действие</th>
-                    <th className="px-3 py-2 text-left sakh-caption">Цель</th>
-                    <th className="px-3 py-2 text-left sakh-caption">Пользователь</th>
-                    <th className="px-3 py-2 text-left sakh-caption">Время</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Source</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Target</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Тип</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Статус</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Дата</th>
+                    <th className="px-3 py-2" />
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRedirects.map((r) => (
-                    <tr key={r.id} className="border-b border-[var(--border-color)]">
-                      <td className="px-3 py-2 font-mono text-xs text-[var(--accent-ocean)]">{r.action}</td>
+                  {redirects.map((r: any) => (
+                    <tr key={r.id} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-elevated)]">
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--accent-ocean)]">{r.source}</td>
                       <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{r.target}</td>
-                      <td className="px-3 py-2 sakh-meta">{r.user}</td>
-                      <td className="px-3 py-2 sakh-meta">{r.timestamp}</td>
+                      <td className="px-3 py-2 sakh-meta">{r.type}</td>
+                      <td className="px-3 py-2">
+                        {r.isActive ? <CheckCircle size={14} className="text-green-500" /> : <XCircle size={14} className="text-red-500" />}
+                      </td>
+                      <td className="px-3 py-2 sakh-meta">{new Date(r.createdAt).toLocaleDateString()}</td>
+                      <td className="px-3 py-2">
+                        <button
+                          onClick={() => handleDeleteRedirect(r.id)}
+                          className="sakh-btn sakh-btn--ghost sakh-btn--xs text-red-500"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <div className="sakh-card p-8 text-center">
-              <Info size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
-              <h3 className="sakh-title mb-2">SEO-инструменты скоро появятся</h3>
-              <p className="sakh-body text-sm text-[var(--text-secondary)]">
-                Управление редиректами и полный SEO-инструментарий находятся в разработке.
-              </p>
             </div>
           )}
         </div>
@@ -96,23 +210,54 @@ export default function EditorialSeo() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="sakh-meta">Битые ссылки</p>
-            <button className="sakh-btn sakh-btn--secondary sakh-btn--sm">
-              <RefreshCw size={14} /> Проверить
-            </button>
-          </div>
-          <div className="sakh-card p-8 text-center">
-            <AlertTriangle size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
-            <h3 className="sakh-title mb-2">Проверка битых ссылок</h3>
-            <p className="sakh-body text-sm text-[var(--text-secondary)]">
-              Автоматическая проверка битых ссылок будет доступна в ближайшее время.
-            </p>
             <button
-              onClick={() => toast.info('Проверка запущена. Результаты появятся после завершения.')}
-              className="sakh-btn sakh-btn--primary sakh-btn--md mt-4"
+              onClick={handleCheckBrokenLinks}
+              disabled={brokenChecking}
+              className="sakh-btn sakh-btn--primary sakh-btn--sm"
             >
-              <RefreshCw size={14} /> Запустить проверку
+              {brokenChecking ? <><Loader2 size={14} className="animate-spin" /> Проверка...</> : <><RefreshCw size={14} /> Проверить</>}
             </button>
           </div>
+
+          {brokenLoading ? (
+            <div className="flex justify-center py-8"><Loader2 size={24} className="animate-spin text-[var(--text-muted)]" /></div>
+          ) : brokenLinks.length === 0 ? (
+            <div className="sakh-card p-8 text-center">
+              <AlertTriangle size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
+              <h3 className="sakh-title mb-2">Проверка битых ссылок</h3>
+              <p className="sakh-body text-sm text-[var(--text-secondary)]">
+                Нажмите «Проверить», чтобы запустить анализ доступности страниц.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th className="px-3 py-2 text-left sakh-caption">URL</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Статус</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Ошибка</th>
+                    <th className="px-3 py-2 text-left sakh-caption">Проверено</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {brokenLinks.map((b: any) => (
+                    <tr key={b.id} className="border-b border-[var(--border-color)]">
+                      <td className="px-3 py-2 font-mono text-xs">{b.url}</td>
+                      <td className="px-3 py-2">
+                        <span className={`inline-flex items-center gap-1 ${b.status === 200 ? 'text-green-500' : 'text-red-500'}`}>
+                          {b.status === 200 ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                          {b.status ?? 'ERR'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-[var(--text-muted)]">{b.error || '—'}</td>
+                      <td className="px-3 py-2 sakh-meta">{new Date(b.checkedAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -120,16 +265,25 @@ export default function EditorialSeo() {
         <div className="sakh-card p-6 text-center">
           <FileText size={48} className="mx-auto mb-4 text-[var(--text-muted)]" />
           <h3 className="sakh-title mb-2">Sitemap.xml</h3>
-          <p className="sakh-body text-sm mb-6">
-            Последняя генерация: 15.05.2026. URL: https://rec-sakh.ru/sitemap.xml
+          <p className="sakh-body text-sm mb-2">
+            URL: <a href={sitemapUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-ocean)] underline">{sitemapUrl}</a>
           </p>
+          <p className="sakh-meta mb-6">Автоматически включает статьи, категории, события и объявления</p>
           <div className="flex items-center justify-center gap-3">
-            <button className="sakh-btn sakh-btn--primary sakh-btn--md">
-              <RefreshCw size={14} /> Сгенерировать
+            <button
+              onClick={handleGenerateSitemap}
+              disabled={sitemapLoading}
+              className="sakh-btn sakh-btn--primary sakh-btn--md"
+            >
+              {sitemapLoading ? <><Loader2 size={14} className="animate-spin" /> Генерация...</> : <><RefreshCw size={14} /> Сгенерировать</>}
             </button>
-            <button className="sakh-btn sakh-btn--secondary sakh-btn--md">
+            <a
+              href={sitemapUrl}
+              download
+              className="sakh-btn sakh-btn--secondary sakh-btn--md"
+            >
               <Download size={14} /> Скачать
-            </button>
+            </a>
           </div>
         </div>
       )}

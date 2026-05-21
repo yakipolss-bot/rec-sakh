@@ -1,5 +1,4 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 
 const SEED_FLIGHTS = [
@@ -441,14 +440,7 @@ export class TransportService {
     return { message: 'Transport data seeded successfully' };
   }
 
-  // --- Scheduled Sync ---
-
-  @Cron('0 */2 * * *') // Every 2 hours
-  async syncTransportData() {
-    this.logger.log('[Transport] Sync tick (placeholder for external API integration)');
-    // TODO: integration with аэропорт Южно-Сахалинск API
-    // TODO: integration with паромная переправа Ванино-Холмск
-  }
+  // --- Scheduled Sync (moved to TransportSyncService) ---
 
   // --- Seed helpers ---
 

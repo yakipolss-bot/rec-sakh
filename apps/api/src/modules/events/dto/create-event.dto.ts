@@ -15,6 +15,7 @@ export const CreateEventSchema = z.object({
   price: z.number().positive('Цена должна быть положительной').optional(),
   currency: z.string().max(3).optional(),
   imageUrl: z.string().url('Некорректный URL изображения').optional(),
+  ticketUrl: z.string().url('Некорректный URL билетов').optional(),
   isRecurring: z.boolean().optional(),
   recurrenceRule: z.string().optional(),
   maxParticipants: z.number().int().positive().optional(),
@@ -59,6 +60,9 @@ export class CreateEventDto {
 
   @ApiPropertyOptional()
   imageUrl?: string;
+
+  @ApiPropertyOptional()
+  ticketUrl?: string;
 
   @ApiPropertyOptional()
   isRecurring?: boolean;

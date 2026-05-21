@@ -146,6 +146,17 @@ export default function EventsPage() {
                       <Clock size={12} />
                       {event.isFree ? 'Бесплатно' : event.price ? `от ${event.price} ₽` : ''}
                     </span>
+                    {event.ticketUrl && (
+                      <a
+                        href={event.ticketUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-[var(--accent-ocean)] hover:underline"
+                      >
+                        Купить билет ↗
+                      </a>
+                    )}
                   </div>
                 </Link>
               </motion.div>

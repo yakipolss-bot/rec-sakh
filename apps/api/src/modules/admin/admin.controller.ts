@@ -8,9 +8,11 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
+import type { FastifyRequest } from 'fastify';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { writeFile } from 'fs/promises';
 import { join, extname } from 'path';
@@ -324,6 +326,18 @@ export class AdminController {
     return { data: items };
   }
 
+  @Post('staff/schedule')
+  @Roles('admin', 'superadmin', 'chief_editor')
+  @ApiOperation({ summary: 'Обновить смену сотрудника' })
+  async createStaffSchedule(@Body() dto: { staffId: string; date: string; shift: string }) {
+    const staff = await this.staffService.findById(dto.staffId);
+    if (!staff) throw new BadRequestException('Staff member not found');
+    const updated = await this.staffService.update(dto.staffId, {
+      schedule: { ...(staff.schedule as any || {}), [dto.date]: dto.shift },
+    } as any);
+    return { data: { id: updated.id, staffId: updated.userId, date: dto.date, shift: dto.shift } };
+  }
+
   // ====== System ======
 
   @Post('system/cache/clear')
@@ -364,21 +378,26 @@ export class AdminController {
 
   @Post('files/upload')
   @Roles('admin', 'superadmin', 'editor', 'chief_editor')
-  @ApiOperation({ summary: 'Загрузить файл (base64)' })
-  async uploadFile(@Body() body: { filename: string; data: string }) {
-    if (!body.filename || !body.data) {
-      throw new BadRequestException('filename and data (base64) are required');
+  @ApiOperation({ summary: 'Загрузить файл (multipart)' })
+  async uploadFile(@Req() req: FastifyRequest) {
+    const file = await req.file();
+    if (!file) {
+      throw new BadRequestException('file is required (multipart)');
     }
-    const ext = extname(body.filename);
+    const ext = extname(file.filename);
     const name = randomUUID() + ext;
-    const buffer = Buffer.from(body.data, 'base64');
     const uploadDir = join(process.cwd(), 'uploads');
+    const chunks: Buffer[] = [];
+    for await (const chunk of file.file) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
     await writeFile(join(uploadDir, name), buffer);
     return {
       data: {
         url: `/uploads/${name}`,
         filename: name,
-        originalName: body.filename,
+        originalName: file.filename,
         size: buffer.length,
       },
     };

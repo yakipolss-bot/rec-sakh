@@ -16,6 +16,7 @@ export const UpdateEventSchema = z.object({
   price: z.number().positive().optional(),
   currency: z.string().max(3).optional(),
   imageUrl: z.string().url().optional(),
+  ticketUrl: z.string().url().optional(),
   status: z.nativeEnum(EventStatus).optional(),
   isRecurring: z.boolean().optional(),
   recurrenceRule: z.string().optional(),
@@ -61,6 +62,9 @@ export class UpdateEventDto {
 
   @ApiPropertyOptional()
   imageUrl?: string;
+
+  @ApiPropertyOptional()
+  ticketUrl?: string;
 
   @ApiPropertyOptional()
   status?: EventStatus;

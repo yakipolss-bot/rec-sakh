@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from '../../services/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3, FileText, Layers, Tag, MessageSquare,
@@ -49,6 +50,7 @@ export default function EditorialLayout({ children }: { children: React.ReactNod
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const { user: authUser, isLoading } = useAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -57,6 +59,11 @@ export default function EditorialLayout({ children }: { children: React.ReactNod
     }).catch(() => {});
     return () => { mounted = false; };
   }, []);
+
+  if (isLoading) return null;
+  if (!authUser || !['editor', 'chief_editor', 'admin', 'superadmin'].includes(authUser.role)) {
+    return <Navigate to="/" replace />;
+  }
 
   const isActive = (path: string) => {
     if (path === '/editorial') return location.pathname === '/editorial';

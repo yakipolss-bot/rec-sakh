@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users, Activity,
-  Eye, Clock, MousePointer,
+  Eye, Clock, MousePointer, Loader2,
 } from 'lucide-react';
+import { adminService } from '../../services/admin.service';
+import { toast } from 'sonner';
 
 type Tab = 'traffic' | 'content' | 'authors' | 'search' | 'online';
 
@@ -17,6 +19,42 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialAnalytics() {
   const [activeTab, setActiveTab] = useState<Tab>('traffic');
+  const [traffic, setTraffic] = useState<any>(null);
+  const [content, setContent] = useState<any>(null);
+  const [realtime, setRealtime] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async (silent = false) => {
+      if (!silent) setIsLoading(true);
+      try {
+        const [trafficRes, contentRes, realtimeRes] = await Promise.allSettled([
+          adminService.getAnalyticsTraffic(),
+          adminService.getAnalyticsContent({ perPage: 10 }),
+          adminService.getRealtimeAnalytics(),
+        ]);
+
+        if (trafficRes.status === 'fulfilled') setTraffic(trafficRes.value);
+        if (contentRes.status === 'fulfilled') setContent(contentRes.value);
+        if (realtimeRes.status === 'fulfilled') setRealtime(realtimeRes.value);
+      } catch {
+        if (!silent) toast.error('Ошибка загрузки аналитики');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load(false);
+    const id = setInterval(() => load(true), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 size={24} className="animate-spin text-[var(--accent-ocean)]" />
+      </div>
+    );
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -25,10 +63,10 @@ export default function EditorialAnalytics() {
           <div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {[
-                { icon: Eye, label: 'Визиты сегодня', value: '12 847' },
-                { icon: Users, label: 'Уникальные', value: '8 231' },
-                { icon: MousePointer, label: 'Ср. глубина', value: '3.2 стр' },
-                { icon: Clock, label: 'Ср. время', value: '4:32 мин' },
+                { icon: Eye, label: 'Всего просмотров', value: traffic?.totalViews?.toLocaleString('ru-RU') || '—' },
+                { icon: Users, label: 'Статей за период', value: String(traffic?.totalArticles || 0) },
+                { icon: MousePointer, label: 'Топ категорий', value: String(traffic?.topCategories?.length || 0) },
+                { icon: Clock, label: 'Период (дней)', value: traffic?.period ? Math.ceil((new Date(traffic.period.to).getTime() - new Date(traffic.period.from).getTime()) / 86400000) + ' дн' : '30 дн' },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
@@ -43,60 +81,34 @@ export default function EditorialAnalytics() {
                 </motion.div>
               ))}
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {traffic?.topCategories?.length > 0 && (
               <div className="sakh-card p-4">
-                <h3 className="sakh-caption text-[var(--text-secondary)] mb-3">Источники трафика</h3>
-                {[
-                  { source: 'Органический поиск', percent: 45 },
-                  { source: 'Прямые заходы', percent: 25 },
-                  { source: 'Социальные сети', percent: 18 },
-                  { source: 'Переходы с сайтов', percent: 12 },
-                ].map((item) => (
-                  <div key={item.source} className="mb-2">
-                    <div className="flex justify-between text-sm mb-0.5">
-                      <span className="text-[var(--text-secondary)]">{item.source}</span>
-                      <span className="font-mono text-xs text-[var(--text-primary)]">{item.percent}%</span>
-                    </div>
-                    <div className="sakh-progress">
-                      <div className="sakh-progress__bar" style={{ width: `${item.percent}%` }} />
-                    </div>
+                <h3 className="sakh-caption text-[var(--text-secondary)] mb-3">Топ категорий по просмотрам</h3>
+                {traffic.topCategories.map((cat: any, i: number) => (
+                  <div key={cat.id || i} className="flex items-center justify-between py-1.5 border-b border-[var(--border-color)] last:border-0">
+                    <span className="text-sm text-[var(--text-primary)]">{cat.name}</span>
+                    <span className="font-mono text-xs text-[var(--text-muted)]">{cat.views?.toLocaleString('ru-RU')}</span>
                   </div>
                 ))}
               </div>
-              <div className="sakh-card p-4">
-                <h3 className="sakh-caption text-[var(--text-secondary)] mb-3">География</h3>
-                {[
-                  { region: 'Сахалинская обл.', percent: 62 },
-                  { region: 'Москва и МО', percent: 14 },
-                  { region: 'Хабаровский край', percent: 8 },
-                  { region: 'Приморский край', percent: 6 },
-                  { region: 'Другие', percent: 10 },
-                ].map((item) => (
-                  <div key={item.region} className="mb-2">
-                    <div className="flex justify-between text-sm mb-0.5">
-                      <span className="text-[var(--text-secondary)]">{item.region}</span>
-                      <span className="font-mono text-xs text-[var(--text-primary)]">{item.percent}%</span>
-                    </div>
-                    <div className="sakh-progress">
-                      <div className="sakh-progress__bar" style={{ width: `${item.percent}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         );
       case 'content':
         return (
           <div className="sakh-card p-4">
             <h3 className="sakh-caption text-[var(--text-secondary)] mb-4">Топ материалов</h3>
-            {['Штормовое предупреждение', 'Паромное сообщение', 'Новый ТЦ', 'Электробусы', 'ДТП на трассе'].map((title, i) => (
-              <div key={title} className="flex items-center gap-3 py-2 border-b border-[var(--border-color)] last:border-0">
-                <span className="sakh-meta sakh-meta--accent font-bold w-5">{String(i + 1).padStart(2, '0')}</span>
-                <span className="flex-1 text-sm text-[var(--text-primary)]">{title}</span>
-                <span className="sakh-meta">{Math.floor(Math.random() * 10000 + 1000).toLocaleString('ru-RU')}</span>
-              </div>
-            ))}
+            {content?.data?.length > 0 ? (
+              content.data.slice(0, 10).map((article: any, i: number) => (
+                <div key={article.id} className="flex items-center gap-3 py-2 border-b border-[var(--border-color)] last:border-0">
+                  <span className="sakh-meta sakh-meta--accent font-bold w-5">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="flex-1 text-sm text-[var(--text-primary)] truncate">{article.title}</span>
+                  <span className="sakh-meta">{article.viewsCount?.toLocaleString('ru-RU') || 0}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-[var(--text-muted)] text-center py-4">Нет данных</p>
+            )}
           </div>
         );
       case 'authors':
@@ -112,65 +124,53 @@ export default function EditorialAnalytics() {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { name: 'Анна Кузнецова', count: 3, views: 18956 },
-                  { name: 'Иван Петров', count: 4, views: 38960 },
-                  { name: 'Мария Соколова', count: 2, views: 19524 },
-                  { name: 'Дмитрий Волков', count: 2, views: 12221 },
-                  { name: 'Елена Морозова', count: 2, views: 7777 },
-                  { name: 'Сергей Новиков', count: 1, views: 8765 },
-                ].map((author) => (
-                  <tr key={author.name} className="border-b border-[var(--border-color)]">
-                    <td className="px-3 py-2 text-[var(--text-primary)]">{author.name}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{author.count}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{author.views.toLocaleString('ru-RU')}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{Math.round(author.views / author.count).toLocaleString('ru-RU')}</td>
-                  </tr>
-                ))}
+                {content?.data?.length > 0 ? (
+                  Object.entries(
+                    content.data.reduce((acc: any, a: any) => {
+                      const key = a.author?.id || 'unknown';
+                      if (!acc[key]) acc[key] = { name: a.author?.name || '—', count: 0, views: 0 };
+                      acc[key].count++;
+                      acc[key].views += a.viewsCount || 0;
+                      return acc;
+                    }, {} as Record<string, { name: string; count: number; views: number }>)
+                  ).map(([_, author]: [string, any]) => (
+                    <tr key={_}>
+                      <td className="px-3 py-2 text-[var(--text-primary)]">{author.name}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{author.count}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{author.views.toLocaleString('ru-RU')}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">{Math.round(author.views / author.count).toLocaleString('ru-RU')}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={4} className="text-center py-4 text-sm text-[var(--text-muted)]">Нет данных</td></tr>
+                )}
               </tbody>
             </table>
           </div>
         );
       case 'search':
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="sakh-card p-4">
-              <h3 className="sakh-caption text-[var(--text-secondary)] mb-3">Часто ищут</h3>
-              {['погода', 'афиша', 'работа', 'ДТП', 'вакансии'].map((q) => (
-                <div key={q} className="flex items-center justify-between py-1.5 border-b border-[var(--border-color)] last:border-0">
-                  <span className="text-sm text-[var(--text-primary)]">{q}</span>
-                  <span className="font-mono text-xs text-[var(--text-muted)]">{Math.floor(Math.random() * 500 + 50)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="sakh-card p-4">
-              <h3 className="sakh-caption text-[var(--text-secondary)] mb-3">Не находят (нулевые результаты)</h3>
-              {['погода оха завтра', 'расписание парома', 'новости курильск', 'телефон мэрии', 'билеты на самолёт'].map((q) => (
-                <div key={q} className="flex items-center justify-between py-1.5 border-b border-[var(--border-color)] last:border-0">
-                  <span className="text-sm text-[var(--accent-sunset)]">{q}</span>
-                  <span className="font-mono text-xs text-[var(--text-muted)]">{Math.floor(Math.random() * 100 + 10)}</span>
-                </div>
-              ))}
-            </div>
+          <div className="sakh-card p-4 text-center">
+            <p className="text-sm text-[var(--text-muted)]">Поисковая аналитика — в разработке</p>
           </div>
         );
       case 'online':
         return (
           <div className="sakh-card p-6 text-center">
             <Activity size={48} className="mx-auto mb-4 text-[var(--accent-ocean)]" />
-            <p className="text-4xl font-bold font-mono text-[var(--text-primary)] mb-2">247</p>
-            <p className="sakh-body">пользователей онлайн сейчас</p>
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              {[
-                { label: 'Читают', value: 142 },
-                { label: 'Комментируют', value: 18 },
-                { label: 'Ищут', value: 87 },
-              ].map((item) => (
-                <div key={item.label} className="p-3 bg-[var(--bg-surface)]">
-                  <p className="text-lg font-mono font-bold text-[var(--accent-ocean)]">{item.value}</p>
-                  <p className="sakh-meta">{item.label}</p>
-                </div>
-              ))}
+            <p className="text-4xl font-bold font-mono text-[var(--text-primary)] mb-2">
+              {realtime?.onlineUsers || 0}
+            </p>
+            <p className="sakh-body">пользователей онлайн (за 15 мин)</p>
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="p-3 bg-[var(--bg-surface)]">
+                <p className="text-lg font-mono font-bold text-[var(--accent-ocean)]">{realtime?.recentComments?.length || 0}</p>
+                <p className="sakh-meta">Комментариев (5 мин)</p>
+              </div>
+              <div className="p-3 bg-[var(--bg-surface)]">
+                <p className="text-lg font-mono font-bold text-[var(--accent-ocean)]">{realtime?.recentActivity?.length || 0}</p>
+                <p className="sakh-meta">Действий (5 мин)</p>
+              </div>
             </div>
           </div>
         );

@@ -24,6 +24,8 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { SeoModule } from './modules/seo/seo.module.js';
+import { EventsSyncModule } from './modules/events-sync/events-sync.module.js';
 import { SupabaseModule } from './common/supabase/supabase.module.js';
 import { CaslModule } from './casl/casl.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
@@ -76,6 +78,8 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter.
     NotificationsModule,
     BillingModule,
     AdminModule,
+    SeoModule,
+    EventsSyncModule,
     CaslModule,
   ],
   providers: [

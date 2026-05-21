@@ -186,6 +186,28 @@ export class NotificationsController {
     return this.newsletterService.create(dto, userId);
   }
 
+  @Get('newsletter')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.admin, UserRole.editor, UserRole.chief_editor)
+  @ApiOperation({ summary: 'Список рассылок' })
+  async getNewsletters() {
+    return this.prisma.newsletter.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { stats: true },
+    });
+  }
+
+  @Get('newsletter/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.admin, UserRole.editor, UserRole.chief_editor)
+  @ApiOperation({ summary: 'Детали рассылки' })
+  async getNewsletter(@Param('id') id: string) {
+    return this.prisma.newsletter.findUniqueOrThrow({
+      where: { id },
+      include: { stats: true },
+    });
+  }
+
   @Post('newsletter/:id/send')
   @UseGuards(RolesGuard)
   @Roles(UserRole.admin, UserRole.editor, UserRole.chief_editor)

@@ -18,6 +18,7 @@ export interface ArticleEvent {
   price: number | null;
   currency: string;
   imageUrl: string | null;
+  ticketUrl: string | null;
   status: string;
   isRecurring: boolean;
   createdAt: string;

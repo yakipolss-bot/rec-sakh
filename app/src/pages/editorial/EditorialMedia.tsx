@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Image, Video, FolderOpen, Download, Trash2,
-  Upload, CheckSquare, Square,
+  Upload, CheckSquare, Square, Loader2,
 } from 'lucide-react';
+import { adminService, type MediaFile } from '../../services/admin.service';
+import { toast } from 'sonner';
 
 type Tab = 'photos' | 'videos' | 'albums';
 
@@ -13,19 +15,29 @@ const tabs: { value: Tab; label: string }[] = [
   { value: 'albums', label: 'Альбомы' },
 ];
 
-const mockPhotos = Array.from({ length: 12 }, (_, i) => ({
-  id: `p${i + 1}`,
-  url: `/images/gallery-${(i % 4) + 1}.jpg`,
-  name: `photo-${i + 1}.jpg`,
-  size: `${(Math.random() * 5 + 1).toFixed(1)} MB`,
-}));
-
 export default function EditorialMedia() {
   const [activeTab, setActiveTab] = useState<Tab>('photos');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [files, setFiles] = useState<MediaFile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const loadFiles = async (silent = false) => {
+    if (!silent) setIsLoading(true);
+    try {
+      const data = await adminService.getMediaList();
+      setFiles(data || []);
+    } catch {
+      if (!silent) toast.error('Ошибка загрузки медиатеки');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { loadFiles(false); const id = setInterval(() => loadFiles(true), 60000); return () => clearInterval(id); }, []);
 
   const toggleSelect = (id: string) => {
     const next = new Set(selected);
@@ -34,19 +46,46 @@ export default function EditorialMedia() {
   };
 
   const selectAll = () => {
-    if (selected.size === mockPhotos.length) setSelected(new Set());
-    else setSelected(new Set(mockPhotos.map((p) => p.id)));
+    if (selected.size === files.length) setSelected(new Set());
+    else setSelected(new Set(files.map((f) => f.filename)));
   };
 
-  const simulateUpload = () => {
+  const handleUpload = async (fileList: FileList | null) => {
+    if (!fileList?.length) return;
     setIsUploading(true);
     setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((p) => {
-        if (p >= 100) { clearInterval(interval); setIsUploading(false); return 100; }
-        return p + 10;
-      });
-    }, 300);
+    const total = fileList.length;
+    let done = 0;
+    for (const file of fileList) {
+      try {
+        const result = await adminService.uploadFile(file);
+        if (result?.url) toast.success(`Загружен: ${file.name}`);
+      } catch {
+        toast.error(`Ошибка загрузки: ${file.name}`);
+      }
+      done++;
+      setUploadProgress(Math.round((done / total) * 100));
+    }
+    setIsUploading(false);
+    loadFiles();
+  };
+
+  const handleDelete = async () => {
+    for (const filename of selected) {
+      try {
+        await adminService.deleteMedia(filename);
+      } catch {
+        toast.error(`Ошибка удаления: ${filename}`);
+      }
+    }
+    setSelected(new Set());
+    loadFiles();
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -59,18 +98,22 @@ export default function EditorialMedia() {
         <div className="flex items-center gap-2">
           {selected.size > 0 && (
             <>
-              <button className="sakh-btn sakh-btn--secondary sakh-btn--sm">
-                <Download size={14} /> Скачать ({selected.size})
-              </button>
-              <button className="sakh-btn sakh-btn--danger sakh-btn--sm">
-                <Trash2 size={14} /> Удалить
+              <button className="sakh-btn sakh-btn--danger sakh-btn--sm" onClick={handleDelete}>
+                <Trash2 size={14} /> Удалить ({selected.size})
               </button>
             </>
           )}
           <label className="sakh-btn sakh-btn--primary sakh-btn--sm cursor-pointer">
             <Upload size={14} />
             Загрузить
-            <input type="file" multiple accept="image/*" className="hidden" />
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleUpload(e.target.files)}
+            />
           </label>
         </div>
       </div>
@@ -90,7 +133,7 @@ export default function EditorialMedia() {
         ))}
       </div>
 
-      {isUploading && (
+      {(isUploading || uploadProgress > 0) && (
         <div className="mb-6">
           <div className="flex justify-between text-sm mb-1">
             <span className="text-[var(--text-secondary)]">Загрузка...</span>
@@ -105,7 +148,7 @@ export default function EditorialMedia() {
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => { e.preventDefault(); setDragOver(false); simulateUpload(); }}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); handleUpload(e.dataTransfer.files); }}
         className={`border-2 border-dashed p-6 text-center mb-6 transition-colors ${
           dragOver ? 'border-[var(--accent-ocean)] bg-[var(--ocean-alpha-10)]' : 'border-[var(--border-color)]'
         }`}
@@ -118,33 +161,54 @@ export default function EditorialMedia() {
         <>
           <div className="flex items-center gap-2 mb-4">
             <button onClick={selectAll} className="flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--accent-ocean)] transition-colors">
-              {selected.size === mockPhotos.length ? <CheckSquare size={14} /> : <Square size={14} />}
+              {selected.size === files.length ? <CheckSquare size={14} /> : <Square size={14} />}
               Выбрать всё
             </button>
+            {files.length > 0 && (
+              <span className="text-xs text-[var(--text-muted)]">{files.length} файлов</span>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {mockPhotos.map((photo) => (
-              <motion.div
-                key={photo.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`sakh-card cursor-pointer group ${selected.has(photo.id) ? 'border-[var(--accent-ocean)]' : ''}`}
-                onClick={() => toggleSelect(photo.id)}
-              >
-                <div className="aspect-square bg-[var(--bg-surface)] flex items-center justify-center relative">
-                  <Image size={32} className="text-[var(--text-muted)]" />
-                  <div className={`absolute top-2 left-2 ${selected.has(photo.id) ? 'text-[var(--accent-ocean)]' : 'text-[var(--text-muted)] opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                    {selected.has(photo.id) ? <CheckSquare size={16} /> : <Square size={16} />}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-[var(--accent-ocean)]" />
+            </div>
+          ) : files.length === 0 ? (
+            <div className="sakh-card p-8 text-center">
+              <Image size={40} className="mx-auto mb-4 text-[var(--text-muted)]" />
+              <h3 className="sakh-title mb-2">Файлы не загружены</h3>
+              <p className="sakh-body text-sm text-[var(--text-secondary)]">
+                Перетащите файлы или нажмите «Загрузить»
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {files.map((file) => (
+                <motion.div
+                  key={file.filename}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={`sakh-card cursor-pointer group ${selected.has(file.filename) ? 'border-[var(--accent-ocean)]' : ''}`}
+                  onClick={() => toggleSelect(file.filename)}
+                >
+                  <div className="aspect-square bg-[var(--bg-surface)] flex items-center justify-center relative overflow-hidden">
+                    {file.isImage ? (
+                      <img src={file.url} alt={file.filename} className="w-full h-full object-cover" />
+                    ) : (
+                      <Image size={32} className="text-[var(--text-muted)]" />
+                    )}
+                    <div className={`absolute top-2 left-2 ${selected.has(file.filename) ? 'text-[var(--accent-ocean)]' : 'text-[var(--text-muted)] opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                      {selected.has(file.filename) ? <CheckSquare size={16} /> : <Square size={16} />}
+                    </div>
                   </div>
-                </div>
-                <div className="p-2">
-                  <p className="sakh-caption truncate text-[10px]">{photo.name}</p>
-                  <p className="sakh-meta text-[10px]">{photo.size}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  <div className="p-2">
+                    <p className="sakh-caption truncate text-[10px]">{file.filename}</p>
+                    <p className="sakh-meta text-[10px]">{formatSize(file.size)}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </>
       )}
 

@@ -497,6 +497,9 @@ model Event {
   isRecurring      Boolean     @default(false) @map("is_recurring")
   recurrenceRule   String?     @map("recurrence_rule")
   maxParticipants  Int?        @map("max_participants")
+  ticketUrl        String?     @map("ticket_url")
+  externalId       String?     @map("external_id")
+  externalSource   String?     @map("external_source") @db.VarChar(50)
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @default(now()) @updatedAt @map("updated_at")
   deletedAt        DateTime?   @map("deleted_at")
@@ -1218,4 +1221,26 @@ model RolePermission {
 
   @@unique([role, permissionId])
   @@map("role_permissions")
+}
+
+model SeoRedirect {
+  id        String   @id @default(uuid()) @db.Uuid
+  source    String   @unique @db.VarChar(500)
+  target    String   @db.VarChar(500)
+  type      Int      @default(301)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("seo_redirects")
+}
+
+model BrokenLinkCheck {
+  id        String   @id @default(uuid()) @db.Uuid
+  url       String   @db.VarChar(1000)
+  status    Int?
+  error     String?
+  checkedAt DateTime @default(now()) @map("checked_at")
+
+  @@map("broken_link_checks")
 }

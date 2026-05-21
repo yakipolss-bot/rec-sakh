@@ -542,7 +542,112 @@ export const adminService = {
   async deleteMedia(filename: string): Promise<void> {
     await apiClient.delete(`/admin/media/${encodeURIComponent(filename)}`);
   },
+
+  // ── Events ──
+  async getEvents(params?: Record<string, unknown>): Promise<{ data: EventItem[]; meta?: Record<string, unknown> }> {
+    const { data } = await apiClient.get('/events', { params });
+    return { data: data?.data || data || [], meta: data?.meta || {} };
+  },
+
+  async getEvent(id: string): Promise<EventItem | null> {
+    const { data } = await apiClient.get(`/events/${id}`);
+    return data?.data || data || null;
+  },
+
+  async createEvent(dto: Partial<EventItem>): Promise<EventItem> {
+    const { data } = await apiClient.post('/events', dto);
+    return data?.data || data;
+  },
+
+  async updateEvent(id: string, dto: Partial<EventItem>): Promise<EventItem> {
+    const { data } = await apiClient.patch(`/events/${id}`, dto);
+    return data?.data || data;
+  },
+
+  async deleteEvent(id: string): Promise<void> {
+    await apiClient.delete(`/events/${id}`);
+  },
+
+  async updateEventStatus(id: string, status: string): Promise<void> {
+    await apiClient.patch(`/events/${id}/status`, { status });
+  },
+
+  // ── Newsletters ──
+
+  async getNewsletters(): Promise<any[]> {
+    const { data } = await apiClient.get('/notifications/newsletter');
+    return Array.isArray(data) ? data : data?.data || [];
+  },
+
+  async getNewsletter(id: string): Promise<any> {
+    const { data } = await apiClient.get(`/notifications/newsletter/${id}`);
+    return data?.data || data;
+  },
+
+  async createNewsletter(dto: { title: string; content: string; type?: string }): Promise<any> {
+    const { data } = await apiClient.post('/notifications/newsletter', dto);
+    return data?.data || data;
+  },
+
+  async sendNewsletter(id: string): Promise<void> {
+    await apiClient.post(`/notifications/newsletter/${id}/send`);
+  },
+
+  async getNewsletterStats(id: string): Promise<any> {
+    const { data } = await apiClient.get(`/notifications/newsletter/${id}/stats`);
+    return data?.data || data;
+  },
+
+  // ── SEO ──
+
+  async getRedirects(): Promise<any[]> {
+    const { data } = await apiClient.get('/admin/seo/redirects');
+    return Array.isArray(data) ? data : data?.data || [];
+  },
+
+  async createRedirect(dto: { source: string; target: string; type?: number }): Promise<any> {
+    const { data } = await apiClient.post('/admin/seo/redirects', dto);
+    return data?.data || data;
+  },
+
+  async deleteRedirect(id: string): Promise<void> {
+    await apiClient.delete(`/admin/seo/redirects/${id}`);
+  },
+
+  async generateSitemap(): Promise<string> {
+    const { data } = await apiClient.post('/admin/seo/sitemap/generate');
+    return data?.url || '';
+  },
+
+  async checkBrokenLinks(): Promise<any[]> {
+    const { data } = await apiClient.post('/admin/seo/broken-links/check');
+    return data?.data || [];
+  },
+
+  async getBrokenLinks(): Promise<any[]> {
+    const { data } = await apiClient.get('/admin/seo/broken-links');
+    return Array.isArray(data) ? data : data?.data || [];
+  },
 };
+
+export interface EventItem {
+  id: string;
+  title: string;
+  description?: string;
+  shortDescription?: string;
+  date: string;
+  time?: string;
+  venue?: string;
+  city?: string;
+  price?: number | string;
+  imageUrl?: string;
+  ticketUrl?: string;
+  status: string;
+  category?: { id: string; name: string };
+  author?: { id: string; name: string };
+  _count?: { subscribers: number };
+  createdAt?: string;
+}
 
 export interface MediaFile {
   filename: string;

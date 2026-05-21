@@ -485,7 +485,7 @@ export default function Navbar() {
                           Личный кабинет
                         </Link>
                       )}
-                      {isAuthenticated && (user?.role === 'editor' || user?.role === 'admin' || user?.role === 'superadmin') && (
+                      {isAuthenticated && (user?.role === 'editor' || user?.role === 'chief_editor' || user?.role === 'admin' || user?.role === 'superadmin') && (
                         <>
                           <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
                           <Link
