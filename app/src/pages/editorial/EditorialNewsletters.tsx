@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Plus, Mail, RefreshCw, Eye, BarChart3, X } from 'lucide-react';
+import { Send, Plus, Mail, RefreshCw, BarChart3, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
 

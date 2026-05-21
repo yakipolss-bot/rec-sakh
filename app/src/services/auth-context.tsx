@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { authService, type AuthResponse } from './auth.service';
+import { authService } from './auth.service';
 import { usersService } from './users.service';
 
 function getLocalStorage(key: string): string | null {
@@ -89,7 +89,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    refresh();
+    const init = async () => {
+      const token = getLocalStorage('accessToken');
+      if (!token) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const profile = await usersService.getMe();
+        setUser({
+          id: profile.id,
+          email: profile.email,
+          name: profile.name,
+          role: profile.role,
+          avatarUrl: profile.avatarUrl,
+        });
+      } catch {
+        const payload = parseJwt(token);
+        if (payload?.exp && (payload.exp as number) * 1000 >= Date.now()) {
+          setUser({
+            id: payload.sub as string || '',
+            email: payload.email as string || '',
+            name: (payload.name as string) || (payload.email as string)?.split('@')[0] || 'User',
+            role: (payload.role as string) || 'authenticated',
+            avatarUrl: null,
+          });
+        } else {
+          try {
+            const session = await authService.getSession();
+            if (session) {
+              setUser(session.user);
+            } else {
+              setUser(null);
+            }
+          } catch {
+            removeLocalStorage('accessToken');
+            removeLocalStorage('refreshToken');
+            setUser(null);
+          }
+        }
+      }
+      setIsLoading(false);
+    };
+    init();
 
     const sub = authService.onAuthStateChange((_event, session) => {
       if (session) {

@@ -68,24 +68,6 @@ export class TransportSyncService {
     // Helper: extract city name from airline+city block
     const extractCity = (text: string): string => text.replace(/[«»"]/g, '').trim();
 
-    // Split by table rows
-    const rows = html.split(/<tr[^>]*>/g);
-    let currentType: 'departure' | 'arrival' = 'departure';
-    let today = new Date();
-    let todayStr = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.${today.getFullYear()}`;
-
-    // Detect current tab (Вылет or Прилет) from anchor
-    for (const seg of html.split(/<div[^>]*class="board-tab"[^>]*>/gi)) {
-      if (seg.includes('Вылет') || seg.includes('depart')) {
-        currentType = 'departure';
-        break;
-      }
-      if (seg.includes('Прилет') || seg.includes('arriv')) {
-        currentType = 'arrival';
-        break;
-      }
-    }
-
     // Actually parse: the airportus board has departure first, then arrival
     // We detect sections by looking at the flight table headers
     const sections = html.split(/<thead>/g);
@@ -132,9 +114,6 @@ export class TransportSyncService {
 
         // Determine departure vs arrival city based on type
         const isDeparture = type === 'departure';
-        const isMoscow = /москва/i.test(city);
-        const isKhabarovsk = /хабаровск/i.test(city);
-        const isVladivostok = /владивосток/i.test(city);
 
         // For departures: city is the destination; for arrivals: city is the origin
         const departureCity = isDeparture ? 'Южно-Сахалинск (UUS)' : (city ? `${city}` : undefined);
@@ -171,7 +150,6 @@ export class TransportSyncService {
       // Parse scheduled time
       let depTime: Date;
       let arrTime: Date;
-      const citySuffix = f.departureCity?.includes('UUS') ? ' (+11:00)' : '';
       const timeStr = f.scheduledTime;
 
       if (timeStr.includes('.')) {
@@ -229,12 +207,8 @@ export class TransportSyncService {
 
       if (!content) continue;
 
-      // Extract port blocks
-      const portRegex = /<div[^>]*class="[^"]*ferry-header[^"]*"[^>]*>([^<]+)<\/div>([\s\S]*?)(?=<div[^"]*ferry-header|$)/gi;
-      let portMatch: RegExpExecArray | null;
       let currentPort = '';
 
-      // Reset lastIndex for inner regex
       const portBlocks = content.split(/<div[^>]*class="[^"]*ferry-header[^"]*"[^>]*>/g);
       for (let i = 1; i < portBlocks.length; i++) {
         // The port name is in the first part before </div>

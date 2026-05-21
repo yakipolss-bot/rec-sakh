@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, CheckCircle, XCircle, Eye, BarChart3, MessageSquare, Loader2 } from 'lucide-react';
+import { DollarSign, CheckCircle, XCircle, Eye, BarChart3, Loader2 } from 'lucide-react';
 import apiClient from '../../services/api-client';
 import { toast } from 'sonner';
 

@@ -200,14 +200,6 @@ export class EventsSyncService implements OnModuleInit {
       return 0;
     }
 
-    const now = new Date();
-    const day = (offset: number) => {
-      const d = new Date(now);
-      d.setDate(d.getDate() + offset);
-      d.setHours(18, 0, 0, 0);
-      return d;
-    };
-
     const slugToId: Record<string, string> = {};
     for (const c of EVENT_CATEGORIES) {
       const cat = await this.prisma.category.findUnique({ where: { slug: c.slug } });

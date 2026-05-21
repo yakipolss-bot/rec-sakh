@@ -34,7 +34,8 @@ interface Road {
 
 interface ScheduleItem {
   id: string; type: string; routeName: string;
-  city?: string; stops: string[]; schedule: Record<string, any>;
+  city?: string; stops: string[];   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schedule: Record<string, any>;
 }
 
 const STATUS_COLORS: Record<string, string> = {

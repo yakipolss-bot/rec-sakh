@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Image, Video, FolderOpen, Download, Trash2,
+  Image, Video, FolderOpen, Trash2,
   Upload, CheckSquare, Square, Loader2,
 } from 'lucide-react';
 import { adminService, type MediaFile } from '../../services/admin.service';
