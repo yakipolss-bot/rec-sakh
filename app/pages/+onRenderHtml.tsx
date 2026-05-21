@@ -4,6 +4,7 @@ import { PageContextProvider } from 'vike-react/usePageContext';
 import type { PageContextServer } from 'vike/types';
 import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
+import Layout from './+Layout';
 
 export { onRenderHtml };
 
@@ -35,7 +36,9 @@ async function onRenderHtml(pageContext: PageContextServer) {
     pageHtml = ReactDOMServer.renderToString(
       <PageContextProvider pageContext={pageContext}>
         <MemoryRouter initialEntries={[url]}>
-          <Page {...pageProps} />
+          <Layout>
+            <Page {...pageProps} />
+          </Layout>
         </MemoryRouter>
       </PageContextProvider>,
     );
