@@ -6,6 +6,9 @@ import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class JwtAuthGuard {
+  private readonly adminEmails: string[] =
+    (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+
   constructor(
     private reflector: Reflector,
     private supabaseService: SupabaseService,
@@ -27,6 +30,8 @@ export class JwtAuthGuard {
     }
 
     const supabaseUser = await this.supabaseService.verifyToken(token);
+    const email = (supabaseUser.email || '').toLowerCase();
+    const isAdmin = this.adminEmails.includes(email);
 
     let user = await this.prisma.user.findUnique({
       where: { id: supabaseUser.id },
@@ -44,12 +49,17 @@ export class JwtAuthGuard {
           id: supabaseUser.id,
           email: supabaseUser.email,
           name: (supabaseUser.user_metadata?.name as string) || supabaseUser.email?.split('@')[0] || 'User',
-          role: 'user',
+          role: isAdmin ? 'superadmin' : 'user',
         },
       });
       await this.prisma.userSetting.create({
         data: { userId: user.id },
       }).catch(() => {});
+    } else if (isAdmin && user.role !== 'superadmin') {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { role: 'superadmin' },
+      });
     }
 
     request.user = {

@@ -29,6 +29,8 @@ export interface NewsArticle {
   isUrgent: boolean;
   isPremium: boolean;
   isBreaking: boolean;
+  hasVideo?: boolean;
+  hasGallery?: boolean;
   publishedAt: string | null;
   scheduledAt: string | null;
   sourceName: string | null;

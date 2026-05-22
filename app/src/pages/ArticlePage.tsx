@@ -2,54 +2,21 @@ import { useState, useCallback, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Eye, MessageSquare, Clock, Bookmark, Share2,
-  Calendar, Copy, Check, Send, Play, ChevronRight
+  ArrowLeft, Eye, MessageSquare, Clock, Bookmark,
+  Calendar, Check, ChevronRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import CommentSection from '@/components/CommentSection';
 import NewsCard from '@/components/NewsCard';
+import ShareButtons from '@/components/ShareButtons';
+import AdSlot from '@/components/AdSlot';
 import { newsService } from '@/services/news.service';
 import { commentsService } from '@/services/comments.service';
 import { useFavorites } from '@/hooks/useFavorites';
+import { renderTipTapJson, estimateReadingTime, injectAdAfterParagraph } from '@/lib/tiptap-renderer';
 import type { NewsArticle } from '@/types';
 import type { Comment } from '@/types';
-
-function renderContentBlock(block: string, i: number, variants: Record<string, unknown>) {
-  const trimmed = block.trim();
-
-  if (/^{video}/.test(trimmed)) {
-    return (
-      <motion.div key={i} variants={variants} className="sakh-video-placeholder">
-        <Play size={48} className="text-[var(--text-muted)]" />
-        <span className="sakh-caption absolute bottom-3 left-3">Видео</span>
-      </motion.div>
-    );
-  }
-
-  if (/^{quote}/.test(trimmed)) {
-    const text = trimmed.replace(/^{quote}/, '').trim();
-    return (
-      <motion.blockquote key={i} variants={variants} className="sakh-quote">
-        {text}
-      </motion.blockquote>
-    );
-  }
-
-  if (/^{infographic}/.test(trimmed)) {
-    return (
-      <motion.div key={i} variants={variants} className="sakh-infographic-placeholder">
-        <span className="sakh-caption">Инфографика</span>
-      </motion.div>
-    );
-  }
-
-  return (
-    <motion.p key={i} variants={variants}>
-      {trimmed || block}
-    </motion.p>
-  );
-}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -66,11 +33,6 @@ const contentVariants = {
     y: 0,
     transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
   },
-};
-
-const shareVariants = {
-  hidden: { scale: 1 },
-  hover: { scale: 1.05, transition: { type: 'spring', stiffness: 400 } },
 };
 
 export default function ArticlePage({ id }: { id?: string }) {
@@ -114,8 +76,7 @@ export default function ArticlePage({ id }: { id?: string }) {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const [toast, setToast] = useState<string | null>(null);
-
-  const [baseUrl, setBaseUrl] = useState('https://rec-sakh.ru');
+  const [baseUrl, setBaseUrl] = useState('https://sakhcom.ru');
 
   useEffect(() => {
     setBaseUrl(window.location.origin);
@@ -167,13 +128,13 @@ export default function ArticlePage({ id }: { id?: string }) {
   const tags: string[] = (article.tags || []).map(t => typeof t === 'string' ? t : (t as { tag: { name: string } }).tag?.name || '').filter(Boolean);
 
   const fav = isFavorite(article.id);
+  const readingTime = article.readingTimeMinutes ?? estimateReadingTime(article.content ? JSON.parse(article.content) : null);
 
   const formattedDate = article.publishedAt ? format(new Date(article.publishedAt), 'd MMMM yyyy, HH:mm', { locale: ru }) : '';
   const formattedUpdate = article.updatedAt ? format(new Date(article.updatedAt), 'd MMMM yyyy, HH:mm', { locale: ru }) : '';
   const showUpdated = article.updatedAt !== article.publishedAt;
 
   const effectiveShareUrl = clientShareUrl || `${baseUrl}/news/${article.slug}`;
-  const shareTitle = encodeURIComponent(article.title);
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -214,6 +175,18 @@ export default function ArticlePage({ id }: { id?: string }) {
     },
   };
 
+  let renderedContent = '';
+  let htmlContent = '';
+  if (article.content) {
+    try {
+      const parsed = JSON.parse(article.content);
+      renderedContent = renderTipTapJson(parsed);
+    } catch {
+      renderedContent = article.content;
+    }
+    htmlContent = injectAdAfterParagraph(renderedContent, 4, '<div class="my-6"><div class="w-full h-24 bg-[var(--bg-surface)] border border-[var(--border-color)] flex items-center justify-center text-xs text-[var(--text-muted)]">Реклама</div></div>');
+  }
+
   return (
     <div className="pt-20 pb-8">
       <div className="max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
@@ -225,7 +198,6 @@ export default function ArticlePage({ id }: { id?: string }) {
           На главную
         </Link>
 
-        {/* JSON-LD Schema.org */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
@@ -298,9 +270,13 @@ export default function ArticlePage({ id }: { id?: string }) {
                 {/* Meta */}
                 <div className="flex items-center justify-between flex-wrap gap-4 py-4 border-b border-[var(--border-color)]">
                   <address className="flex items-center gap-3 not-italic">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-mono uppercase bg-[var(--bg-surface)] text-[var(--accent-ocean)] shrink-0">
-                      {article.author?.name?.charAt(0) || '?'}
-                    </div>
+                    {article.author?.avatarUrl ? (
+                      <img src={article.author.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-mono uppercase bg-[var(--bg-surface)] text-[var(--accent-ocean)] shrink-0">
+                        {article.author?.name?.charAt(0) || '?'}
+                      </div>
+                    )}
                     <div>
                       <div className="text-sm font-medium text-[var(--text-primary)]">
                         {article.author?.name || ''}
@@ -314,7 +290,7 @@ export default function ArticlePage({ id }: { id?: string }) {
                   <div className="flex items-center gap-4">
                     <span className="sakh-meta sakh-meta--with-icon">
                       <Eye size={12} />
-                      {(article.views || 0).toLocaleString('ru-RU')}
+                      {(article.viewsCount ?? 0).toLocaleString('ru-RU')}
                     </span>
                     <span className="sakh-meta sakh-meta--with-icon">
                       <MessageSquare size={12} />
@@ -322,7 +298,7 @@ export default function ArticlePage({ id }: { id?: string }) {
                     </span>
                     <span className="sakh-meta sakh-meta--with-icon">
                       <Clock size={12} />
-                      {article.readingTimeMinutes} мин
+                      {readingTime} мин
                     </span>
                     {article.publishedAt && (
                       <time dateTime={article.publishedAt} className="sakh-meta sakh-meta--with-icon">
@@ -339,12 +315,6 @@ export default function ArticlePage({ id }: { id?: string }) {
                     >
                       <Bookmark size={18} fill={fav ? 'var(--accent-ocean)' : 'none'} />
                     </motion.button>
-                    <button
-                      className="p-2 transition-colors text-[var(--text-muted)] hover:text-[var(--accent-ocean)]"
-                      aria-label="Поделиться"
-                    >
-                      <Share2 size={18} />
-                    </button>
                   </div>
                 </div>
               </header>
@@ -365,65 +335,14 @@ export default function ArticlePage({ id }: { id?: string }) {
               )}
 
               {/* Content */}
-              <div className="sakh-prose mb-8">
-                {article.content.split('\n\n').map((block, i) =>
-                  renderContentBlock(block, i, contentVariants),
-                )}
-              </div>
+              <div
+                className="sakh-prose mb-8"
+                dangerouslySetInnerHTML={{ __html: htmlContent }}
+              />
 
               {/* Share Buttons */}
-              <aside aria-label="Поделиться" className="flex items-center gap-3 mb-8 flex-wrap">
-                <span className="sakh-caption">Поделиться:</span>
-                <motion.a
-                  variants={shareVariants}
-                  initial="hidden"
-                  whileHover="hover"
-                  href={`https://t.me/share/url?url=${encodeURIComponent(effectiveShareUrl)}&text=${shareTitle}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="sakh-btn sakh-btn--sm sakh-btn--secondary"
-                  aria-label="Поделиться в Telegram"
-                >
-                  <Send size={14} />
-                  Telegram
-                </motion.a>
-                <motion.a
-                  variants={shareVariants}
-                  initial="hidden"
-                  whileHover="hover"
-                  href={`https://vk.com/share.php?url=${encodeURIComponent(effectiveShareUrl)}&title=${shareTitle}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="sakh-btn sakh-btn--sm sakh-btn--secondary"
-                  aria-label="Поделиться во ВКонтакте"
-                >
-                  <Share2 size={14} />
-                  VK
-                </motion.a>
-                <motion.a
-                  variants={shareVariants}
-                  initial="hidden"
-                  whileHover="hover"
-                  href={`https://wa.me/?text=${shareTitle}%20${encodeURIComponent(effectiveShareUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="sakh-btn sakh-btn--sm sakh-btn--secondary"
-                  aria-label="Поделиться в WhatsApp"
-                >
-                  <Send size={14} />
-                  WhatsApp
-                </motion.a>
-                <motion.button
-                  variants={shareVariants}
-                  initial="hidden"
-                  whileHover="hover"
-                  onClick={copyLink}
-                  className="sakh-btn sakh-btn--sm sakh-btn--secondary"
-                  aria-label="Скопировать ссылку"
-                >
-                  <Copy size={14} />
-                  Копировать
-                </motion.button>
+              <aside aria-label="Поделиться" className="mb-8">
+                <ShareButtons url={effectiveShareUrl} title={article.title} />
               </aside>
 
               {/* Tags */}
@@ -467,6 +386,7 @@ export default function ArticlePage({ id }: { id?: string }) {
                 </div>
               </div>
             )}
+            <AdSlot code="<div class='w-full h-64 bg-[var(--bg-surface)] border border-[var(--border-color)] flex items-center justify-center text-xs text-[var(--text-muted)]'>Рекламное место</div>" />
           </aside>
         </div>
       </div>

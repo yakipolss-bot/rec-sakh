@@ -142,13 +142,13 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
 
     switch (sortBy) {
       case 'views':
-        result.sort((a, b) => (b.views || 0) - (a.views || 0));
+        result.sort((a, b) => (b.viewsCount ?? 0) - (a.viewsCount ?? 0));
         break;
       case 'comments':
         result.sort((a, b) => b.commentsCount - a.commentsCount);
         break;
       case 'popularity':
-        result.sort((a, b) => ((b.views || 0) * 1 + b.commentsCount * 3 + (b.viewsCount || 0) * 2) - ((a.views || 0) * 1 + a.commentsCount * 3 + (a.viewsCount || 0) * 2));
+        result.sort((a, b) => ((b.viewsCount ?? 0) * 3 + b.commentsCount * 3) - ((a.viewsCount ?? 0) * 3 + a.commentsCount * 3));
         break;
       default:
         result.sort((a, b) => new Date(b.publishedAt || '').getTime() - new Date(a.publishedAt || '').getTime());
@@ -429,7 +429,7 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
                         {article.title}
                       </p>
                       <span className="sakh-meta mt-1 block">
-                        {(article.views || 0).toLocaleString('ru-RU')} просмотров
+                        {(article.viewsCount ?? 0).toLocaleString('ru-RU')} просмотров
                       </span>
                     </div>
                   </Link>

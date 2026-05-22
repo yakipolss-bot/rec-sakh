@@ -9,6 +9,7 @@ import { newsService } from '@/services/news.service';
 import { categoriesService } from '@/services/categories.service';
 import type { Category } from '@/services/categories.service';
 import type { NewsArticle } from '@/services/news.service';
+import RichTextEditor from '@/components/RichTextEditor';
 
 export default function EditorialNewsEdit() {
   const { id } = useParams<{ id: string }>();
@@ -135,8 +136,7 @@ export default function EditorialNewsEdit() {
 
         <div>
           <label className="sakh-caption text-[var(--text-secondary)] block mb-1.5">Текст</label>
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} className="sakh-textarea min-h-[300px]" rows={12} />
-          <p className="sakh-meta mt-1">WYSIWYG-редактор будет доступен позже</p>
+          <RichTextEditor content={content ? JSON.parse(content) : undefined} onChange={(json) => setContent(JSON.stringify(json))} placeholder="Начните писать статью…" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -184,11 +184,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     init();
 
-    const sub = authService.onAuthStateChange((event, session) => {
+    const sub = authService.onAuthStateChange(async (event, session) => {
       if (event === 'INITIAL_SESSION') {
         return;
       }
-      if (session) {
+      if (event === 'SIGNED_IN' && session) {
+        try {
+          const profile = await usersService.getMe();
+          setUser({
+            id: profile.id,
+            email: profile.email,
+            name: profile.name,
+            role: profile.role,
+            avatarUrl: profile.avatarUrl,
+          });
+        } catch {
+          setUser(session.user);
+        }
+      } else if (session) {
         setUser(session.user);
       } else {
         setUser(null);

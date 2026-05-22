@@ -137,13 +137,33 @@ export const authService = {
   },
 
   async getProfile() {
+    const accessToken = getLocalStorage('accessToken');
+    if (accessToken) {
+      try {
+        const axiosInstance = axios.create({
+          baseURL: API_BASE_URL,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        });
+        const { data: profileData } = await axiosInstance.get('/users/me');
+        const profile = profileData.data || profileData;
+        return {
+          id: profile.id,
+          email: profile.email || '',
+          name: profile.name || 'User',
+          role: profile.role || 'user',
+          avatarUrl: profile.avatarUrl || null,
+        };
+      } catch {
+        // fallback to Supabase session
+      }
+    }
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) throw new Error('Not authenticated');
     return {
       id: session.user.id,
       email: session.user.email || '',
       name: extractName(session.user),
-      role: 'authenticated',
+      role: 'user',
       avatarUrl: session.user.user_metadata?.avatar_url || null,
     };
   },

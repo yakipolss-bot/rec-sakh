@@ -112,7 +112,7 @@ function filterArticles(
   if (sort === 'date') {
     filtered.sort((a, b) => new Date(b.publishedAt || '').getTime() - new Date(a.publishedAt || '').getTime());
   } else if (sort === 'popularity') {
-    filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
+    filtered.sort((a, b) => (b.viewsCount ?? 0) - (a.viewsCount ?? 0));
   }
 
   return filtered;
@@ -751,7 +751,7 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
                         )}
                         <span className="sakh-meta sakh-meta--with-icon">
                           <Eye size={12} />
-                          {(article.views || 0).toLocaleString('ru-RU')}
+                          {(article.viewsCount ?? 0).toLocaleString('ru-RU')}
                         </span>
                         <span className="sakh-meta sakh-meta--with-icon">
                           <MessageSquare size={12} />

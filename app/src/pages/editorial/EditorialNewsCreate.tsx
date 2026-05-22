@@ -123,14 +123,7 @@ export default function EditorialNewsCreate() {
 
         <div>
           <label className="sakh-caption text-[var(--text-secondary)] block mb-1.5">Текст новости</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Введите текст новости..."
-            className="sakh-textarea min-h-[300px] font-body"
-            rows={12}
-          />
-          <p className="sakh-meta mt-1">WYSIWYG-редактор будет доступен позже</p>
+          <RichTextEditor content={content ? JSON.parse(content) : undefined} onChange={(json) => setContent(JSON.stringify(json))} placeholder="Начните писать статью…" />
         </div>
 
         <div>

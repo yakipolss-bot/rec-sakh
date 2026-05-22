@@ -63,7 +63,7 @@ export default function NewsCard({ article, variant = 'default', index = 0 }: Ne
               <div className="flex items-center gap-3">
                 <span className="sakh-meta sakh-meta--with-icon">
                   <Eye size={12} />
-                  {article.views.toLocaleString('ru-RU')}
+                  {(article.viewsCount ?? 0).toLocaleString('ru-RU')}
                 </span>
                 <span className="sakh-meta sakh-meta--with-icon">
                   <MessageSquare size={12} />
@@ -110,7 +110,7 @@ export default function NewsCard({ article, variant = 'default', index = 0 }: Ne
               <span className="sakh-meta">{formattedDate}</span>
               <span className="sakh-meta sakh-meta--with-icon">
                 <Eye size={10} />
-                {article.views.toLocaleString('ru-RU')}
+                {(article.viewsCount ?? 0).toLocaleString('ru-RU')}
               </span>
             </div>
           </div>
@@ -157,7 +157,7 @@ export default function NewsCard({ article, variant = 'default', index = 0 }: Ne
             <div className="flex items-center gap-3">
               <span className="sakh-meta sakh-meta--with-icon">
                 <Eye size={12} />
-                {article.views.toLocaleString('ru-RU')}
+                {(article.viewsCount ?? 0).toLocaleString('ru-RU')}
               </span>
               <span className="sakh-meta sakh-meta--with-icon">
                 <MessageSquare size={12} />

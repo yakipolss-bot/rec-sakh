@@ -9,9 +9,8 @@ export interface NewsArticle {
   publishedAt: string;
   updatedAt: string;
   mainImageUrl: string | null;
-  views: number;
-  commentsCount: number;
   viewsCount: number;
+  commentsCount: number;
   readingTimeMinutes: number;
   tags: string[];
   city: string;
