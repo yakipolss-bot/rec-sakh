@@ -177,15 +177,25 @@ export class EventsSyncService implements OnModuleInit {
   // ── Seed (fallback when DB empty) ──
 
   async seedInitialEvents(): Promise<number> {
-    const count = await this.prisma.event.count({ where: { externalSource: null } });
-    if (count > 0) {
-      this.logger.log(`Seed events already exist (${count}), skipping`);
+    const seededCount = await this.prisma.event.count({ where: { externalSource: null } });
+    const totalCount = await this.prisma.event.count();
+
+    // If we have seed events but they're missing images, update images instead of skipping
+    if (seededCount > 0 && seededCount < 20) {
+      const noImgCount = await this.prisma.event.count({
+        where: { externalSource: null, imageUrl: null },
+      });
+      if (noImgCount > 0) {
+        this.logger.log(`Updating images for ${noImgCount} seed events...`);
+        await this.seedImagesForExisting();
+        return seededCount;
+      }
+      this.logger.log(`Seed events already exist (${seededCount}), skipping`);
       return 0;
     }
 
-    const existingAny = await this.prisma.event.count();
-    if (existingAny > 20) {
-      this.logger.log(`Already have ${existingAny} events, skipping seed`);
+    if (totalCount > 20) {
+      this.logger.log(`Already have ${totalCount} events, skipping seed`);
       return 0;
     }
 
@@ -247,5 +257,37 @@ export class EventsSyncService implements OnModuleInit {
 
     this.logger.log(`Seeded ${events.length} initial events`);
     return events.length;
+  }
+
+  private async seedImagesForExisting(): Promise<void> {
+    const seedEvents = [
+      { title: 'Чехов. Рассказы', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop' },
+      { title: 'Концерт симфонического оркестра «Времена года»', img: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800b?w=600&h=400&fit=crop' },
+      { title: 'Выставка «Сахалин в акварели»', img: 'https://images.unsplash.com/photo-1531913764164-f85c5e25e58f?w=600&h=400&fit=crop' },
+      { title: 'Мюзикл «Алые паруса»', img: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&h=400&fit=crop' },
+      { title: 'Спектакль «Гроза»', img: 'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600&h=400&fit=crop' },
+      { title: 'Джазовый вечер «Сахалинские ритмы»', img: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=600&h=400&fit=crop' },
+      { title: 'Фестиваль «Край света»', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=600&h=400&fit=crop' },
+      { title: 'Экскурсия «По следам первооткрывателей»', img: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&h=400&fit=crop' },
+      { title: 'Чемпионат по волейболу Сахалинской области', img: 'https://images.unsplash.com/photo-1461896836934-bd45ba8fcf2b?w=600&h=400&fit=crop' },
+      { title: 'Мастер-класс «Сахалинская кухня»', img: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&h=400&fit=crop' },
+      { title: 'Кинопоказ «Остров — 2026»', img: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop' },
+      { title: 'Балет «Лебединое озеро»', img: 'https://images.unsplash.com/photo-1540039155733-5bb30b53e2bc?w=600&h=400&fit=crop' },
+      { title: 'Выставка «Море и люди Сахалина»', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop' },
+      { title: 'Стендап: Открытый микрофон', img: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=600&h=400&fit=crop' },
+      { title: 'Детский спектакль «Золотой ключик»', img: 'https://images.unsplash.com/photo-1503454537925-8f6a7a5af0c4?w=600&h=400&fit=crop' },
+    ];
+    for (const s of seedEvents) {
+      const existing = await this.prisma.event.findFirst({
+        where: { title: s.title, externalSource: null, imageUrl: null },
+      });
+      if (existing) {
+        await this.prisma.event.update({
+          where: { id: existing.id },
+          data: { imageUrl: s.img },
+        });
+      }
+    }
+    this.logger.log('Updated images for seed events');
   }
 }
