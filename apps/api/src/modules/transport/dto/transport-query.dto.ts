@@ -1,30 +1,38 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 
 // --- Query DTOs ---
 
 export class TransportScheduleQueryDto {
+  @IsOptional() @IsString()
   @ApiPropertyOptional({ enum: ['bus', 'train'] })
   type?: string;
 
+  @IsOptional() @IsString()
   @ApiPropertyOptional()
   city?: string;
 
+  @IsOptional() @IsString()
   @ApiPropertyOptional()
   routeName?: string;
 }
 
 export class TransportFlightQueryDto {
+  @IsOptional() @IsString()
   @ApiPropertyOptional()
   date?: string;
 
+  @IsOptional() @IsString()
   @ApiPropertyOptional({ enum: ['arrival', 'departure'] })
   type?: string;
 }
 
 export class TransportFerryQueryDto {
+  @IsOptional() @IsString()
   @ApiPropertyOptional()
   date?: string;
 
+  @IsOptional() @IsString()
   @ApiPropertyOptional()
   route?: string;
 }

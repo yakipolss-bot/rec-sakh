@@ -105,7 +105,7 @@ async function main() {
         name: cat.name,
         slug: cat.slug,
         sortOrder: cat.sortOrder,
-        type: (cat as any).type || 'news',
+        type: ('type' in cat ? cat.type : 'news') as string,
       },
     });
     categoryMap[cat.slug] = created.id;

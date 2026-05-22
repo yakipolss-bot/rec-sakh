@@ -1,9 +1,9 @@
 require('dotenv').config();
 (async () => {
   const imported = await import('pg-boss');
-  const _pgBossPkg = imported as any;
+  const _pgBossPkg = imported as Record<string, unknown>;
   // prefer named `PgBoss` export, then default, then whole package
-  const PgBossCtor = _pgBossPkg && (_pgBossPkg.PgBoss ?? _pgBossPkg.default ?? _pgBossPkg);
+  const PgBossCtor = _pgBossPkg && (_pgBossPkg.PgBoss ?? _pgBossPkg.default ?? _pgBossPkg) as new (config: { connectionString: string }) => { start(): Promise<void>; stop(): Promise<void>; publish(name: string, data: Record<string, unknown>): Promise<string> };
   console.log('pg-boss module keys:', Object.keys(_pgBossPkg));
   console.log('pg-boss default present:', !!_pgBossPkg.default, 'typeof default:', typeof _pgBossPkg.default);
 

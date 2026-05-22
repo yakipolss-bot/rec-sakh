@@ -21,6 +21,13 @@ export class TransportController {
 
   // --- Public Endpoints ---
 
+  @Get('sync/status')
+  @Public()
+  @ApiOperation({ summary: 'Статус синхронизации транспорта' })
+  async getSyncStatus() {
+    return this.transportService.getSyncStatus();
+  }
+
   @Get('schedule')
   @Public()
   @ApiOperation({ summary: 'Расписания транспорта (bus/train)' })

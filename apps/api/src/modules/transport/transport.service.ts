@@ -1,5 +1,6 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { TransportSyncService } from './transport-sync.service.js';
 
 const SEED_FLIGHTS = [
   {
@@ -181,10 +182,17 @@ const SEED_SCHEDULES = [
 ];
 
 @Injectable()
-export class TransportService {
+export class TransportService implements OnApplicationBootstrap {
   private readonly logger = new Logger(TransportService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private syncService: TransportSyncService,
+  ) {}
+
+  async onApplicationBootstrap() {
+    await this.ensureSeedData();
+  }
 
   // --- Public Endpoints ---
 
@@ -481,5 +489,21 @@ export class TransportService {
       await this.prisma.transportSchedule.create({ data: s });
     }
     this.logger.log(`[Transport] Seeded ${SEED_SCHEDULES.length} schedules`);
+  }
+
+  async getSyncStatus() {
+    const [flights, ferries, roads, schedules] = await Promise.all([
+      this.prisma.transportFlight.count(),
+      this.prisma.transportFerry.count(),
+      this.prisma.transportRoad.count(),
+      this.prisma.transportSchedule.count(),
+    ]);
+
+    return {
+      flights: { count: flights, lastSync: this.syncService.lastFlightsSync, lastCount: this.syncService.lastFlightsCount },
+      ferries: { count: ferries, lastSync: this.syncService.lastFerrySync, lastCount: this.syncService.lastFerryCount },
+      roads: { count: roads },
+      schedules: { count: schedules },
+    };
   }
 }

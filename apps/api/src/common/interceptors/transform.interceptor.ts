@@ -34,7 +34,7 @@ export class TransformInterceptor<T>
         if (data && data.data !== undefined && data.meta !== undefined) {
           return data;
         }
-        const meta: any = {
+        const meta: Record<string, unknown> = {
           requestId,
           timestamp: new Date().toISOString(),
         };

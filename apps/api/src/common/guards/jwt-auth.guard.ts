@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 import { SupabaseService } from '../supabase/supabase.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { FastifyRequest } from 'fastify';
 
 @Injectable()
 export class JwtAuthGuard {
@@ -74,7 +75,7 @@ export class JwtAuthGuard {
     return true;
   }
 
-  private extractToken(request: any): string | null {
+  private extractToken(request: FastifyRequest): string | null {
     const auth = request.headers?.authorization;
     if (!auth) return null;
     const [type, token] = auth.split(' ');

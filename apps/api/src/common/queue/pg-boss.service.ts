@@ -1,9 +1,16 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 
+interface PgBossInstance {
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  publish(name: string, data?: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+  work(name: string, handler: (job: { data: Record<string, unknown> }) => Promise<unknown>, options?: Record<string, unknown>): Promise<unknown>;
+}
+
 @Injectable()
 export class PgBossService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PgBossService.name);
-  private boss: any | null = null;
+  private boss: PgBossInstance | null = null;
 
   async onModuleInit() {
     const connectionString = process.env.DATABASE_URL;
@@ -11,11 +18,11 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn('DATABASE_URL not set — PgBoss disabled');
       return;
     }
-    let PgBossCtor: any = null;
+    let PgBossCtor: (new (config: { connectionString: string }) => PgBossInstance) | null = null;
     try {
       const imported = await import('pg-boss');
-      const pkg: any = imported as any;
-      PgBossCtor = pkg.PgBoss ?? pkg.default ?? pkg;
+      const pkg = imported as Record<string, unknown>;
+      PgBossCtor = (pkg.PgBoss ?? pkg.default ?? pkg) as new (config: { connectionString: string }) => PgBossInstance;
       this.logger.log(`pg-boss module keys: ${Object.keys(pkg).join(', ')}`);
       this.logger.log(`pg-boss default present: ${!!pkg.default} typeof default: ${typeof pkg.default}`);
     } catch {
@@ -37,10 +44,10 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      await this.boss.start();
+      await this.boss!.start();
       this.logger.log('PgBoss started');
     } catch (e) {
-      this.logger.warn('Failed to start PgBoss — queue disabled: ' + (e?.message ?? String(e)));
+      this.logger.warn('Failed to start PgBoss — queue disabled: ' + ((e as Error)?.message ?? String(e)));
       this.boss = null;
     }
   }
@@ -49,14 +56,14 @@ export class PgBossService implements OnModuleInit, OnModuleDestroy {
     return this.boss !== null;
   }
 
-  async publish(name: string, data?: any, options?: any) {
+  async publish(name: string, data?: Record<string, unknown>, options?: Record<string, unknown>) {
     if (!this.boss) throw new Error('PgBoss not started');
     return this.boss.publish(name, data, options);
   }
 
-  async work(name: string, handler: (job: any) => Promise<any>, options?: any) {
+  async work(name: string, handler: (data: Record<string, unknown>) => Promise<unknown>, options?: Record<string, unknown>) {
     if (!this.boss) throw new Error('PgBoss not started');
-    return this.boss.work(name, async (job: any) => {
+    return this.boss.work(name, async (job: { data: Record<string, unknown> }) => {
       try {
         return await handler(job.data);
       } catch (err) {

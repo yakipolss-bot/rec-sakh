@@ -155,7 +155,14 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
 
 function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
   const isActive = (href: string) => location.pathname.startsWith(href);
+
+  const cycleTheme = () => {
+    const idx = themeCycle.indexOf(theme);
+    const next = themeCycle[(idx + 1) % themeCycle.length];
+    setTheme(next);
+  };
 
   return (
     <AnimatePresence>
@@ -170,14 +177,14 @@ function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void })
             onClick={onClose}
           />
           <motion.div
-            initial={{ x: '100%' }}
+            initial={{ x: '-100%' }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 bottom-0 z-[65] w-80 overflow-y-auto"
+            className="fixed top-0 left-0 bottom-0 z-[65] w-80 overflow-y-auto"
             style={{
               backgroundColor: 'var(--bg-primary)',
-              borderLeft: '1px solid var(--border-color)',
+              borderRight: '1px solid var(--border-color)',
             }}
           >
             <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
@@ -221,6 +228,18 @@ function MobileDrawer({ open, onClose }: { open: boolean; onClose: () => void })
                     {s.label}
                   </Link>
                 ))}
+              </div>
+
+              <div className="pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                <button
+                  onClick={() => { cycleTheme(); onClose(); }}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm transition-colors w-full text-left"
+                  style={{ color: 'var(--text-secondary)' }}
+                  aria-label={themeLabels[theme]}
+                >
+                  {themeIcons[theme] || <Sun size={16} />}
+                  {themeLabels[theme]}
+                </button>
               </div>
 
               <div className="pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
@@ -288,7 +307,17 @@ export default function Navbar() {
         {/* Top bar */}
         <div className="flex items-center h-10 px-4 sm:px-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
           <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            {/* Mobile hamburger - left */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="lg:hidden p-2 transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+                aria-label="Меню"
+              >
+                <Menu size={20} />
+              </button>
+
               <Link to="/" className="flex items-center gap-2 shrink-0">
                 <span className="font-mono text-base tracking-[0.12em] uppercase" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
                   SAKHALIN
@@ -513,14 +542,6 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
 
-              <button
-                onClick={() => setMobileOpen(true)}
-                className="lg:hidden p-2 transition-colors"
-                style={{ color: 'var(--text-secondary)' }}
-                aria-label="Меню"
-              >
-                <Menu size={20} />
-              </button>
             </div>
           </div>
         </div>

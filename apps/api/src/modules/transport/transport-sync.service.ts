@@ -1,10 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { PDFParse } from 'pdf-parse';
+
 
 @Injectable()
 export class TransportSyncService {
   private readonly logger = new Logger(TransportSyncService.name);
+
+  lastFlightsSync: Date | null = null;
+  lastFerrySync: Date | null = null;
+  lastFlightsCount = 0;
+  lastFerryCount = 0;
 
   constructor(private prisma: PrismaService) {}
 
@@ -23,6 +30,8 @@ export class TransportSyncService {
       }
 
       await this.upsertFlights(flights);
+      this.lastFlightsSync = new Date();
+      this.lastFlightsCount = flights.length;
       this.logger.log(`[Sync] Updated ${flights.length} flights`);
     } catch (err) {
       this.logger.error(`[Sync] Airport fetch failed: ${err}`);
@@ -37,14 +46,50 @@ export class TransportSyncService {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SakhcomBot/1.0)' },
       }).then((r) => r.text());
 
-      const ferries = this.parseFerrySchedule(html);
-      if (ferries.length === 0) {
-        this.logger.warn('[Sync] No ferries parsed from sasco.ru');
+      // Extract PDF links from the page
+      const pdfLinks = [...html.matchAll(/<a[^>]*href="([^"]+\.pdf)"[^>]*class="docs-list-item"[^>]*>/gi)]
+        .map(m => m[1])
+        .filter(h => h.includes('rasp_VHV'));
+
+      if (pdfLinks.length === 0) {
+        this.logger.warn('[Sync] No schedule PDFs found on sasco.ru');
         return;
       }
 
-      await this.upsertFerries(ferries);
-      this.logger.log(`[Sync] Updated ${ferries.length} ferry entries`);
+      const allFerries: FerryData[] = [];
+
+      for (const link of pdfLinks) {
+        const url = link.startsWith('http') ? link : `https://www.sasco.ru${link}`;
+        this.logger.log(`[Sync] Downloading PDF: ${url}`);
+
+        const res = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SakhcomBot/1.0)' },
+        });
+        const buf = Buffer.from(await res.arrayBuffer());
+
+        const pdf = new PDFParse({ data: buf });
+        const result = await pdf.getText();
+        const text: string = result.text;
+
+        const ferries = this.parseFerryPdf(text);
+        allFerries.push(...ferries);
+        this.logger.log(`[Sync] Parsed ${ferries.length} entries from ${url.split('/').pop()}`);
+      }
+
+      if (allFerries.length === 0) {
+        this.logger.warn('[Sync] No ferry entries parsed from PDFs');
+        return;
+      }
+
+      // Clear old ferry data and re-insert
+      await this.prisma.transportFerry.deleteMany({});
+      for (const f of allFerries) {
+        await this.prisma.transportFerry.create({ data: f });
+      }
+
+      this.lastFerrySync = new Date();
+      this.lastFerryCount = allFerries.length;
+      this.logger.log(`[Sync] Updated ${allFerries.length} ferry entries from ${pdfLinks.length} PDFs`);
     } catch (err) {
       this.logger.error(`[Sync] Ferry fetch failed: ${err}`);
     }
@@ -55,7 +100,6 @@ export class TransportSyncService {
   private parseAirportBoard(html: string): AirportFlightData[] {
     const flights: AirportFlightData[] = [];
 
-    // Helper: normalize status
     const normStatus = (s: string): string => {
       const st = s.trim().toLowerCase();
       if (st.includes('вылетел') || st.includes('прибыл')) return 'arrived';
@@ -65,63 +109,64 @@ export class TransportSyncService {
       return 'scheduled';
     };
 
-    // Helper: extract city name from airline+city block
-    const extractCity = (text: string): string => text.replace(/[«»"]/g, '').trim();
+    const airlineMap: Record<string, string> = {
+      taiga: 'Таига',
+      s7: 'S7 Airlines',
+      aurora: 'Аврора',
+      aeroflot: 'Аэрофлот',
+      rus: 'Россия',
+    };
 
-    // Actually parse: the airportus board has departure first, then arrival
-    // We detect sections by looking at the flight table headers
-    const sections = html.split(/<thead>/g);
-    let sectionIdx = 0;
-    for (const section of sections) {
-      if (sectionIdx === 0) { sectionIdx++; continue; } // skip before first thead
+    const depSection = html.match(/tab-page="departure"[\s\S]*?(?=tab-page="arrival"|$)/i)?.[0] || '';
+    const arrSection = html.match(/tab-page="arrival"[\s\S]*?$/i)?.[0] || '';
 
-      const type: 'departure' | 'arrival' = sectionIdx === 1 ? 'departure' : 'arrival';
-      sectionIdx++;
+    const parseSection = (section: string, type: 'departure' | 'arrival') => {
+      const rowRegex = /<div\s+class="board-table__row\s*([^"]*)"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/g;
+      let rowMatch: RegExpExecArray | null;
+      while ((rowMatch = rowRegex.exec(section)) !== null) {
+        const rowClass = rowMatch[1];
+        const rowHtml = rowMatch[2];
+        if (!rowHtml || rowClass.includes('--head')) continue;
 
-      // Extract all rows from this section
-      const rowMatches = section.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
-      for (const rowMatch of rowMatches) {
-        const rowHtml = rowMatch[1];
-        if (!rowHtml || rowHtml.includes('<th')) continue; // skip header rows
+        const getItem = (n: number): string => {
+          const m = rowHtml.match(new RegExp(`board-table__item--${n}[^>]*>([\\s\\S]*?)<\\/div>`));
+          if (!m) return '';
+          return m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        };
 
-        const cells = [...rowHtml.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((m) =>
-          m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-        );
+        const item1 = getItem(1);
+        const item2 = getItem(2);
+        const item3 = getItem(3);
+        const item4 = getItem(4);
+        const item5 = getItem(5);
+        const item6 = getItem(6);
 
-        if (cells.length < 4) continue;
+        const flightNumMatch = item1.match(/<span[^>]*class="flight"[^>]*>([^<]+)<\/span>/i);
+        const flightNum = flightNumMatch ? flightNumMatch[1].trim() : item1;
 
-        // cells[0] = flight number, cells[1] = airline, cells[2] = city
-        // cells[3] = scheduled time, cells[4] = actual time, cells[5] = status
-        const flightNum = cells[0].replace(/\s+/g, ' ').trim();
-        const airline = cells[1] || null;
-        const city = extractCity(cells[2] || '');
+        const srcMatch = item2.match(/src="[^"]*\/([^/.]+)\./i);
+        const airline = srcMatch ? (airlineMap[srcMatch[1]] || srcMatch[1]) : null;
 
-        // Time parsing — could be "09:00" or "22.05 09:00"
-        const timeRaw = cells[3] || '';
+        const city = item3.replace(/\s*<div.*$/s, '').trim();
+
+        const timeRaw = item4.replace(/<[^>]+>/g, '').trim();
         const timeMatch = timeRaw.match(/(\d{1,2})[.:](\d{2})/);
         let scheduledTime = timeRaw;
         if (timeMatch) {
-          // Check if it has date prefix like "22.05 09:00" (future date)
           const datePrefix = timeRaw.match(/(\d{2}\.\d{2})\s+/);
-          if (datePrefix) {
-            scheduledTime = datePrefix[1] + ' ' + timeMatch[0];
-          }
+          scheduledTime = datePrefix ? datePrefix[1] + ' ' + timeMatch[0] : timeMatch[0];
         }
 
-        const actualTime = cells[4] || null;
-        const rawStatus = cells[5] || '';
+        const actualTime = item5.replace(/<[^>]+>/g, '').trim() || null;
+        const rawStatus = item6.replace(/<[^>]+>/g, '').trim();
         const status = normStatus(rawStatus);
 
-        // Determine departure vs arrival city based on type
-        const isDeparture = type === 'departure';
-
-        // For departures: city is the destination; for arrivals: city is the origin
-        const departureCity = isDeparture ? 'Южно-Сахалинск (UUS)' : (city ? `${city}` : undefined);
-        const arrivalCity = isDeparture ? (city ? `${city}` : undefined) : 'Южно-Сахалинск (UUS)';
+        const departureCity = type === 'departure' ? 'Южно-Сахалинск (UUS)' : city;
+        const arrivalCity = type === 'arrival' ? 'Южно-Сахалинск (UUS)' : city;
 
         flights.push({
           flightNumber: flightNum,
-          airline: airline || null,
+          airline,
           departureCity: departureCity || null,
           arrivalCity: arrivalCity || null,
           scheduledTime,
@@ -130,7 +175,10 @@ export class TransportSyncService {
           type,
         });
       }
-    }
+    };
+
+    parseSection(depSection, 'departure');
+    parseSection(arrSection, 'arrival');
 
     return flights;
   }
@@ -191,112 +239,124 @@ export class TransportSyncService {
     }
   }
 
-  // ─── Ferry parser ──────────────────────────────────────────────
+  // ─── Ferry PDF parser ────────────────────────────────────────────
 
-  private parseFerrySchedule(html: string): FerryData[] {
+  private parseFerryPdf(text: string): FerryData[] {
     const ferries: FerryData[] = [];
 
-    // The SASCO page has a specific structure for each vessel
-    // Find each vessel section: <h3>Сахалин-X</h3>
-    const vesselRegex = /<h3[^>]*>([^<]+)<\/h3>\s*<div[^>]*class="[^"]*ferry[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/gi;
-    let match: RegExpExecArray | null;
+    // Extract vessel name(s) from header
+    const vesselHeaderMatch = text.match(/д\/э\s+"([^"]+)"(?:\s+д\/э\s+"([^"]+)")?/);
+    const vessels: string[] = [];
+    if (vesselHeaderMatch) {
+      if (vesselHeaderMatch[1]) vessels.push(vesselHeaderMatch[1]);
+      if (vesselHeaderMatch[2]) vessels.push(vesselHeaderMatch[2]);
+    }
+    if (vessels.length === 0) return [];
 
-    while ((match = vesselRegex.exec(html)) !== null) {
-      const vesselName = match[1].trim();
-      const content = match[2];
+    const route = 'Ванино-Холмск';
 
-      if (!content) continue;
+    // Find the table data rows — dates in format DD.MM.YYYY
+    const lines = text.split('\n');
 
-      let currentPort = '';
-
-      const portBlocks = content.split(/<div[^>]*class="[^"]*ferry-header[^"]*"[^>]*>/g);
-      for (let i = 1; i < portBlocks.length; i++) {
-        // The port name is in the first part before </div>
-        const headerEnd = portBlocks[i].indexOf('</div>');
-        if (headerEnd === -1) continue;
-        currentPort = portBlocks[i].substring(0, headerEnd).replace(/<[^>]+>/g, '').trim();
-
-        const portContent = portBlocks[i].substring(headerEnd + 6);
-
-        // Extract arrival/departure times
-        const times = [...portContent.matchAll(/(?:Приход|Отход)\s*\(?[^)]*\)?\s*([\d.]+)\s+([\d:]+)/gi)];
-        for (const t of times) {
-          const label = t[0].includes('Приход') ? 'arrival' : 'departure';
-          const dateStr = t[1];
-          const timeStr = t[2];
-
-          const dateParts = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4})/);
-          const timeParts = timeStr.match(/(\d{1,2})[.:](\d{2})/);
-          if (!dateParts || !timeParts) continue;
-
-          const d = parseInt(dateParts[1]), m = parseInt(dateParts[2]) - 1, y = parseInt(dateParts[3]);
-          const h = parseInt(timeParts[1]), min = parseInt(timeParts[2]);
-
-          const dt = new Date(y, m, d, h, min);
-
-          // Determine route
-          const route = 'Ванино-Холмск';
-          const isVanino = /ванино/i.test(currentPort);
-          const isKholmsk = /холмск/i.test(currentPort);
-          const departurePort = isVanino ? 'Ванино' : isKholmsk ? 'Холмск' : currentPort;
-          const arrivalPort = isVanino ? 'Холмск' : isKholmsk ? 'Ванино' : '';
-
-          ferries.push({
-            route,
-            vesselName,
-            departurePort,
-            arrivalPort,
-            departureTime: label === 'departure' ? dt : new Date(dt.getTime() - 18 * 60 * 60 * 1000),
-            arrivalTime: label === 'arrival' ? dt : new Date(dt.getTime() + 18 * 60 * 60 * 1000),
-            status: 'scheduled',
-            date: new Date(y, m, d),
-          });
-        }
+    // Find the column header line: "приход отход приход отход ..."
+    let dataStart = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/приход\s+отход/i.test(lines[i]) && lines[i].includes('приход') && lines[i].includes('отход')) {
+        dataStart = i + 1;
+        break;
       }
     }
+    if (dataStart < 0) return [];
 
-    // Fallback: use simpler regex if above didn't match
-    if (ferries.length === 0) {
-      // Direct table parsing
-      const tableRegex = /<h3[^>]*>([^<]+)<\/h3>([\s\S]*?)(?=<h3|$)/gi;
-      while ((match = tableRegex.exec(html)) !== null) {
-        const vesselName = match[1].trim();
-        const content = match[2];
+    // Collect all date rows (lines containing only dates and spaces)
+    const dateRows: string[] = [];
+    for (let i = dataStart; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      // Stop at line that doesn't look like date data
+      if (!/^\d{2}\.\d{2}\.\d{4}/.test(line)) break;
+      dateRows.push(line);
+    }
 
-        // Find all date-time entries
-        const entries = [...content.matchAll(/([А-Яа-я]+)\s*\(?[^)]*\)?\s*((?:\d{2}\.){2}\d{4})\s+(\d{1,2}[:.]\d{2})/gi)];
-        let currentPort = '';
-        for (const entry of entries) {
-          const label = entry[1].trim(); // Приход/Отход + port name
-          const dateStr = entry[2];
-          const timeStr = entry[3].replace('.', ':');
+    // Expected month per column group (0=апрель, 1=май, 2=июнь)
+    const expectedMonths = [3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5];
 
-          if (label.includes('Ванино') || label.includes('Холмск')) {
-            currentPort = label.includes('Ванино') ? 'Ванино' : 'Холмск';
+    // Parse each row: every row has date pairs for (Vanino_arr, Vanino_dep, Kholmsk_arr, Kholmsk_dep) × 3 months
+    for (let ri = 0; ri < dateRows.length; ri++) {
+      const rawDates = dateRows[ri].trim().split(/\s+/).map(d => {
+        const parts = d.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+        if (!parts) return null;
+        return { day: parseInt(parts[1]), month: parseInt(parts[2]) - 1, year: parseInt(parts[3]) };
+      }).filter((d): d is { day: number; month: number; year: number } => d !== null);
+
+      if (rawDates.length < 8) continue;
+
+      // Fix PDF artifacts: enforce expected month per column
+      const dates: Date[] = rawDates.map((d, idx) => {
+        const expMonth = idx < expectedMonths.length ? expectedMonths[idx] : d.month;
+        // If extracted month is Jan (0) or differs from expected, use expected
+        const month = (d.month === 0 || d.month !== expMonth) ? expMonth : d.month;
+        return new Date(d.year, month, d.day);
+      });
+
+      for (let mi = 0; mi < 3 && mi * 4 + 3 < dates.length; mi++) {
+        const vanDep = dates[mi * 4 + 1];
+        const khlArr = dates[mi * 4 + 2];
+        const khlDep = dates[mi * 4 + 3];
+
+        for (const vesselName of vessels) {
+          // Vanino → Kholmsk
+          if (vanDep && khlArr) {
+            const depDate = new Date(vanDep);
+            depDate.setHours(8, 0, 0, 0);
+            const arrDate = new Date(khlArr);
+            // Arrival assumed ~18 hours later if same day, else use the date as-is
+            if (arrDate.getTime() === depDate.getTime()) {
+              arrDate.setHours(20, 0, 0, 0);
+            } else {
+              arrDate.setHours(8, 0, 0, 0);
+            }
+            ferries.push({
+              route, vesselName,
+              departurePort: 'Ванино', arrivalPort: 'Холмск',
+              departureTime: depDate, arrivalTime: arrDate,
+              status: 'scheduled',
+              date: new Date(depDate.getFullYear(), depDate.getMonth(), depDate.getDate()),
+            });
           }
 
-          const dateParts = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4})/);
-          const timeParts = timeStr.match(/(\d{1,2}):(\d{2})/);
-          if (!dateParts || !timeParts) continue;
+          // Kholmsk → Vanino (next row's Vanino arrival, or same row if this is the last row)
+          if (khlDep) {
+            let nextVanArr: Date | null = null;
+            // Try next row for the same month
+            if (ri + 1 < dateRows.length) {
+              const nextDates = dateRows[ri + 1].trim().split(/\s+/).map(d => {
+                const parts = d.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+                if (!parts) return null;
+                return new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]));
+              }).filter((d): d is Date => d !== null);
+              if (mi * 4 < nextDates.length) {
+                nextVanArr = nextDates[mi * 4];
+              }
+            }
+            // Fallback: next month's first date in same row
+            if (!nextVanArr && mi + 1 < 3 && (mi + 1) * 4 < dates.length) {
+              nextVanArr = dates[(mi + 1) * 4];
+            }
 
-          const d = parseInt(dateParts[1]), m = parseInt(dateParts[2]) - 1, y = parseInt(dateParts[3]);
-          const h = parseInt(timeParts[1]), min = parseInt(timeParts[2]);
-          const dt = new Date(y, m, d, h, min);
-
-          const isDeparture = /отход/i.test(label);
-          const isArrival = /приход/i.test(label) || /приход/i.test(html.substring(Math.max(0, entry.index - 50), entry.index));
-
-          if (currentPort) {
-            ferries.push({
-              route: 'Ванино-Холмск',
-              vesselName,
-              departurePort: currentPort,
-              arrivalPort: currentPort === 'Ванино' ? 'Холмск' : 'Ванино',
-              departureTime: isDeparture || !isArrival ? dt : new Date(dt.getTime() - 18 * 60 * 60 * 1000),
-              arrivalTime: isArrival ? dt : new Date(dt.getTime() + 18 * 60 * 60 * 1000),
-              status: 'scheduled',
-              date: new Date(y, m, d),
-            });
+            if (nextVanArr) {
+              const depDate = new Date(khlDep);
+              depDate.setHours(8, 0, 0, 0);
+              const arrDate = new Date(nextVanArr);
+              arrDate.setHours(8, 0, 0, 0);
+              ferries.push({
+                route, vesselName,
+                departurePort: 'Холмск', arrivalPort: 'Ванино',
+                departureTime: depDate, arrivalTime: arrDate,
+                status: 'scheduled',
+                date: new Date(depDate.getFullYear(), depDate.getMonth(), depDate.getDate()),
+              });
+            }
           }
         }
       }
@@ -305,30 +365,6 @@ export class TransportSyncService {
     return ferries;
   }
 
-  private async upsertFerries(ferries: FerryData[]) {
-    // Upsert ferries by unique key (vesselName + departureTime)
-    for (const f of ferries) {
-      const existing = await this.prisma.transportFerry.findFirst({
-        where: {
-          vesselName: f.vesselName,
-          departureTime: f.departureTime,
-        },
-      });
-
-      if (existing) {
-        await this.prisma.transportFerry.update({
-          where: { id: existing.id },
-          data: {
-            status: f.status,
-            departureTime: f.departureTime,
-            arrivalTime: f.arrivalTime,
-          },
-        });
-      } else {
-        await this.prisma.transportFerry.create({ data: f });
-      }
-    }
-  }
 }
 
 interface AirportFlightData {
