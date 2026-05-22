@@ -42,9 +42,7 @@ export function useUser(options: UseUserOptions = {}) {
         setIsLoading(true);
         setError(null);
         const profile = await usersService.getMe();
-        if (mounted) {
-          setUser(profile);
-        }
+        if (mounted) setUser(profile);
       } catch {
         try {
           const fallback = await authService.getProfile();
@@ -63,22 +61,20 @@ export function useUser(options: UseUserOptions = {}) {
             });
           }
         } catch {
-          if (mounted) {
-            setError(new Error('Failed to fetch user'));
+          // Silently fall back to auth context user if API is unavailable
+          if (mounted && authUser) {
+            setUser(mapAuthUserToProfile(authUser));
+            setError(null);
           }
         }
       } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+        if (mounted) setIsLoading(false);
       }
     };
 
     fetchUser();
 
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [enabled]);
 
   const refetch = async () => {
@@ -104,7 +100,11 @@ export function useUser(options: UseUserOptions = {}) {
           adsCount: 0,
         });
       } catch {
-        setError(new Error('Failed to fetch user'));
+        // Silently fall back to auth context user
+        if (authUser) {
+          setUser(mapAuthUserToProfile(authUser));
+          setError(null);
+        }
       }
     } finally {
       setIsLoading(false);
