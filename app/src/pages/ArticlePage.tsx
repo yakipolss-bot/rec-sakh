@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -23,15 +23,6 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.05, delayChildren: 0.1 },
-  },
-};
-
-const contentVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
@@ -89,16 +80,6 @@ export default function ArticlePage({ id }: { id?: string }) {
       setClientShareUrl(window.location.href);
     }
   }, [article]);
-
-  const copyLink = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setToast('Ссылка скопирована');
-    } catch {
-      setToast('Не удалось скопировать');
-    }
-    setTimeout(() => setToast(null), 3000);
-  }, []);
 
   if (loading) {
     return (

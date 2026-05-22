@@ -31,7 +31,7 @@ export default function CategorySections() {
   if (loading) {
     return (
       <>
-        {CATEGORY_SLUGS.map((slug, idx) => (
+        {CATEGORY_SLUGS.map((slug, _idx) => (
           <section key={slug} className="mb-12">
             <div className="flex items-center gap-2 mb-6">
               <div className="sakh-skeleton sakh-skeleton--heading w-32 h-6" />
