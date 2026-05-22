@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Sun, Moon, Focus, User, Menu, X, ChevronDown, MapPin } from 'lucide-react';
+import { Search, Sun, Moon, Focus, User, Menu, X, ChevronDown } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
+import CitySelector from '@/components/CitySelector';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/services/auth-context';
 
@@ -294,9 +295,8 @@ export default function Navbar() {
                 </span>
                 <span className="w-[2px] h-4 inline-block" style={{ backgroundColor: 'var(--accent-ocean)' }} />
               </Link>
-              <div className="hidden sm:flex items-center gap-1">
-                <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Южно-Сахалинск</span>
+              <div className="hidden sm:flex items-center">
+                <CitySelector />
               </div>
             </div>
 

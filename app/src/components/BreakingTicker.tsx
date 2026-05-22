@@ -2,11 +2,13 @@ import { usePolling } from '@/hooks/usePolling';
 import { Link } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import { newsService } from '@/services/news.service';
+import { useCity } from '@/contexts/CityContext';
 
 export default function BreakingTicker() {
+  const { currentCity } = useCity();
   const { data: items } = usePolling<{ id: string; slug: string; title: string }[]>(
     async () => {
-      const res = await newsService.getNews({ status: 'published', isUrgent: true, perPage: 20 });
+      const res = await newsService.getNews({ status: 'published', isUrgent: true, perPage: 20, city: currentCity.name });
       return (res.data ?? []).map((a: any) => ({ id: a.id, slug: a.slug, title: a.title }));
     },
     30000,

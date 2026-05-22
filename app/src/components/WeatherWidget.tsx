@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Cloud, CloudRain, Snowflake, Sun, Wind, Droplets, Gauge, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAllCitiesWeather } from '@/services/weather.service';
+import { useCity } from '@/contexts/CityContext';
 import type { WeatherData } from '@/types';
 
 const weatherIcons: Record<WeatherData['condition'], React.ReactNode> = {
@@ -23,8 +24,8 @@ const weatherLabels: Record<WeatherData['condition'], string> = {
 };
 
 export default function WeatherWidget() {
+  const { currentCity, setCity, cities } = useCity();
   const [allWeather, setAllWeather] = useState<WeatherData[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +42,8 @@ export default function WeatherWidget() {
     return () => { mounted = false; clearInterval(interval); };
   }, []);
 
-  const weather = allWeather[selectedIndex];
+  const weatherIndex = allWeather.findIndex(w => w.cityCode === currentCity.code);
+  const weather = weatherIndex >= 0 ? allWeather[weatherIndex] : allWeather[0];
 
   return (
     <div className="sakh-card p-4">
@@ -50,13 +52,16 @@ export default function WeatherWidget() {
           Погода
         </h3>
         <select
-          value={selectedIndex}
-          onChange={(e) => setSelectedIndex(Number(e.target.value))}
+          value={currentCity.code}
+          onChange={(e) => {
+            const city = cities.find(c => c.code === e.target.value);
+            if (city) setCity(city);
+          }}
           className="sakh-select"
           style={{ width: 'auto', fontSize: 'var(--text-xs)', padding: '2px 24px 2px 8px', backgroundPosition: 'right 4px center' }}
         >
-          {allWeather.map((w, i) => (
-            <option key={w.cityCode} value={i}>{w.city}</option>
+          {allWeather.map((w) => (
+            <option key={w.cityCode} value={w.cityCode}>{w.city}</option>
           ))}
         </select>
       </div>

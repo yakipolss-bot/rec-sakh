@@ -2,12 +2,14 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, Eye } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
 import { newsService } from '@/services/news.service';
+import { useCity } from '@/contexts/CityContext';
 import type { NewsArticle } from '@/types';
 
 export default function MostReadSidebar() {
+  const { currentCity } = useCity();
   const { data: articles, loading } = usePolling<NewsArticle[]>(
     async () => {
-      const res = await newsService.getNews({ status: 'published', perPage: 20 });
+      const res = await newsService.getNews({ status: 'published', perPage: 20, city: currentCity.name });
       const sorted = (res.data ?? []).sort(
         (a: NewsArticle, b: NewsArticle) => (b.viewsCount ?? 0) - (a.viewsCount ?? 0),
       );

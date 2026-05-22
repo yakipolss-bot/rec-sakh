@@ -2,13 +2,15 @@ import { motion } from 'framer-motion';
 import { Sun } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
 import { newsService } from '@/services/news.service';
+import { useCity } from '@/contexts/CityContext';
 import NewsCard from '@/components/NewsCard';
 import type { NewsArticle } from '@/types';
 
 export default function ThemeSection() {
+  const { currentCity } = useCity();
   const { data: articles, loading } = usePolling<NewsArticle[]>(
     async () => {
-      const res = await newsService.getNews({ status: 'published', perPage: 20 });
+      const res = await newsService.getNews({ status: 'published', perPage: 20, city: currentCity.name });
       return res.data ?? [];
     },
     60000,

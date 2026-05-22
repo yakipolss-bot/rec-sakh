@@ -3,15 +3,17 @@ import { motion } from 'framer-motion';
 import { Sun, ChevronRight } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
 import { newsService } from '@/services/news.service';
+import { useCity } from '@/contexts/CityContext';
 import NewsCard from '@/components/NewsCard';
 import type { NewsArticle } from '@/types';
 
 const CATEGORY_SLUGS = ['obshchestvo', 'ekonomika', 'sport', 'kultura', 'tekhnologii'];
 
 export default function CategorySections() {
+  const { currentCity } = useCity();
   const { data: articles, loading } = usePolling<NewsArticle[]>(
     async () => {
-      const res = await newsService.getNews({ status: 'published', perPage: 50 });
+      const res = await newsService.getNews({ status: 'published', perPage: 50, city: currentCity.name });
       return res.data ?? [];
     },
     60000,

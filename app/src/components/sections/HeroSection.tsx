@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Zap, Eye, MessageSquare } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
 import { newsService } from '@/services/news.service';
+import { useCity } from '@/contexts/CityContext';
 import type { NewsArticle } from '@/types';
 
 const itemVariants = {
@@ -11,9 +12,10 @@ const itemVariants = {
 };
 
 export default function HeroSection() {
+  const { currentCity } = useCity();
   const { data: articles, loading } = usePolling<NewsArticle[]>(
     async () => {
-      const res = await newsService.getNews({ status: 'published', perPage: 3 });
+      const res = await newsService.getNews({ status: 'published', perPage: 3, city: currentCity.name });
       return res.data ?? [];
     },
     30000,

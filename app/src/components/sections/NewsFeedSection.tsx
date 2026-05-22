@@ -3,15 +3,17 @@ import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
 import { newsService } from '@/services/news.service';
+import { useCity } from '@/contexts/CityContext';
 import NewsCard from '@/components/NewsCard';
 import BentoGrid from '@/components/BentoGrid';
 import type { BentoItem } from '@/components/BentoGrid';
 import type { NewsArticle } from '@/types';
 
 export default function NewsFeedSection() {
+  const { currentCity } = useCity();
   const { data: articles, loading } = usePolling<NewsArticle[]>(
     async () => {
-      const res = await newsService.getNews({ status: 'published', perPage: 11 });
+      const res = await newsService.getNews({ status: 'published', perPage: 11, city: currentCity.name });
       return res.data ?? [];
     },
     30000,

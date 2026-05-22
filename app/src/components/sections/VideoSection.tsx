@@ -3,12 +3,14 @@ import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
 import { newsService } from '@/services/news.service';
+import { useCity } from '@/contexts/CityContext';
 import type { NewsArticle } from '@/types';
 
 export default function VideoSection() {
+  const { currentCity } = useCity();
   const { data: articles, loading } = usePolling<NewsArticle[]>(
     async () => {
-      const res = await newsService.getNews({ status: 'published', perPage: 5 });
+      const res = await newsService.getNews({ status: 'published', perPage: 5, city: currentCity.name });
       return res.data ?? [];
     },
     60000,
