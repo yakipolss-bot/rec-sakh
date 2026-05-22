@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ThemeProvider } from '../src/hooks/useTheme';
 import { FavoritesProvider } from '../src/hooks/useFavorites';
+import { CityProvider } from '../src/contexts/CityContext';
 import Navbar from '../src/components/Navbar';
 import Footer from '../src/components/Footer';
 import ScrollProgress from '../src/components/ScrollProgress';
@@ -19,10 +20,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <AuthProvider>
     <ThemeProvider>
       <FavoritesProvider>
-        <ScrollProgress />
-        <Navbar />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
+        <CityProvider>
+          <ScrollProgress />
+          <Navbar />
+          <main className="min-h-screen">{children}</main>
+          <Footer />
+        </CityProvider>
       </FavoritesProvider>
     </ThemeProvider>
     </AuthProvider>
