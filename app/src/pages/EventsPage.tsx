@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, CalendarDays, Clock, Tag, ImageOff } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { eventsService } from '@/services/events.service';
 import apiClient from '@/services/api-client';
@@ -12,6 +12,12 @@ interface EventCategory {
   id: string;
   name: string;
   slug: string;
+}
+
+interface DayGroup {
+  date: string;
+  label: string;
+  events: ArticleEvent[];
 }
 
 const containerVariants = {
@@ -147,6 +153,33 @@ export default function EventsPage() {
     return events;
   }, [events, activeCategory]);
 
+  const dayGroups: DayGroup[] = useMemo(() => {
+    const sorted = [...filtered].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    const groups: DayGroup[] = [];
+    for (const ev of sorted) {
+      const d = new Date(ev.startDate);
+      const dateKey = format(d, 'yyyy-MM-dd');
+      const existing = groups.find(g => g.date === dateKey);
+      if (existing) {
+        existing.events.push(ev);
+      } else {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        let label: string;
+        if (isSameDay(d, today)) {
+          label = 'Сегодня';
+        } else if (isSameDay(d, tomorrow)) {
+          label = 'Завтра';
+        } else {
+          label = format(d, 'd MMMM', { locale: ru });
+        }
+        groups.push({ date: dateKey, label, events: [ev] });
+      }
+    }
+    return groups;
+  }, [filtered]);
+
   const displayedCategories = categories.filter(c =>
     ['kino', 'teatr', 'kontserty', 'ekskursii', 'sport', 'vystavki', 'festivali', 'master-klassy', 'detyam', 'obuchenie'].includes(c.slug)
   );
@@ -205,16 +238,35 @@ export default function EventsPage() {
             </p>
           </div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          >
-            {filtered.map(event => (
-              <EventCard key={event.id} event={event} />
+          <div className="space-y-8">
+            {dayGroups.map((group, gi) => (
+              <motion.div
+                key={group.date}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: gi * 0.05, duration: 0.3 }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-base font-medium text-[var(--text-primary)]">{group.label}</h2>
+                  <span className="text-xs font-mono text-[var(--text-muted)] uppercase tracking-wider">
+                    {format(new Date(group.date), 'EEEE', { locale: ru })}
+                  </span>
+                  <span className="flex-1 h-px bg-[var(--border-color)]" />
+                  <span className="text-[10px] font-mono text-[var(--text-muted)]">{group.events.length} событ{group.events.length === 1 ? 'ие' : group.events.length < 5 ? 'ия' : 'ий'}</span>
+                </div>
+                <motion.div
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                >
+                  {group.events.map(event => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </motion.div>
+              </motion.div>
             ))}
-          </motion.div>
+          </div>
         )}
         {hasMore && !loading && (
           <div className="flex justify-center mt-8">
