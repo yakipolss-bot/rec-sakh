@@ -182,7 +182,7 @@ export class SearchIndexService implements OnModuleInit {
 
   async performSyncNews(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
-    const where: any = { deletedAt: null, status: 'published' };
+    const where: Record<string, unknown> = { deletedAt: null, status: 'published' };
     if (ids) where.id = { in: ids };
     const items = await this.prisma.newsArticle.findMany({
       where,
@@ -243,7 +243,7 @@ export class SearchIndexService implements OnModuleInit {
 
   async performSyncEvents(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
-    const where: any = { status: 'published' };
+    const where: Record<string, unknown> = { status: 'published' };
     if (ids) where.id = { in: ids };
     const items = await this.prisma.event.findMany({ where, select: { id: true, title: true, description: true, categoryId: true, city: true, startDate: true, isFree: true } });
     const docs = items.map(i => ({
@@ -266,7 +266,7 @@ export class SearchIndexService implements OnModuleInit {
 
   async performSyncAds(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
-    const where: any = { deletedAt: null };
+    const where: Record<string, unknown> = { deletedAt: null };
     if (ids) where.id = { in: ids };
     const items = await this.prisma.ad.findMany({
       where, select: { id: true, title: true, description: true, categoryId: true, city: true, price: true, createdAt: true },
@@ -291,7 +291,7 @@ export class SearchIndexService implements OnModuleInit {
 
   async performSyncJobs(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
-    const where: any = { deletedAt: null };
+    const where: Record<string, unknown> = { deletedAt: null };
     if (ids) where.id = { in: ids };
     const items = await this.prisma.job.findMany({
       where, select: { id: true, title: true, description: true, categoryId: true, city: true, salaryMin: true, salaryMax: true, type: true },
@@ -317,7 +317,7 @@ export class SearchIndexService implements OnModuleInit {
 
   async performSyncDirectory(ids?: string[]) {
     if (!this.enabled) { await this.checkHealth(); if (!this.enabled) return; }
-    const where: any = { status: 'active' };
+    const where: Record<string, unknown> = { status: 'active' };
     if (ids) where.id = { in: ids };
     const items = await this.prisma.directoryOrganization.findMany({
       where, select: { id: true, name: true, description: true, categoryId: true, city: true, avgRating: true },

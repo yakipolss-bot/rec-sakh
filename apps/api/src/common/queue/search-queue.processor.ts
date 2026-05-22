@@ -58,7 +58,7 @@ export class SearchQueueProcessor implements OnModuleInit {
     });
 
     // Single document index
-    await this.pgBoss.work('typesense:indexNews', async (data: { article: any }) => {
+    await this.pgBoss.work('typesense:indexNews', async (data: { article: { id: string; title: string; lead?: string | null; content: string; categoryId?: string | null; city?: string | null; publishedAt?: Date | null; slug: string } }) => {
       this.logger.log(`Processing typesense:indexNews ${data?.article?.id}`);
       await this.searchIndex.performIndexNews(data.article);
     });

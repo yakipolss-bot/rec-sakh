@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, Eye } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
 import { newsService } from '@/services/news.service';
-import { useCity } from '@/contexts/CityContext';
+import { useCity } from '@/contexts/useCity';
 import type { NewsArticle } from '@/types';
 
 export default function MostReadSidebar() {

@@ -66,7 +66,6 @@ export default function ArticlePage({ id }: { id?: string }) {
 
   const { isFavorite, toggleFavorite } = useFavorites();
 
-  const [toast, setToast] = useState<string | null>(null);
   const [baseUrl, setBaseUrl] = useState('https://sakhcom.ru');
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MapPin, ChevronDown } from 'lucide-react';
-import { useCity } from '@/contexts/CityContext';
+import { useCity } from '@/contexts/useCity';
 
 export default function CitySelector() {
   const { currentCity, setCity, cities } = useCity();

@@ -24,7 +24,8 @@ async function bootstrap() {
   app.enableCors({ origin: allowedOrigins, credentials: true });
 
   // L8: HTTP→HTTPS redirect (trust proxy + x-forwarded-proto)
-  app.getHttpAdapter().getInstance().addHook('onRequest', (request: any, reply: any, done: () => void) => {
+  const fastifyInstance = app.getHttpAdapter().getInstance() as import('fastify').FastifyInstance;
+  fastifyInstance.addHook('onRequest', (request: import('fastify').FastifyRequest, reply: import('fastify').FastifyReply, done: () => void) => {
     const proto = request.headers['x-forwarded-proto'];
     if (proto === 'http') {
       reply.redirect(`https://${request.headers.host}${request.url}`);

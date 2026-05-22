@@ -104,22 +104,26 @@ export default function EventsPage() {
   const [hasMore, setHasMore] = useState(false);
   const pageSize = 24;
 
+  // Load categories once
+  useEffect(() => {
+    apiClient.get('/categories', { params: { type: 'events' } })
+      .then(res => { setCategories(Array.isArray(res.data) ? res.data : res.data?.data || []); })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     async function fetch() {
       try {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-        const [eventsRes, catRes] = await Promise.all([
-          eventsService.getAll({
-            perPage: pageSize,
-            page,
-            sort: 'startDate',
-            dateFrom: now.toISOString(),
-            ...(activeCategory ? { categoryId: activeCategory } : {}),
-          }),
-          apiClient.get('/categories', { params: { type: 'events' } }).catch(() => ({ data: [] })),
-        ]);
+        const eventsRes = await eventsService.getAll({
+          perPage: pageSize,
+          page,
+          sort: 'startDate',
+          dateFrom: now.toISOString(),
+          ...(activeCategory ? { categoryId: activeCategory } : {}),
+        });
         if (!cancelled) {
           if (page === 1) {
             setEvents(eventsRes.data || []);

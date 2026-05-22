@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
 import { newsService } from '@/services/news.service';
-import { useCity } from '@/contexts/CityContext';
+import { useCity } from '@/contexts/useCity';
 import type { NewsArticle } from '@/types';
 
 export default function VideoSection() {

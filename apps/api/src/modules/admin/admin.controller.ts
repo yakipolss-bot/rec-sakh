@@ -316,13 +316,18 @@ export class AdminController {
   @ApiOperation({ summary: 'График работы сотрудников' })
   async getStaffSchedule() {
     const staff = await this.staffService.findAll({});
-    const items = (staff.data || staff || []).map((s: any) => ({
-      id: s.id,
-      staffId: s.userId,
-      staffName: s.user?.name || '—',
-      date: s.hireDate?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-      shift: s.schedule?.shift || 'day',
-    }));
+    const list = (staff.data || staff || []) as Array<Record<string, unknown>>;
+    const items = list.map((s) => {
+      const user = s.user as Record<string, unknown> | undefined;
+      const schedule = s.schedule as Record<string, string> | undefined;
+      return {
+        id: s.id as string,
+        staffId: s.userId as string,
+        staffName: (user?.name as string) || '—',
+        date: typeof s.hireDate === 'string' ? s.hireDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        shift: schedule?.shift || 'day',
+      };
+    });
     return { data: items };
   }
 
@@ -333,8 +338,8 @@ export class AdminController {
     const staff = await this.staffService.findById(dto.staffId);
     if (!staff) throw new BadRequestException('Staff member not found');
     const updated = await this.staffService.update(dto.staffId, {
-      schedule: { ...(staff.schedule as any || {}), [dto.date]: dto.shift },
-    } as any);
+      schedule: { ...(typeof staff.schedule === 'object' && staff.schedule !== null ? staff.schedule as Record<string, string> : {}), [dto.date]: dto.shift },
+    });
     return { data: { id: updated.id, staffId: updated.userId, date: dto.date, shift: dto.shift } };
   }
 
