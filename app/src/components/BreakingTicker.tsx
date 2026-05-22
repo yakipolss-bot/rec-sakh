@@ -12,7 +12,7 @@ export default function BreakingTicker() {
     30000,
   );
 
-  if (items.length === 0) return null;
+  if (!items || items.length === 0) return null;
 
   const doubled = [...items, ...items];
 
