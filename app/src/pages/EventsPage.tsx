@@ -100,19 +100,33 @@ export default function EventsPage() {
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const pageSize = 24;
 
   useEffect(() => {
     let cancelled = false;
     async function fetch() {
       try {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
         const [eventsRes, catRes] = await Promise.all([
-          eventsService.getAll({ perPage: 50, sort: 'startDate' }),
+          eventsService.getAll({
+            perPage: pageSize,
+            page,
+            sort: 'startDate',
+            dateFrom: now.toISOString(),
+            ...(activeCategory ? { categoryId: activeCategory } : {}),
+          }),
           apiClient.get('/categories', { params: { type: 'events' } }).catch(() => ({ data: [] })),
         ]);
         if (!cancelled) {
-          setEvents(eventsRes.data || []);
-          const catData = Array.isArray(catRes.data) ? catRes.data : [];
-          setCategories(catData as EventCategory[]);
+          if (page === 1) {
+            setEvents(eventsRes.data || []);
+          } else {
+            setEvents(prev => [...prev, ...(eventsRes.data || [])]);
+          }
+          setHasMore(eventsRes.meta?.totalPages > page);
         }
       } catch {
         // silent
@@ -122,15 +136,11 @@ export default function EventsPage() {
     }
     fetch();
     return () => { cancelled = true; };
-  }, []);
+  }, [page, activeCategory]);
 
   const filtered = useMemo(() => {
-    const now = new Date();
-    let list = events.filter(e => new Date(e.startDate) >= now);
-    if (activeCategory) {
-      list = list.filter(e => e.categoryId === activeCategory);
-    }
-    return list.slice(0, 30);
+    if (activeCategory) return events;
+    return events;
   }, [events, activeCategory]);
 
   const displayedCategories = categories.filter(c =>
@@ -161,7 +171,7 @@ export default function EventsPage() {
 
         <div className="flex flex-wrap items-center gap-2 mb-6 pb-3 border-b border-[var(--border-color)]">
           <button
-            onClick={() => setActiveCategory(null)}
+            onClick={() => { setActiveCategory(null); setPage(1); }}
             className={!activeCategory ? 'sakh-tag sakh-tag--accent' : 'sakh-tag sakh-tag--outline'}
           >
             Все
@@ -169,7 +179,7 @@ export default function EventsPage() {
           {displayedCategories.map(cat => (
             <button
               key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
+              onClick={() => { setActiveCategory(cat.id); setPage(1); }}
               className={activeCategory === cat.id ? 'sakh-tag sakh-tag--accent' : 'sakh-tag sakh-tag--outline'}
             >
               {cat.name}
@@ -201,6 +211,16 @@ export default function EventsPage() {
               <EventCard key={event.id} event={event} />
             ))}
           </motion.div>
+        )}
+        {hasMore && !loading && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={() => setPage(p => p + 1)}
+              className="sakh-btn sakh-btn--outline sakh-btn--md"
+            >
+              Загрузить ещё
+            </button>
+          </div>
         )}
       </div>
     </div>

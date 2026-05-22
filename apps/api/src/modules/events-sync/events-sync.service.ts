@@ -61,17 +61,6 @@ export class EventsSyncService implements OnModuleInit {
     }
   }
 
-  @Cron('0 3 * * *')
-  async autoArchiveExpired() {
-    const result = await this.prisma.event.updateMany({
-      where: { status: 'published', endDate: { lt: new Date() }, deletedAt: null },
-      data: { status: 'archived' },
-    });
-    if (result.count > 0) {
-      this.logger.log(`Archived ${result.count} expired events`);
-    }
-  }
-
   @Cron('0 */6 * * *')
   async syncFromProCulture() {
     const apiKey = this.config.get<string>('PRO_CULTURE_API_KEY');

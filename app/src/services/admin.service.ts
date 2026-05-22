@@ -546,21 +546,86 @@ export const adminService = {
   // ── Events ──
   async getEvents(params?: Record<string, unknown>): Promise<{ data: EventItem[]; meta?: Record<string, unknown> }> {
     const { data } = await apiClient.get('/events', { params });
-    return { data: data?.data || data || [], meta: data?.meta || {} };
+    const items: EventItem[] = (data?.data || data || []).map((ev: Record<string, unknown>) => ({
+      id: ev.id as string,
+      title: ev.title as string,
+      description: ev.description as string,
+      shortDescription: ev.shortDescription as string,
+      date: ev.startDate as string,
+      time: ev.startDate ? new Date(ev.startDate as string).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : undefined,
+      venue: ev.venueName as string,
+      city: ev.city as string,
+      price: ev.price != null ? Number(ev.price) : undefined,
+      imageUrl: ev.imageUrl as string,
+      ticketUrl: ev.ticketUrl as string,
+      status: ev.status as string,
+      category: ev.category as { id: string; name: string },
+      organizer: ev.organizer as { id: string; name: string },
+      _count: ev._count as { subscribers: number },
+      createdAt: ev.createdAt as string,
+    }));
+    return { data: items, meta: data?.meta || {} };
   },
 
   async getEvent(id: string): Promise<EventItem | null> {
     const { data } = await apiClient.get(`/events/${id}`);
-    return data?.data || data || null;
+    const ev = data?.data || data;
+    if (!ev) return null;
+    return {
+      id: ev.id,
+      title: ev.title,
+      description: ev.description,
+      shortDescription: ev.shortDescription,
+      date: ev.startDate,
+      time: ev.startDate ? new Date(ev.startDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : undefined,
+      venue: ev.venueName,
+      city: ev.city,
+      price: ev.price != null ? Number(ev.price) : undefined,
+      imageUrl: ev.imageUrl,
+      ticketUrl: ev.ticketUrl,
+      status: ev.status,
+      category: ev.category,
+      organizer: ev.organizer,
+      _count: ev._count,
+      createdAt: ev.createdAt,
+    };
   },
 
   async createEvent(dto: Partial<EventItem>): Promise<EventItem> {
-    const { data } = await apiClient.post('/events', dto);
+    const payload: Record<string, unknown> = {};
+    if (dto.title) payload.title = dto.title;
+    if (dto.description) payload.description = dto.description;
+    if (dto.shortDescription) payload.shortDescription = dto.shortDescription;
+    if (dto.date) {
+      payload.startDate = dto.time
+        ? new Date(`${dto.date}T${dto.time}:00`).toISOString()
+        : new Date(`${dto.date}T00:00:00`).toISOString();
+    }
+    if (dto.venue) payload.venueName = dto.venue;
+    if (dto.city) payload.city = dto.city;
+    if (dto.price) payload.price = Number(dto.price);
+    if (dto.ticketUrl) payload.ticketUrl = dto.ticketUrl;
+    if (dto.imageUrl) payload.imageUrl = dto.imageUrl;
+    const { data } = await apiClient.post('/events', payload);
     return data?.data || data;
   },
 
   async updateEvent(id: string, dto: Partial<EventItem>): Promise<EventItem> {
-    const { data } = await apiClient.patch(`/events/${id}`, dto);
+    const payload: Record<string, unknown> = {};
+    if (dto.title) payload.title = dto.title;
+    if (dto.description) payload.description = dto.description;
+    if (dto.shortDescription) payload.shortDescription = dto.shortDescription;
+    if (dto.date) {
+      payload.startDate = dto.time
+        ? new Date(`${dto.date}T${dto.time}:00`).toISOString()
+        : new Date(`${dto.date}T00:00:00`).toISOString();
+    }
+    if (dto.venue) payload.venueName = dto.venue;
+    if (dto.city) payload.city = dto.city;
+    if (dto.price) payload.price = Number(dto.price);
+    if (dto.ticketUrl) payload.ticketUrl = dto.ticketUrl;
+    if (dto.imageUrl) payload.imageUrl = dto.imageUrl;
+    const { data } = await apiClient.patch(`/events/${id}`, payload);
     return data?.data || data;
   },
 
@@ -644,7 +709,6 @@ export interface EventItem {
   ticketUrl?: string;
   status: string;
   category?: { id: string; name: string };
-  author?: { id: string; name: string };
   _count?: { subscribers: number };
   createdAt?: string;
 }
