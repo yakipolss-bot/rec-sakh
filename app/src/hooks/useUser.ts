@@ -1,15 +1,32 @@
 import { useEffect, useState } from 'react';
 import { usersService, type UserProfile } from '@/services/users.service';
 import { authService } from '@/services/auth.service';
+import { useAuth } from '@/services/auth-context';
 
 interface UseUserOptions {
   enabled?: boolean;
 }
 
+function mapAuthUserToProfile(authUser: ReturnType<typeof useAuth>['user']): UserProfile {
+  return {
+    id: authUser?.id ?? '',
+    name: authUser?.name ?? 'User',
+    email: authUser?.email ?? '',
+    role: authUser?.role ?? 'authenticated',
+    avatarUrl: authUser?.avatarUrl ?? null,
+    karma: 0,
+    level: 'user',
+    registeredAt: new Date().toISOString(),
+    commentsCount: 0,
+    adsCount: 0,
+  };
+}
+
 export function useUser(options: UseUserOptions = {}) {
+  const { user: authUser } = useAuth();
   const { enabled = true } = options;
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<UserProfile | null>(authUser ? mapAuthUserToProfile(authUser) : null);
+  const [isLoading, setIsLoading] = useState(!authUser);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -64,7 +81,37 @@ export function useUser(options: UseUserOptions = {}) {
     };
   }, [enabled]);
 
-  return { user, isLoading, error, refetch: () => {} };
+  const refetch = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const profile = await usersService.getMe();
+      setUser(profile);
+    } catch {
+      try {
+        const fallback = await authService.getProfile();
+        setUser({
+          id: fallback.id,
+          email: fallback.email,
+          name: fallback.name,
+          role: fallback.role || 'authenticated',
+          avatarUrl: fallback.avatarUrl,
+          karma: 0,
+          level: 'user',
+          registeredAt: new Date().toISOString(),
+          commentsCount: 0,
+          adsCount: 0,
+        });
+      } catch {
+        setError(new Error('Failed to fetch user'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { user, isLoading, error, refetch };
 }
 
 export function useUserActivity() {

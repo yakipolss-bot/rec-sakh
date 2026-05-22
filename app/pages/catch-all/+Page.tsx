@@ -128,7 +128,7 @@ function AnimatedRoutes() {
             <Route path="support" element={<AccountSupport />} />
           </Route>
 
-          <Route path="/editorial" element={<ProtectedRoute allowedRoles={['editor', 'admin']}><EditorialLayout /></ProtectedRoute>}>
+          <Route path="/editorial" element={<ProtectedRoute allowedRoles={['editor', 'chief_editor', 'admin', 'superadmin']}><EditorialLayout /></ProtectedRoute>}>
             <Route index element={<EditorialDashboard />} />
             <Route path="news" element={<EditorialNews />}>
               <Route index element={<EditorialNewsList />} />
@@ -150,7 +150,7 @@ function AnimatedRoutes() {
             <Route path="newsletters" element={<EditorialNewsletters />} />
           </Route>
 
-          <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'superadmin']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="users/:id" element={<AdminUserId />} />

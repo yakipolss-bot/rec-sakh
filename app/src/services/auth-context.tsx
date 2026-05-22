@@ -45,10 +45,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = async () => {
+    setIsLoading(true);
     const token = getLocalStorage('accessToken');
+
     if (!token) {
-      setUser(null);
-      setIsLoading(false);
+      try {
+        const session = await authService.getSession();
+        if (session) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -85,16 +97,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   useEffect(() => {
     const init = async () => {
       const token = getLocalStorage('accessToken');
       if (!token) {
-        setUser(null);
-        setIsLoading(false);
+        try {
+          const session = await authService.getSession();
+          if (session) {
+            // Try to fetch fresh role from DB
+            try {
+              const profile = await usersService.getMe();
+              setUser({
+                id: session.user.id,
+                email: session.user.email,
+                name: session.user.name,
+                role: profile.role || session.user.role,
+                avatarUrl: session.user.avatarUrl,
+              });
+            } catch {
+              setUser(session.user);
+            }
+          } else {
+            setUser(null);
+          }
+        } catch {
+          setUser(null);
+        } finally {
+          setIsLoading(false);
+        }
         return;
       }
 
@@ -121,7 +156,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const session = await authService.getSession();
             if (session) {
-              setUser(session.user);
+              // Try to fetch fresh role from DB
+              try {
+                const profile = await usersService.getMe();
+                setUser({
+                  id: session.user.id,
+                  email: session.user.email,
+                  name: session.user.name,
+                  role: profile.role || session.user.role,
+                  avatarUrl: session.user.avatarUrl,
+                });
+              } catch {
+                setUser(session.user);
+              }
             } else {
               setUser(null);
             }
@@ -131,8 +178,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
           }
         }
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     init();
 

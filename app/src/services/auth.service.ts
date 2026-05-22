@@ -82,9 +82,31 @@ export const authService = {
   async login(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    const result = toAuthResponse(data.session);
+    let result = toAuthResponse(data.session);
     if (!result) throw new Error('Login failed');
     persistTokens(result.accessToken, result.refreshToken);
+
+    // Fetch user profile with actual role from database
+    try {
+      const axiosInstance = axios.create({
+        baseURL: API_BASE_URL,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${result.accessToken}` },
+      });
+      const { data: profileData } = await axiosInstance.get('/users/me');
+      const userProfile = profileData.data || profileData;
+      // Update result with actual role from database
+      result = {
+        ...result,
+        user: {
+          ...result.user,
+          role: userProfile.role || result.user.role,
+        },
+      };
+    } catch {
+      // Fallback to token-based role if API fails
+      console.warn('Failed to fetch user role from database, using token role');
+    }
+
     return result;
   },
 

@@ -28,32 +28,16 @@ export default function AccountLayout() {
     }
   };
 
-  if (error) {
-    return (
-      <div className="pt-20 pb-8">
-        <div className="max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
-          <div className="text-center py-12">
-            <p className="text-[var(--accent-sunset)]">Ошибка загрузки профиля</p>
-            <button onClick={() => window.location.reload()} className="sakh-btn sakh-btn--sm mt-4">
-              Перезагрузить
-            </button>
-          </div>
-        </div>
+  const layoutContent = isLoading || !user ? (
+    <div className="space-y-4">
+      <div className="h-12 bg-[var(--bg-surface)] rounded"></div>
+      <div className="grid grid-cols-1 gap-4">
+        <div className="h-48 bg-[var(--bg-surface)] rounded" />
       </div>
-    );
-  }
-
-  if (isLoading || !user) {
-    return (
-      <div className="pt-20 pb-8">
-        <div className="max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-12 bg-[var(--bg-surface)] rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    </div>
+  ) : (
+    <Outlet />
+  );
 
   return (
     <div className="pt-20 pb-8">
@@ -66,24 +50,24 @@ export default function AccountLayout() {
         >
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center text-lg font-mono uppercase bg-[var(--bg-surface)] text-[var(--accent-ocean)] border-2 border-[var(--accent-ocean)]">
-              {user.avatar ? (
+              {user?.avatar ? (
                 <img src={user.avatar} alt="" className="w-full h-full object-cover rounded" />
               ) : (
-                user.name.charAt(0)
+                <span>{user?.name?.charAt(0) ?? 'U'}</span>
               )}
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg sm:text-xl font-medium text-[var(--text-primary)] truncate">
-                {user.name}
+                {user?.name ?? 'Загрузка...'}
               </h1>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] truncate">
-                {user.email}
+                {user?.email ?? 'Загрузка...'}
               </p>
             </div>
             <div className="hidden sm:flex items-center gap-2">
-              <span className="sakh-meta">{user.level}</span>
+              <span className="sakh-meta">{user?.level ?? '...'}</span>
               <span className="sakh-meta">
-                Карма: {user.karma}
+                Карма: {user?.karma ?? '...'}
               </span>
             </div>
             <button
@@ -165,7 +149,16 @@ export default function AccountLayout() {
               </AnimatePresence>
             </div>
 
-            <Outlet />
+            {error ? (
+              <div className="sakh-card p-8 text-center">
+                <p className="text-[var(--accent-sunset)]">Ошибка загрузки профиля</p>
+                <button onClick={() => window.location.reload()} className="sakh-btn sakh-btn--sm mt-4">
+                  Перезагрузить
+                </button>
+              </div>
+            ) : (
+              layoutContent
+            )}
           </div>
         </div>
       </div>
