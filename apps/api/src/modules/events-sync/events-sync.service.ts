@@ -174,31 +174,9 @@ export class EventsSyncService implements OnModuleInit {
     return catMap.get('kontserty'); // fallback
   }
 
-  // ── Seed (fallback when DB empty) ──
+  // ── Seed (re-created every API restart to keep dates fresh) ──
 
   async seedInitialEvents(): Promise<number> {
-    const seededCount = await this.prisma.event.count({ where: { externalSource: null } });
-    const totalCount = await this.prisma.event.count();
-
-    // If we have seed events but they're missing images, update images instead of skipping
-    if (seededCount > 0 && seededCount < 20) {
-      const noImgCount = await this.prisma.event.count({
-        where: { externalSource: null, imageUrl: null },
-      });
-      if (noImgCount > 0) {
-        this.logger.log(`Updating images for ${noImgCount} seed events...`);
-        await this.seedImagesForExisting();
-        return seededCount;
-      }
-      this.logger.log(`Seed events already exist (${seededCount}), skipping`);
-      return 0;
-    }
-
-    if (totalCount > 20) {
-      this.logger.log(`Already have ${totalCount} events, skipping seed`);
-      return 0;
-    }
-
     const now = new Date();
     const slugToId: Record<string, string> = {};
     for (const c of EVENT_CATEGORIES) {
@@ -217,12 +195,22 @@ export class EventsSyncService implements OnModuleInit {
       { title: 'Экскурсия «По следам первооткрывателей»', desc: 'Пешеходная экскурсия по историческому центру Южно-Сахалинска.', short: 'Пешеходная экскурсия по центру города', cat: 'ekskursii', venue: 'Краеведческий музей', addr: 'ул. Ленина, 137', d: 1, free: false, price: 350, img: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&h=400&fit=crop', ticket: 'https://sakhalinmuseum.ru' },
       { title: 'Чемпионат по волейболу Сахалинской области', desc: 'Финальные игры чемпионата Сахалинской области по волейболу.', short: 'Финальные игры чемпионата области', cat: 'sport', venue: 'СК «Кристалл»', addr: 'ул. Горького, 11', d: 8, endOff: 9, free: false, price: 200, img: 'https://images.unsplash.com/photo-1461896836934-bd45ba8fcf2b?w=600&h=400&fit=crop', ticket: 'https://sport.sakhalin.gov.ru' },
       { title: 'Мастер-класс «Сахалинская кухня»', desc: 'Кулинарный мастер-класс: уха по-сахалински, папоротник, кета в сливочном соусе.', short: 'Готовим блюда сахалинской кухни', cat: 'master-klassy', venue: 'Ресторан «Остров»', addr: 'ул. Сахалинская, 52', d: 2, free: false, price: 1500, img: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&h=400&fit=crop' },
-      { title: 'Кинопоказ «Остров — 2026»', desc: 'Премьера документального фильма о природе и жизни на Сахалине.', short: 'Премьера документального фильма', cat: 'kino', venue: 'Кинотеатр «Премьер»', addr: 'ул. Ленина, 96', d: 3, free: true, img: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop', ticket: 'https://kinopremier65.ru' },
       { title: 'Балет «Лебединое озеро»', desc: 'Классический балет П.И. Чайковского в исполнении Сахалинского театра балета.', short: 'Классический балет', cat: 'teatr', venue: 'Чехов-центр', addr: 'пл. Ленина, 1', d: 12, free: false, price: 1500, img: 'https://images.unsplash.com/photo-1540039155733-5bb30b53e2bc?w=600&h=400&fit=crop', ticket: 'https://chehovcenter.ru/afisha' },
       { title: 'Выставка «Море и люди Сахалина»', desc: 'Фотовыставка работ сахалинских фотографов.', short: 'Фотовыставка о море и людях Сахалина', cat: 'vystavki', venue: 'Художественный музей', addr: 'ул. Ленина, 137', d: 0, endOff: 30, free: true, img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop', ticket: 'https://sakhartmuseum.ru' },
       { title: 'Стендап: Открытый микрофон', desc: 'Вечер юмора от сахалинских комиков. Вход за донат.', short: 'Вечер стендапа', cat: 'kontserty', venue: 'Бар «Шторм»', addr: 'ул. Чехова, 63', d: 6, free: true, img: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=600&h=400&fit=crop' },
       { title: 'Детский спектакль «Золотой ключик»', desc: 'Музыкальный спектакль для всей семьи по мотивам сказки А. Толстого.', short: 'Спектакль для детей по Буратино', cat: 'detyam', venue: 'Театр кукол', addr: 'ул. Карла Маркса, 24', d: 11, free: false, price: 400, img: 'https://images.unsplash.com/photo-1503454537925-8f6a7a5af0c4?w=600&h=400&fit=crop', ticket: 'https://sakhpuppet.ru/afisha' },
+      // ── Кино ──
+      { title: 'Кинопоказ «Остров — 2026»', desc: 'Премьера документального фильма о природе и жизни на Сахалине.', short: 'Премьера документального фильма', cat: 'kino', venue: 'Кинотеатр «Премьер»', addr: 'ул. Ленина, 96', d: 3, free: true, img: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop', ticket: 'https://kinopremier65.ru' },
+      { title: '«Аватар: Путь воды»', desc: 'Продолжение эпической саги Джеймса Кэмерона. Потрясающие визуальные эффекты, захватывающий сюжет.', short: 'Фантастический блокбастер Джеймса Кэмерона', cat: 'kino', venue: 'Кинотеатр «Октябрь»', addr: 'пл. Ленина, 1', d: 1, free: false, price: 450, img: 'https://images.unsplash.com/photo-1535016120720-40c646be5580?w=600&h=400&fit=crop', ticket: 'https://kino65.ru' },
+      { title: '«Холоп-2»', desc: 'Комедия о том, как мажор снова попадает в непривычную обстановку. Продолжение самого кассового российского фильма.', short: 'Российская комедия — продолжение хита', cat: 'kino', venue: 'Кинотеатр «Премьер»', addr: 'ул. Ленина, 96', d: 2, free: false, price: 350, img: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&h=400&fit=crop', ticket: 'https://kinopremier65.ru' },
+      { title: '«Дюна: Часть вторая»', desc: 'Пол Видираес продолжает свой путь по пустынной планете Арракис. Эпическая научно-фантастическая сага.', short: 'Фантастика Дени Вильнёва', cat: 'kino', venue: 'Кинотеатр «Октябрь»', addr: 'пл. Ленина, 1', d: 4, free: false, price: 500, img: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=400&fit=crop', ticket: 'https://kino65.ru' },
+      { title: '«Лёд-3»', desc: 'Романтическая музыкальная драма о любви, фигурном катании и преодолении.', short: 'Российская драма о фигурном катании', cat: 'kino', venue: 'Кинотеатр «Премьер»', addr: 'ул. Ленина, 96', d: 5, free: false, price: 380, img: 'https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=600&h=400&fit=crop' },
+      { title: '«Гарри Поттер: Философский камень» (перезапуск)', desc: 'Культовый фильм о мальчике, который выжил, возвращается на большой экран в обновлённой версии.', short: 'Культовое фэнтези на большом экране', cat: 'kino', venue: 'Кинотеатр «Октябрь»', addr: 'пл. Ленина, 1', d: 6, free: false, price: 400, img: 'https://images.unsplash.com/photo-1506466010722-395aa2deb877?w=600&h=400&fit=crop', ticket: 'https://kino65.ru' },
+      { title: '«Чебурашка»', desc: 'Добрая семейная комедия о приключениях ушастого зверька в провинциальном городке.', short: 'Семейная комедия', cat: 'kino', venue: 'Кинотеатр «Премьер»', addr: 'ул. Ленина, 96', d: 0, free: false, price: 300, img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&h=400&fit=crop', ticket: 'https://kinopremier65.ru' },
     ];
+
+    // Delete old seed events and re-create with fresh dates
+    await this.prisma.event.deleteMany({ where: { externalSource: null } });
 
     for (const evt of events) {
       const sd = new Date(now);
@@ -255,39 +243,7 @@ export class EventsSyncService implements OnModuleInit {
       });
     }
 
-    this.logger.log(`Seeded ${events.length} initial events`);
+    this.logger.log(`Seeded ${events.length} events with fresh dates`);
     return events.length;
-  }
-
-  private async seedImagesForExisting(): Promise<void> {
-    const seedEvents = [
-      { title: 'Чехов. Рассказы', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop' },
-      { title: 'Концерт симфонического оркестра «Времена года»', img: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800b?w=600&h=400&fit=crop' },
-      { title: 'Выставка «Сахалин в акварели»', img: 'https://images.unsplash.com/photo-1531913764164-f85c5e25e58f?w=600&h=400&fit=crop' },
-      { title: 'Мюзикл «Алые паруса»', img: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&h=400&fit=crop' },
-      { title: 'Спектакль «Гроза»', img: 'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600&h=400&fit=crop' },
-      { title: 'Джазовый вечер «Сахалинские ритмы»', img: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=600&h=400&fit=crop' },
-      { title: 'Фестиваль «Край света»', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=600&h=400&fit=crop' },
-      { title: 'Экскурсия «По следам первооткрывателей»', img: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&h=400&fit=crop' },
-      { title: 'Чемпионат по волейболу Сахалинской области', img: 'https://images.unsplash.com/photo-1461896836934-bd45ba8fcf2b?w=600&h=400&fit=crop' },
-      { title: 'Мастер-класс «Сахалинская кухня»', img: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&h=400&fit=crop' },
-      { title: 'Кинопоказ «Остров — 2026»', img: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&h=400&fit=crop' },
-      { title: 'Балет «Лебединое озеро»', img: 'https://images.unsplash.com/photo-1540039155733-5bb30b53e2bc?w=600&h=400&fit=crop' },
-      { title: 'Выставка «Море и люди Сахалина»', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop' },
-      { title: 'Стендап: Открытый микрофон', img: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=600&h=400&fit=crop' },
-      { title: 'Детский спектакль «Золотой ключик»', img: 'https://images.unsplash.com/photo-1503454537925-8f6a7a5af0c4?w=600&h=400&fit=crop' },
-    ];
-    for (const s of seedEvents) {
-      const existing = await this.prisma.event.findFirst({
-        where: { title: s.title, externalSource: null, imageUrl: null },
-      });
-      if (existing) {
-        await this.prisma.event.update({
-          where: { id: existing.id },
-          data: { imageUrl: s.img },
-        });
-      }
-    }
-    this.logger.log('Updated images for seed events');
   }
 }
