@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
 
 const ZODIAC_SIGNS = [
   { id: 'aries', name: 'Овен', date: '21 мар — 19 апр', emoji: '♈' },
@@ -39,6 +40,7 @@ export default function HoroscopePage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Гороскоп | Сахалин" noIndex />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

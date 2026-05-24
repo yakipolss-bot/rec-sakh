@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Bus, Plane, Ship, Route, Loader2, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import apiClient from '../services/api-client';
+import SEOHead from '@/components/SEOHead';
 
 type TransportTab = 'schedule' | 'airport' | 'ferry' | 'roads';
 
@@ -193,6 +194,7 @@ export default function TransportPage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Транспорт | Сахалин" description="Расписание самолётов и паромов Сахалина. Онлайн табло аэропорта." />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

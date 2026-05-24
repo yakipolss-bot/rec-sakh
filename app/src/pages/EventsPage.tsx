@@ -7,6 +7,7 @@ import { ru } from 'date-fns/locale';
 import { eventsService } from '@/services/events.service';
 import apiClient from '@/services/api-client';
 import type { ArticleEvent } from '@/services/events.service';
+import SEOHead from '@/components/SEOHead';
 
 interface EventCategory {
   id: string;
@@ -186,6 +187,7 @@ export default function EventsPage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="События | Сахалин" description="Афиша мероприятий Сахалина. Концерты, спектакли, выставки, фестивали." />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

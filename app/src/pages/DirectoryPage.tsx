@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Search, Phone, MapPin, Star, X } from 'lucide-react';
+import { ArrowLeft, Search, Phone, MapPin, Star, X, Loader2 } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
+import { directoryService, type DirectoryOrg } from '@/services/directory.service';
 
 const DIR_CATEGORIES = [
   { value: 'restaurants', label: 'Рестораны', icon: '🍽️' },
@@ -12,36 +14,38 @@ const DIR_CATEGORIES = [
   { value: 'transport', label: 'Транспорт', icon: '🚌' },
 ];
 
-interface Organization {
-  id: string;
-  name: string;
-  category: string;
-  address: string;
-  rating: number;
-  phone: string;
-}
-
-const mockOrgs: Organization[] = [
-  { id: 'd1', name: 'Ресторан «Сахалин»', category: 'restaurants', address: 'ул. Ленина, 23', rating: 4.5, phone: '+7 (4242) 55-55-55' },
-  { id: 'd2', name: 'ТЦ «Остров»', category: 'shops', address: 'ул. Сахалинская, 1', rating: 4.2, phone: '+7 (4242) 33-33-33' },
-  { id: 'd3', name: 'Городская больница №1', category: 'medicine', address: 'пр. Мира, 10', rating: 3.8, phone: '+7 (4242) 44-44-44' },
-  { id: 'd4', name: 'Школа №3', category: 'education', address: 'ул. Чехова, 5', rating: 4.0, phone: '+7 (4242) 22-22-22' },
-  { id: 'd5', name: 'МФЦ «Мои документы»', category: 'services', address: 'ул. Пограничная, 19', rating: 4.1, phone: '+7 (4242) 11-11-11' },
-  { id: 'd6', name: 'Автовокзал Южно-Сахалинска', category: 'transport', address: 'ул. Вокзальная, 3', rating: 3.5, phone: '+7 (4242) 66-66-66' },
-  { id: 'd7', name: 'Кофейня «Берег»', category: 'restaurants', address: 'наб. Реки 1', rating: 4.7, phone: '+7 (4242) 77-77-77' },
-  { id: 'd8', name: 'Аптека «Здоровье»', category: 'medicine', address: 'ул. Коммунистическая, 12', rating: 4.3, phone: '+7 (4242) 88-88-88' },
-];
-
 export default function DirectoryPage() {
   const [category, setCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [orgs, setOrgs] = useState<DirectoryOrg[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  let filtered = mockOrgs;
-  if (category) filtered = filtered.filter(o => o.category === category);
-  if (search) filtered = filtered.filter(o => o.name.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    let cancelled = false;
+    const fetch = async () => {
+      setLoading(true);
+      try {
+        const params: Record<string, string> = { perPage: '100' };
+        if (search) params.search = search;
+        const res = await directoryService.getAll(params);
+        if (!cancelled) setOrgs(res.data || []);
+      } catch {
+        if (!cancelled) setOrgs([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetch();
+    return () => { cancelled = true; };
+  }, [search]);
+
+  const filtered = category
+    ? orgs.filter(o => o.category?.slug === category)
+    : orgs;
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Справочник | Сахалин" description="Справочник организаций и услуг Сахалина." />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">
@@ -98,44 +102,58 @@ export default function DirectoryPage() {
           ))}
         </div>
 
-        <motion.div
-          key={`${category}-${search}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ staggerChildren: 0.05 }}
-          className="space-y-3"
-        >
-          {filtered.map((org, i) => (
-            <motion.div
-              key={org.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.05 }}
-              className="sakh-card p-4"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="sakh-title mb-1">{org.name}</h3>
-                  <div className="flex items-center gap-3 flex-wrap text-sm text-[var(--text-secondary)] mb-2">
-                    <span>{DIR_CATEGORIES.find(c => c.value === org.category)?.icon} {DIR_CATEGORIES.find(c => c.value === org.category)?.label}</span>
-                    <span className="flex items-center gap-1">
-                      <MapPin size={12} />
-                      {org.address}
-                    </span>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-ocean)]" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-[var(--text-secondary)]">
+            <p className="text-lg">Организации не найдены</p>
+          </div>
+        ) : (
+          <motion.div
+            key={`${category}-${search}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ staggerChildren: 0.05 }}
+            className="space-y-3"
+          >
+            {filtered.map((org, i) => (
+              <motion.div
+                key={org.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
+                className="sakh-card p-4"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="sakh-title mb-1">{org.name}</h3>
+                    <div className="flex items-center gap-3 flex-wrap text-sm text-[var(--text-secondary)] mb-2">
+                      {org.category && (
+                        <span>{DIR_CATEGORIES.find(c => c.value === org.category!.slug)?.icon} {org.category.name}</span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <MapPin size={12} />
+                        {org.address || org.city || '—'}
+                      </span>
+                    </div>
+                    {org.phone && (
+                      <a href={`tel:${org.phone}`} className="sakh-meta sakh-meta--with-icon text-[var(--accent-ocean)] hover:underline">
+                        <Phone size={12} />
+                        {org.phone}
+                      </a>
+                    )}
                   </div>
-                  <a href={`tel:${org.phone}`} className="sakh-meta sakh-meta--with-icon text-[var(--accent-ocean)] hover:underline">
-                    <Phone size={12} />
-                    {org.phone}
-                  </a>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Star size={14} className="text-[var(--accent-sunset)]" fill="var(--accent-sunset)" />
+                    <span className="font-mono font-bold text-[var(--text-primary)]">{Number(org.avgRating).toFixed(1)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Star size={14} className="text-[var(--accent-sunset)]" fill="var(--accent-sunset)" />
-                  <span className="font-mono font-bold text-[var(--text-primary)]">{org.rating}</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   );

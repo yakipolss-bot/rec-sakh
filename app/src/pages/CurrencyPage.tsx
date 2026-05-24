@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, TrendingUp, TrendingDown, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { fetchCurrencyRates, generateHistory } from '@/services/currency.service';
 import type { CurrencyRate } from '@/types';
+import SEOHead from '@/components/SEOHead';
 
 const FLAGS: Record<string, string> = {
   USD: '🇺🇸',
@@ -54,6 +55,7 @@ export default function CurrencyPage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Курсы валют | Сахалин" description="Курс рубля, доллара, евро в Южно-Сахалинске." />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

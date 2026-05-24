@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { authService } from '../services/auth.service';
 import { parseUrlHash, clearUrlHash } from '../services/supabase';
+import SEOHead from '@/components/SEOHead';
 
 type AuthMode = 'login' | 'register' | 'sms' | 'recover';
 
@@ -250,6 +251,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center pt-20 pb-8">
+      <SEOHead title="Вход | Сахалин" noIndex />
       <div className="w-full max-w-md mx-auto px-4 sm:px-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <Link

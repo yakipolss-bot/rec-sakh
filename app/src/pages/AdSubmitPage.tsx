@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Send, Loader2, AlertCircle } from 'lucide-react';
 import { adsService } from '@/services/ads.service';
 import type { CreateAdPayload } from '@/services/ads.service';
+import SEOHead from '@/components/SEOHead';
 
 const CATEGORIES: { value: string; label: string }[] = [
   { value: 'realty', label: 'Недвижимость' },
@@ -59,6 +60,7 @@ export default function AdSubmitPage() {
   if (submitted) {
     return (
       <div className="pt-20 pb-8">
+        <SEOHead title="Подать объявление | Сахалин" noIndex />
         <div className="max-w-[720px] mx-auto px-4 sm:px-6">
           <div className="sakh-empty">
             <h1 className="sakh-empty__title">Объявление отправлено на модерацию</h1>
@@ -72,6 +74,7 @@ export default function AdSubmitPage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Подать объявление | Сахалин" noIndex />
       <div className="max-w-[720px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

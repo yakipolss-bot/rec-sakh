@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Info, Mail, Users, Briefcase, FileText, Shield, Cookie } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
 
 type AboutTab = 'about' | 'advertising' | 'contacts' | 'vacancies' | 'agreement' | 'privacy' | 'cookies';
 
@@ -97,6 +98,7 @@ export default function AboutPages() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="О проекте | Сахалин" />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

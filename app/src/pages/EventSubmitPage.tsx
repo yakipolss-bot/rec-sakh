@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient from '../services/api-client';
+import SEOHead from '@/components/SEOHead';
 
 const CATEGORIES = [
   { value: '', label: 'Выберите категорию' },
@@ -92,6 +93,7 @@ export default function EventSubmitPage() {
   if (submitted) {
     return (
       <div className="pt-20 pb-8">
+        <SEOHead title="Создать событие | Сахалин" noIndex />
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
           <div className="sakh-empty">
             <h1 className="sakh-empty__title">Событие отправлено на модерацию</h1>
@@ -107,6 +109,7 @@ export default function EventSubmitPage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Создать событие | Сахалин" noIndex />
       <div className="max-w-[720px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

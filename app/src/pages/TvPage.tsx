@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Tv } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
 
 const schedule = [
   { time: '06:00', channel: 'Первый канал', show: 'Утро России. Суббота' },
@@ -38,6 +39,7 @@ export default function TvPage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Телепрограмма | Сахалин" description="Телепрограмма на сегодня в Южно-Сахалинске." />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

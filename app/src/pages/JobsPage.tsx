@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, Briefcase, Clock, Search, Building2, CircleDollarSig
 import FilterBar from '@/components/FilterBar';
 import { jobsService } from '@/services/jobs.service';
 import type { Job } from '@/services/jobs.service';
+import SEOHead from '@/components/SEOHead';
 
 const CITIES = [
   { value: 'Южно-Сахалинск', label: 'Южно-Сахалинск' },
@@ -77,6 +78,7 @@ export default function JobsPage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Работа | Сахалин" description="Вакансии на Сахалине. Свежие предложения работы." />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">

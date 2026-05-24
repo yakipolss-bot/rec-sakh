@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Sun, Cloud, CloudRain, Snowflake, Wind, Droplets, Gauge, AlertTriangle, ArrowLeft, MapPin, Loader2, Umbrella } from 'lucide-react';
 import { fetchAllCitiesWeather, fetchCityForecast } from '@/services/weather.service';
 import type { WeatherData, ForecastDay } from '@/types';
+import SEOHead from '@/components/SEOHead';
 
 const weatherIcons: Record<WeatherData['condition'], React.ReactNode> = {
   sunny: <Sun size={32} />,
@@ -71,6 +72,7 @@ export default function WeatherPage() {
 
   return (
     <div className="pt-20 pb-8">
+      <SEOHead title="Погода | Сахалин" description="Прогноз погоды в Южно-Сахалинске и Сахалинской области." />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link to="/" className="sakh-caption transition-colors hover:text-[var(--accent-ocean)]">
