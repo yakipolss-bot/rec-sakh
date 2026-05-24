@@ -1,34 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-function createSupabaseClient(): SupabaseClient {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://fhdtteyrcczqlmvwjhps.supabase.co';
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-  if (!supabaseAnonKey) {
-    throw new Error('VITE_SUPABASE_ANON_KEY is not configured. Add it to Vercel env vars.');
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  });
+export function getSupabaseUrl(): string {
+  return import.meta.env.VITE_SUPABASE_URL || 'https://fhdtteyrcczqlmvwjhps.supabase.co';
 }
 
-let client: SupabaseClient | null = null;
-
-export function getSupabase(): SupabaseClient {
-  if (!client) {
-    client = createSupabaseClient();
+export function getSupabaseAnonKey(): string {
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  if (!key) {
+    console.warn('VITE_SUPABASE_ANON_KEY is not configured');
   }
-  return client;
+  return key;
 }
 
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_, prop) {
-    return getSupabase()[prop as keyof SupabaseClient];
-  },
-});
+export function getOAuthUrl(provider: string): string {
+  const redirectTo = `${window.location.origin}/auth`;
+  const url = getSupabaseUrl();
+  const anonKey = getSupabaseAnonKey();
+  return `${url}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectTo)}&client_id=${anonKey}`;
+}
+
+export function parseUrlHash(): {
+  accessToken: string | null;
+  refreshToken: string | null;
+  type: string | null;
+} {
+  const hash = window.location.hash;
+  if (!hash) return { accessToken: null, refreshToken: null, type: null };
+
+  const params = new URLSearchParams(hash.replace('#', '?'));
+  return {
+    accessToken: params.get('access_token'),
+    refreshToken: params.get('refresh_token'),
+    type: params.get('type'),
+  };
+}
+
+export function clearUrlHash(): void {
+  window.history.replaceState(null, '', window.location.pathname + window.location.search);
+}

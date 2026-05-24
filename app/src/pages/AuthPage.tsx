@@ -6,7 +6,7 @@ import {
   MessageCircle, Globe, Send, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { authService } from '../services/auth.service';
-import { supabase } from '../services/supabase';
+import { parseUrlHash, clearUrlHash } from '../services/supabase';
 
 type AuthMode = 'login' | 'register' | 'sms' | 'recover';
 
@@ -87,14 +87,22 @@ export default function AuthPage() {
   }, [countdown]);
 
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    const { accessToken, refreshToken, type } = parseUrlHash();
+    if (accessToken) {
+      if (refreshToken) {
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+      if (type === 'recovery') {
         setMode('recover');
         setRecoverStep('reset');
+      } else {
+        setSuccess('Вход выполнен!');
+        setTimeout(() => navigate('/account'), 1000);
       }
-    });
-    return () => listener?.subscription.unsubscribe();
-  }, []);
+      clearUrlHash();
+    }
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

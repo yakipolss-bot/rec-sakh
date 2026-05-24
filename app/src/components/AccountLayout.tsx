@@ -5,19 +5,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, LogOut } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { toast } from 'sonner';
-import { accountNavItems } from '@/data/accountNavItems';
+import { getAccountNavItems } from '@/data/accountNavItems';
+import type { AccountNavItem } from '@/data/accountNavItems';
 
 export default function AccountLayout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isLoading, error } = useUser();
 
-  const isActive = (item: typeof accountNavItems[number]) => {
+  const navItems = getAccountNavItems(user?.role);
+
+  const isActive = (item: AccountNavItem) => {
     if (item.exact) return location.pathname === item.path;
     return location.pathname.startsWith(item.path);
   };
 
-  const activeItem = accountNavItems.find(isActive);
+  const activeItem = navItems.find(isActive);
 
   const handleLogout = async () => {
     try {
@@ -84,7 +87,7 @@ export default function AccountLayout() {
         <div className="flex gap-6">
           <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0">
             <nav className="sticky top-24">
-              {accountNavItems.map(item => {
+              {navItems.map(item => {
                 const Icon = item.icon;
                 const active = isActive(item);
                 return (
@@ -125,7 +128,7 @@ export default function AccountLayout() {
                     exit={{ opacity: 0, height: 0 }}
                     className="border border-t-0 border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden"
                   >
-                    {accountNavItems.map(item => {
+                    {navItems.map(item => {
                       const Icon = item.icon;
                       const active = isActive(item);
                       return (
