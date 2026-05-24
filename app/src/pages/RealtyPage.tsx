@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Maximize2, Home, Layers, Loader2 } from 'lucide-react';
 import FilterBar from '@/components/FilterBar';
 import SEOHead from '@/components/SEOHead';
-import { realtyService, type RealtyItem } from '@/services/realty.service';
+import realtyService from '@/services/realty.service';
+import type { RealtyItem } from '@/models/realty/RealtyItem';
 
 const REALTY_CITIES = [
   { value: 'yuzhno', label: 'Южно-Сахалинск' },
@@ -50,27 +52,16 @@ function formatFloor(item: RealtyItem): string {
 export default function RealtyPage() {
   const [mode, setMode] = useState('sale');
   const [city, setCity] = useState<string | null>(null);
-  const [items, setItems] = useState<RealtyItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const params: Record<string, string> = { type: mode, perPage: '50' };
-        if (city) params.city = city;
-        const res = await realtyService.getAll(params);
-        if (!cancelled) setItems(res.data || []);
-      } catch {
-        if (!cancelled) setItems([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetch();
-    return () => { cancelled = true; };
-  }, [mode, city]);
+  const params: Record<string, string> = { type: mode, perPage: '50' };
+  if (city) params.city = city;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['realty', mode, city],
+    queryFn: () => realtyService.getAll(params),
+  });
+
+  const items = data?.data || [];
 
   return (
     <div className="pt-20 pb-8">
@@ -111,7 +102,7 @@ export default function RealtyPage() {
           <FilterBar options={REALTY_CITIES} selected={city} onChange={setCity} allLabel="Все города" />
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-ocean)]" />
           </div>

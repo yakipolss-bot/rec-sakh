@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { ModerationQueueItem, ModerationRule } from '@/services/admin.service';
+import type { ModerationQueueItem } from '@/models/admin/ModerationQueueItem';
+import type { ModerationRule } from '@/models/admin/ModerationRule';
 
 const tabs = ['Жалобы на контент', 'На пользователей', 'Авто-модерация', 'Правила'];
 

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { authService } from './auth.service';
-import { usersService } from './users.service';
+import authService from './auth.service';
+import usersService from './users.service';
 import { parseUrlHash, clearUrlHash } from './supabase';
 
 function getLocalStorage(key: string): string | null {

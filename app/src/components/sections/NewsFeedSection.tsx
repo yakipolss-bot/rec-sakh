@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
-import { newsService } from '@/services/news.service';
+import newsService from '@/services/news.service';
 import { useCity } from '@/contexts/useCity';
 import NewsCard from '@/components/NewsCard';
 import BentoGrid from '@/components/BentoGrid';

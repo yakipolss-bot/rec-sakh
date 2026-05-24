@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, TrendingUp, TrendingDown, ArrowRightLeft, Loader2 } from 'lucide-react';
-import { fetchCurrencyRates, generateHistory } from '@/services/currency.service';
+import currencyService from '@/services/currency.service';
 import type { CurrencyRate } from '@/types';
 import SEOHead from '@/components/SEOHead';
 
@@ -24,7 +24,7 @@ export default function CurrencyPage() {
   const loadRates = async () => {
     try {
       setLoading(true);
-      const data = await fetchCurrencyRates();
+      const data = await currencyService.getRates();
       if (data.length > 0) {
         setRates(data);
       }
@@ -40,7 +40,7 @@ export default function CurrencyPage() {
   }, []);
 
   const history = useMemo(() => rates.length > 0
-    ? generateHistory(rates.find(r => r.code === 'USD')?.rate ?? 0)
+    ? currencyService.generateHistory(rates.find(r => r.code === 'USD')?.rate ?? 0)
     : [], [rates]);
 
   const getRate = (code: string) => {

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Plus, Bookmark, Tag, User, Key } from 'lucide-react';
-import { categoriesService } from '@/services/categories.service';
+import categoriesService from '@/services/categories.service';
 import { useUserSubscriptions } from '@/hooks/useUser';
-import { usersService } from '@/services/users.service';
+import usersService from '@/services/users.service';
 import { toast } from 'sonner';
 import EmptyState from '@/components/EmptyState';
 import type { Category } from '@/types';

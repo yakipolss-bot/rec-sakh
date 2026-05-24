@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sun, Cloud, CloudRain, Snowflake, Wind, Droplets, Gauge, AlertTriangle, ArrowLeft, MapPin, Loader2, Umbrella } from 'lucide-react';
-import { fetchAllCitiesWeather, fetchCityForecast } from '@/services/weather.service';
+import weatherService from '@/services/weather.service';
 import type { WeatherData, ForecastDay } from '@/types';
 import SEOHead from '@/components/SEOHead';
 
@@ -42,7 +42,7 @@ export default function WeatherPage() {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      const data = await fetchAllCitiesWeather();
+      const data = await weatherService.getAll();
       if (mounted) {
         setAllWeather(data);
         if (data.length > 0) setSelectedIndex(0);
@@ -60,7 +60,7 @@ export default function WeatherPage() {
     if (!city) return;
     let mounted = true;
     const loadForecast = async () => {
-      const data = await fetchCityForecast(city.cityCode);
+      const data = await weatherService.getForecast(city.cityCode);
       if (mounted) setForecast(data);
     };
     loadForecast();

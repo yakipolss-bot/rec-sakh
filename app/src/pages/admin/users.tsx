@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { AdminUser } from '@/services/admin.service';
+import type { AdminUser } from '@/models/admin/AdminUser';
 
 const roles = ['Все', 'user', 'moderator', 'editor', 'admin'];
 const statuses = ['Все', 'active', 'blocked', 'pending'];

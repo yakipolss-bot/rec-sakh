@@ -5,10 +5,10 @@ import {
   Search, Edit, Eye, History, BarChart3,
   Trash2, AlertTriangle, Loader2,
 } from 'lucide-react';
-import { newsService } from '@/services/news.service';
-import { categoriesService } from '@/services/categories.service';
-import type { NewsArticle } from '@/services/news.service';
-import type { Category } from '@/services/categories.service';
+import newsService from '@/services/news.service';
+import categoriesService from '@/services/categories.service';
+import type { Article as NewsArticle } from '@/models/news/Article';
+import type { Category } from '@/models/categories/Category';
 
 const statusColors: Record<string, string> = {
   draft: 'sakh-tag--sunset',

@@ -5,7 +5,8 @@ import {
   DollarSign, Eye, Layout,
 } from 'lucide-react';
 import { adminService } from '@/services';
-import type { AdCampaign, AdPlacement } from '@/services/admin.service';
+import type { AdCampaign } from '@/models/admin/AdCampaign';
+import type { AdPlacement } from '@/models/admin/AdPlacement';
 
 type AdTab = 'campaigns' | 'placements' | 'clients' | 'stats';
 

@@ -8,8 +8,8 @@ import {
   Calendar, Menu, X, ChevronRight, Users, Zap, Search,
   Loader2,
 } from 'lucide-react';
-import { usersService } from '@/services/users.service';
-import type { UserProfile } from '@/services/users.service';
+import usersService from '@/services/users.service';
+import type { UserProfile } from '@/models/users/UserProfile';
 
 const navSections = [
   {

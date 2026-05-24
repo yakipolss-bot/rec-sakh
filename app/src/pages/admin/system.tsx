@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { SystemHealthData, AuditLogEntry } from '@/services/admin.service';
+import type { SystemHealthData } from '@/models/admin/SystemHealthData';
+import type { AuditLogEntry } from '@/models/admin/AuditLogEntry';
 
 const tabs = [
   { id: 'cache', label: 'Кэш', icon: Database },

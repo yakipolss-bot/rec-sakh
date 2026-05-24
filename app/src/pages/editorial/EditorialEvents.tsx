@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Info, Plus, Edit2, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { adminService, type EventItem } from '../../services/admin.service';
+import { adminService } from '@/services';
+import type { EventItem } from '@/models/admin/EventItem';
 
 type Tab = 'all' | 'moderation' | 'create';
 

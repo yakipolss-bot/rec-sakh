@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { MediaFile } from '@/services/admin.service';
+import type { MediaFile } from '@/models/admin/MediaFile';
 
 const PER_PAGE = 20;
 

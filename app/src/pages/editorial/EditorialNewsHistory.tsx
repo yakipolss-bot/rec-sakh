@@ -2,8 +2,8 @@ import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, User } from 'lucide-react';
-import { newsService } from '@/services';
-import type { NewsArticle } from '@/services/news.service';
+import newsService from '@/services/news.service';
+import type { Article as NewsArticle } from '@/models/news/Article';
 
 export default function EditorialNewsHistory() {
   const { id } = useParams<{ id: string }>();

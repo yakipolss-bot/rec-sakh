@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { Transaction, Tariff } from '@/services/admin.service';
+import type { Transaction } from '@/models/admin/Transaction';
+import type { Tariff } from '@/models/admin/Tariff';
 
 type BillingTab = 'transactions' | 'refunds' | 'reports' | 'tariffs';
 

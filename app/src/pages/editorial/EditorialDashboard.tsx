@@ -6,8 +6,8 @@ import {
   AlertTriangle, ArrowRight, DollarSign,
   TrendingUp, Users, Zap, Loader2,
 } from 'lucide-react';
-import { newsService } from '@/services/news.service';
-import type { NewsArticle } from '@/services/news.service';
+import newsService from '@/services/news.service';
+import type { Article as NewsArticle } from '@/models/news/Article';
 
 export default function EditorialDashboard() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);

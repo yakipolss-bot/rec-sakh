@@ -10,8 +10,8 @@ import { ru } from 'date-fns/locale';
 import SEOHead from '@/components/SEOHead';
 import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
-import { newsService } from '@/services/news.service';
-import { categoriesService } from '@/services/categories.service';
+import newsService from '@/services/news.service';
+import categoriesService from '@/services/categories.service';
 import type { NewsArticle } from '@/types';
 import type { Category } from '@/types';
 

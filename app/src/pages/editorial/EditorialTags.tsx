@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Tag, Merge, ArrowRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { tagsService } from '@/services/tags.service';
-import type { Tag as TagType } from '@/services/tags.service';
+import tagsService from '@/services/tags.service';
+import type { Tag as TagType } from '@/models/tags/Tag';
 
 export default function EditorialTags() {
   const [tags, setTags] = useState<TagType[]>([]);

@@ -1,12 +1,17 @@
 import apiClient from './api-client';
-import type { Comment } from '@/types';
+import { Comment } from '../models/comments/Comment';
 
-export const commentsService = {
-  async getComments(newsId: string) {
+class CommentsService {
+  async getComments(newsId: string): Promise<Comment[]> {
     const { data } = await apiClient.get('/comments', { params: { newsId } });
     return (data.data || data) as Comment[];
-  },
-  async deleteComment(id: string) {
+  }
+
+  async deleteComment(id: string): Promise<void> {
     await apiClient.delete(`/comments/${id}`);
-  },
-};
+  }
+}
+
+const commentsService = new CommentsService();
+export default commentsService;
+export { CommentsService };

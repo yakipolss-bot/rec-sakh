@@ -4,7 +4,8 @@ import {
   Calendar, Check, X,
 } from 'lucide-react';
 import { adminService } from '@/services';
-import type { StaffMember, StaffScheduleItem } from '@/services/admin.service';
+import type { StaffMember } from '@/models/admin/StaffMember';
+import type { StaffScheduleItem } from '@/models/admin/StaffScheduleItem';
 
 const shiftLabels: Record<string, string> = {
   morning: 'Утро (6-14)', day: 'День (14-22)', night: 'Ночь (22-6)',

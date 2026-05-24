@@ -5,7 +5,7 @@ import {
   Mail, Lock, Phone, UserPlus, ArrowLeft,
   MessageCircle, Globe, Send, CheckCircle, AlertCircle
 } from 'lucide-react';
-import { authService } from '../services/auth.service';
+import authService from '../services/auth.service';
 import { parseUrlHash, clearUrlHash } from '../services/supabase';
 import SEOHead from '@/components/SEOHead';
 

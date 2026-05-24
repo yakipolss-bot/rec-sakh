@@ -7,8 +7,8 @@ import NewsCard from '@/components/NewsCard';
 import FilterBar from '@/components/FilterBar';
 import Pagination from '@/components/Pagination';
 import EmptyState from '@/components/EmptyState';
-import { newsService } from '@/services/news.service';
-import { categoriesService } from '@/services/categories.service';
+import newsService from '@/services/news.service';
+import categoriesService from '@/services/categories.service';
 import type { NewsArticle } from '@/types';
 import type { Category } from '@/types';
 

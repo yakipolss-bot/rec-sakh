@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Cloud, CloudRain, Snowflake, Sun, Wind, Droplets, Gauge, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchAllCitiesWeather } from '@/services/weather.service';
+import weatherService from '@/services/weather.service';
 import { useCity } from '@/contexts/useCity';
 import type { WeatherData } from '@/types';
 
@@ -31,7 +31,7 @@ export default function WeatherWidget() {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      const data = await fetchAllCitiesWeather();
+      const data = await weatherService.getAll();
       if (mounted) {
         setAllWeather(data);
         setLoading(false);

@@ -1,227 +1,28 @@
 import apiClient from './api-client';
+import { DashboardData } from '../models/admin/DashboardData';
+import { RecentAction } from '../models/admin/RecentAction';
+import { Alert } from '../models/admin/Alert';
+import { AdminUser } from '../models/admin/AdminUser';
+import { StaffMember } from '../models/admin/StaffMember';
+import { StaffScheduleItem } from '../models/admin/StaffScheduleItem';
+import { ModerationQueueItem } from '../models/admin/ModerationQueueItem';
+import { ModerationRule } from '../models/admin/ModerationRule';
+import { ModerationStats } from '../models/admin/ModerationStats';
+import { SystemHealthData } from '../models/admin/SystemHealthData';
+import { AuditLogEntry } from '../models/admin/AuditLogEntry';
+import { Setting } from '../models/admin/Setting';
+import { AnalyticsDashboard } from '../models/admin/AnalyticsDashboard';
+import { EventItem } from '../models/admin/EventItem';
+import { MediaFile } from '../models/admin/MediaFile';
+import { Comment } from '../models/admin/Comment';
+import { Transaction } from '../models/admin/Transaction';
+import { Tariff } from '../models/admin/Tariff';
+import { AdCampaign } from '../models/admin/AdCampaign';
+import { AdPlacement } from '../models/admin/AdPlacement';
 
-// ── Interfaces ──
-
-export interface AdminStats {
-  uptime: string;
-  cpuLoad: number;
-  errors500: number;
-  apiResponseTime: number;
-  usersOnline: number;
-}
-
-export interface DashboardData {
-  stats: AdminStats;
-  analytics: {
-    onlineUsers: number;
-    usersToday: number;
-    publishedToday: number;
-    commentsToday: number;
-    pendingModeration: number;
-    totalNews: number;
-    totalUsers: number;
-    totalComments: number;
-  };
-  health: SystemHealthData;
-}
-
-export interface RecentAction {
-  id: string;
-  user: string;
-  action: string;
-  target: string;
-  timestamp: string;
-}
-
-export interface Alert {
-  id: string;
-  type: 'critical' | 'warning' | 'info';
-  message: string;
-  timestamp: string;
-}
-
-export interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  city?: string;
-  registeredAt: string;
-  adsCount?: number;
-  commentsCount?: number;
-  avatarUrl?: string;
-  karma?: number;
-  level?: number;
-  createdAt?: string;
-  phone?: string;
-}
-
-export interface StaffMember {
-  id: string;
-  userId: string;
-  position: string;
-  department: string | null;
-  hireDate: string;
-  isActive: boolean;
-  kpiScore: number | null;
-  schedule: Record<string, unknown>;
-  permissions: string[];
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-    role: string;
-    status?: string;
-    karma?: number;
-    level?: number;
-    phone?: string;
-    bio?: string;
-    createdAt?: string;
-  };
-}
-
-export interface StaffScheduleItem {
-  id: string;
-  staffId: string;
-  staffName: string;
-  date: string;
-  shift: 'morning' | 'day' | 'night';
-}
-
-export interface ModerationQueueItem {
-  id: string;
-  contentType: string;
-  contentId: string;
-  reason: string | null;
-  reportedBy: string | null;
-  reviewedBy: string | null;
-  status: 'pending' | 'approved' | 'rejected';
-  actionTaken: string | null;
-  createdAt: string;
-  reporter?: { id: string; name: string; email: string } | null;
-  reviewer?: { id: string; name: string; email: string } | null;
-}
-
-export interface ModerationRule {
-  id: string;
-  ruleType: string;
-  pattern: string;
-  action: string;
-  priority: number;
-  isActive: boolean;
-  createdAt: string;
-  creator?: { id: string; name: string } | null;
-}
-
-export interface ModerationStats {
-  pending: number;
-  approvedToday: number;
-  total: number;
-  avgResponseTimeHours: number | null;
-}
-
-export interface AdPlacement {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  zone: string;
-  width: number;
-  height: number;
-  pricePerDay: number;
-  isActive: boolean;
-}
-
-export interface AdCampaign {
-  id: string;
-  name: string;
-  placementId: string;
-  advertiserName: string;
-  advertiserContact: string;
-  imageUrl: string;
-  targetUrl: string;
-  startsAt: string;
-  endsAt: string;
-  budget: number;
-  spent: number;
-  impressionsTarget: number | null;
-  clicksTarget: number | null;
-  isActive: boolean;
-  placement?: AdPlacement;
-}
-
-export interface Transaction {
-  id: string;
-  date: string;
-  user: string;
-  type: 'payment' | 'refund' | 'withdrawal';
-  amount: number;
-  method: string;
-  status: 'success' | 'pending' | 'failed';
-}
-
-export interface Tariff {
-  id: string;
-  name: string;
-  price: number;
-  interval: string;
-  features: string[];
-  description?: string;
-  currency?: string;
-  isActive?: boolean;
-  sortOrder?: number;
-}
-
-export interface SystemHealthData {
-  uptime: number;
-  memoryUsage: { heapUsed: number; heapTotal: number; rss: number; unit: string };
-  apiStatus: string;
-  databaseStatus: string;
-  cacheStatus: string;
-  lastBackup: string | null;
-  nodeVersion: string;
-  platform: string;
-}
-
-export interface AuditLogEntry {
-  id: string;
-  user: string;
-  action: string;
-  target: string;
-  timestamp: string;
-}
-
-export interface ServerLog {
-  id: string;
-  level: string;
-  message: string;
-  timestamp: string;
-}
-
-export interface Setting {
-  key: string;
-  value: unknown;
-  updatedBy: string | null;
-  updatedAt: string;
-}
-
-export interface AnalyticsDashboard {
-  onlineUsers: number;
-  usersToday: number;
-  publishedToday: number;
-  commentsToday: number;
-  pendingModeration: number;
-  totalNews: number;
-  totalUsers: number;
-  totalComments: number;
-}
-
-// ── Service ──
-
-export const adminService = {
+class AdminService {
   // ── Dashboard ──
+
   async getDashboard(): Promise<DashboardData> {
     const [dashboardRes, , healthRes] = await Promise.all([
       apiClient.get('/admin/dashboard'),
@@ -256,7 +57,7 @@ export const adminService = {
       },
       health: health ?? dashboard,
     };
-  },
+  }
 
   async getRecentActions(): Promise<RecentAction[]> {
     const { data } = await apiClient.get('/admin/audit');
@@ -268,7 +69,7 @@ export const adminService = {
       target: (log.entityType as string) || '',
       timestamp: log.createdAt ? new Date(log.createdAt as string).toLocaleString('ru-RU') : '',
     }));
-  },
+  }
 
   async getAlerts(): Promise<Alert[]> {
     const { data } = await apiClient.get('/admin/health');
@@ -292,179 +93,193 @@ export const adminService = {
       }
     }
     return alerts;
-  },
+  }
 
   // ── Users ──
+
   async getUsers(params?: { page?: number; perPage?: number; search?: string; role?: string; status?: string }): Promise<{ data: AdminUser[]; meta: Record<string, unknown> }> {
     const { data } = await apiClient.get('/users', { params });
     return { data: data?.data || [], meta: data?.meta || {} };
-  },
+  }
 
   async getUserById(id: string): Promise<AdminUser> {
     const { data } = await apiClient.get(`/users/${id}`);
     return data?.data || data;
-  },
+  }
 
   async updateUser(userId: string, dto: Record<string, unknown>): Promise<AdminUser> {
     const { data } = await apiClient.patch(`/users/${userId}`, dto);
     return data?.data || data;
-  },
+  }
 
   async blockUser(userId: string): Promise<void> {
     await apiClient.delete(`/users/${userId}`);
-  },
+  }
+
+  async changeUserStatus(userId: string, status: string): Promise<void> {
+    await apiClient.patch(`/users/${userId}`, { status });
+  }
 
   async changeUserRole(userId: string, role: string): Promise<void> {
     await apiClient.patch(`/admin/users/${userId}/role`, { role });
-  },
+  }
 
   // ── Staff ──
+
   async getStaff(params?: Record<string, unknown>): Promise<{ data: StaffMember[]; meta: Record<string, unknown> }> {
     const { data } = await apiClient.get('/admin/staff', { params });
     return { data: data?.data || [], meta: data?.meta || {} };
-  },
+  }
 
   async getStaffById(id: string): Promise<StaffMember> {
     const { data } = await apiClient.get(`/admin/staff/${id}`);
     return data?.data || data;
-  },
+  }
 
   async getStaffSchedule(): Promise<StaffScheduleItem[]> {
     const { data } = await apiClient.get('/admin/staff/schedule');
     return data?.data || data || [];
-  },
+  }
 
   async createStaffSchedule(dto: { staffId: string; date: string; shift: string }): Promise<StaffScheduleItem> {
     const { data } = await apiClient.post('/admin/staff/schedule', dto);
     return data?.data || data;
-  },
+  }
 
   // ── Moderation ──
+
   async getModerationQueue(params?: Record<string, unknown>): Promise<{ data: ModerationQueueItem[]; meta: Record<string, unknown> }> {
     const { data } = await apiClient.get('/admin/moderation/queue', { params });
     return { data: data?.data || [], meta: data?.meta || {} };
-  },
+  }
 
   async reviewModeration(id: string, dto: { status: 'approved' | 'rejected'; reason?: string }): Promise<void> {
     await apiClient.post(`/admin/moderation/queue/${id}/review`, dto);
-  },
+  }
 
   async getModerationRules(): Promise<ModerationRule[]> {
     const { data } = await apiClient.get('/admin/moderation/rules');
     return data?.data || data || [];
-  },
+  }
 
   async createModerationRule(dto: Record<string, unknown>): Promise<ModerationRule> {
     const { data } = await apiClient.post('/admin/moderation/rules', dto);
     return data?.data || data;
-  },
+  }
 
   async updateModerationRule(id: string, dto: Partial<ModerationRule>): Promise<ModerationRule> {
     const { data } = await apiClient.patch(`/admin/moderation/rules/${id}`, dto);
     return data?.data || data;
-  },
+  }
 
   async deleteModerationRule(id: string): Promise<void> {
     await apiClient.delete(`/admin/moderation/rules/${id}`);
-  },
+  }
 
   async getModerationStats(): Promise<ModerationStats> {
     const { data } = await apiClient.get('/admin/moderation/stats');
     return data?.data || data;
-  },
+  }
 
   // ── Settings ──
+
   async getSettings(): Promise<Setting[]> {
     const { data } = await apiClient.get('/admin/settings');
     return data?.data || data || [];
-  },
+  }
 
   async getSetting(key: string): Promise<Setting> {
     const { data } = await apiClient.get(`/admin/settings/${key}`);
     return data?.data || data;
-  },
+  }
 
   async updateSetting(key: string, value: unknown): Promise<Setting> {
     const { data } = await apiClient.put(`/admin/settings/${key}`, { value });
     return data?.data || data;
-  },
+  }
 
   async deleteSetting(key: string): Promise<void> {
     await apiClient.delete(`/admin/settings/${key}`);
-  },
+  }
 
   // ── Analytics ──
+
   async getAnalyticsDashboard(): Promise<AnalyticsDashboard> {
     const { data } = await apiClient.get('/admin/analytics/dashboard');
     return data?.data || data;
-  },
+  }
 
   async getAnalyticsTraffic(params?: Record<string, unknown>): Promise<unknown> {
     const { data } = await apiClient.get('/admin/analytics/traffic', { params });
     return data?.data || data;
-  },
+  }
 
   async getAnalyticsContent(params?: Record<string, unknown>): Promise<unknown> {
     const { data } = await apiClient.get('/admin/analytics/content', { params });
     return data?.data || data;
-  },
+  }
 
   async getRealtimeAnalytics(): Promise<unknown> {
     const { data } = await apiClient.get('/admin/analytics/realtime');
     return data?.data || data;
-  },
+  }
 
   // ── Content ──
+
   async bulkNewsOperation(action: string, ids: string[], value?: string): Promise<unknown> {
     const { data } = await apiClient.post('/admin/content/news/bulk', { action, ids, value });
     return data?.data || data;
-  },
+  }
 
   // ── Health / Audit ──
+
   async getHealth(): Promise<SystemHealthData> {
     const { data } = await apiClient.get('/admin/health');
     return data?.data || data;
-  },
+  }
 
   async getAuditLog(params?: Record<string, unknown>): Promise<{ data: AuditLogEntry[]; meta: Record<string, unknown> }> {
     const { data } = await apiClient.get('/admin/audit', { params });
     return { data: data?.data || [], meta: data?.meta || {} };
-  },
+  }
 
   async getAuditStats(): Promise<unknown> {
     const { data } = await apiClient.get('/admin/audit/stats');
     return data?.data || data;
-  },
+  }
 
   // ── Roles ──
+
   async getRoles(): Promise<string[]> {
     const { data } = await apiClient.get('/admin/roles');
     return data?.data || data || [];
-  },
+  }
 
-  // ── System — implemented on backend ──
+  // ── System ──
+
   async clearCache(): Promise<void> {
     await apiClient.post('/admin/system/cache/clear');
-  },
+  }
 
   async warmCache(): Promise<void> {
     await apiClient.post('/admin/system/cache/warm');
-  },
+  }
 
   async reindexSearch(): Promise<void> {
     await apiClient.post('/search/sync');
-  },
+  }
 
   async optimizeMedia(): Promise<void> {
     await apiClient.post('/admin/system/media/optimize');
-  },
+  }
 
   async checkUpdates(): Promise<{ hasUpdates: boolean; version?: string }> {
     const { data } = await apiClient.get('/admin/system/updates');
     return data?.data || data || { hasUpdates: false };
-  },
+  }
 
   // ── Files ──
+
   async uploadFile(file: File): Promise<{ url: string }> {
     const form = new FormData();
     form.append('file', file);
@@ -472,78 +287,83 @@ export const adminService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return data?.data || data;
-  },
+  }
 
   // ── Backup ──
+
   async createBackup(): Promise<void> {
     await apiClient.post('/admin/backup');
-  },
+  }
 
-  // ── Billing (admin routes) ──
+  // ── Billing ──
+
   async getTransactions(params?: Record<string, unknown>): Promise<{ data: Transaction[]; meta?: Record<string, unknown> }> {
     const { data } = await apiClient.get('/billing/admin/transactions', { params });
     return { data: data?.data || data || [], meta: data?.meta || {} };
-  },
+  }
 
   async getTariffs(): Promise<Tariff[]> {
     const { data } = await apiClient.get('/billing/admin/tariffs');
     return data?.data || data || [];
-  },
+  }
 
   async selectTariff(tariffId: string): Promise<void> {
     await apiClient.post(`/billing/admin/tariffs/${tariffId}/select`);
-  },
+  }
 
   // ── Comments Management ──
+
   async getComments(params?: Record<string, unknown>): Promise<{ data: Comment[]; meta: Record<string, unknown> }> {
     const { data } = await apiClient.get('/comments', { params });
     return { data: data?.data || data || [], meta: data?.meta || {} };
-  },
+  }
 
   async deleteComment(id: string): Promise<void> {
     await apiClient.delete(`/comments/${id}`);
-  },
+  }
 
   async moderateComment(id: string, status: 'approved' | 'rejected'): Promise<void> {
     await apiClient.patch(`/comments/${id}/moderate`, { status });
-  },
+  }
 
   async bulkModerateComments(dto: { ids: string[]; status: 'approved' | 'rejected' }): Promise<void> {
     await apiClient.post('/comments/bulk-moderate', dto);
-  },
+  }
 
   async banCommentUser(userId: string): Promise<void> {
     await apiClient.post('/comments/ban', { userId });
-  },
+  }
 
   async unbanCommentUser(userId: string): Promise<void> {
     await apiClient.delete(`/comments/ban/${userId}`);
-  },
+  }
 
   async getCommentBlacklist(): Promise<{ word: string }[]> {
     const { data } = await apiClient.get('/comments/blacklist');
     return data?.data || data || [];
-  },
+  }
 
   async addCommentBlacklistWord(word: string): Promise<void> {
     await apiClient.post('/comments/blacklist', { word });
-  },
+  }
 
   async removeCommentBlacklistWord(word: string): Promise<void> {
     await apiClient.delete(`/comments/blacklist/${encodeURIComponent(word)}`);
-  },
+  }
 
   // ── Media Library ──
+
   async getMediaList(): Promise<MediaFile[]> {
     const { data } = await apiClient.get('/admin/media');
     return data?.data || data || [];
-  },
+  }
 
   async deleteMedia(filename: string): Promise<void> {
     await apiClient.delete(`/admin/media/${encodeURIComponent(filename)}`);
-  },
+  }
 
   // ── Events ──
+
   async getEvents(params?: Record<string, unknown>): Promise<{ data: EventItem[]; meta?: Record<string, unknown> }> {
     const { data } = await apiClient.get('/events', { params });
     const items: EventItem[] = (data?.data || data || []).map((ev: Record<string, unknown>) => ({
@@ -565,7 +385,7 @@ export const adminService = {
       createdAt: ev.createdAt as string,
     }));
     return { data: items, meta: data?.meta || {} };
-  },
+  }
 
   async getEvent(id: string): Promise<EventItem | null> {
     const { data } = await apiClient.get(`/events/${id}`);
@@ -589,7 +409,7 @@ export const adminService = {
       _count: ev._count,
       createdAt: ev.createdAt,
     };
-  },
+  }
 
   async createEvent(dto: Partial<EventItem>): Promise<EventItem> {
     const payload: Record<string, unknown> = {};
@@ -608,7 +428,7 @@ export const adminService = {
     if (dto.imageUrl) payload.imageUrl = dto.imageUrl;
     const { data } = await apiClient.post('/events', payload);
     return data?.data || data;
-  },
+  }
 
   async updateEvent(id: string, dto: Partial<EventItem>): Promise<EventItem> {
     const payload: Record<string, unknown> = {};
@@ -627,108 +447,74 @@ export const adminService = {
     if (dto.imageUrl) payload.imageUrl = dto.imageUrl;
     const { data } = await apiClient.patch(`/events/${id}`, payload);
     return data?.data || data;
-  },
+  }
 
   async deleteEvent(id: string): Promise<void> {
     await apiClient.delete(`/events/${id}`);
-  },
+  }
 
   async updateEventStatus(id: string, status: string): Promise<void> {
     await apiClient.patch(`/events/${id}/status`, { status });
-  },
+  }
 
   // ── Newsletters ──
 
   async getNewsletters(): Promise<Record<string, unknown>[]> {
     const { data } = await apiClient.get('/notifications/newsletter');
     return Array.isArray(data) ? data : data?.data || [];
-  },
+  }
 
   async getNewsletter(id: string): Promise<Record<string, unknown>> {
     const { data } = await apiClient.get(`/notifications/newsletter/${id}`);
     return data?.data || data;
-  },
+  }
 
   async createNewsletter(dto: { title: string; content: string; type?: string }): Promise<Record<string, unknown>> {
     const { data } = await apiClient.post('/notifications/newsletter', dto);
     return data?.data || data;
-  },
+  }
 
   async sendNewsletter(id: string): Promise<void> {
     await apiClient.post(`/notifications/newsletter/${id}/send`);
-  },
+  }
 
   async getNewsletterStats(id: string): Promise<Record<string, unknown>> {
     const { data } = await apiClient.get(`/notifications/newsletter/${id}/stats`);
     return data?.data || data;
-  },
+  }
 
   // ── SEO ──
 
   async getRedirects(): Promise<Record<string, unknown>[]> {
     const { data } = await apiClient.get('/admin/seo/redirects');
     return Array.isArray(data) ? data : data?.data || [];
-  },
+  }
 
   async createRedirect(dto: { source: string; target: string; type?: number }): Promise<Record<string, unknown>> {
     const { data } = await apiClient.post('/admin/seo/redirects', dto);
     return data?.data || data;
-  },
+  }
 
   async deleteRedirect(id: string): Promise<void> {
     await apiClient.delete(`/admin/seo/redirects/${id}`);
-  },
+  }
 
   async generateSitemap(): Promise<string> {
     const { data } = await apiClient.post('/admin/seo/sitemap/generate');
     return data?.url || '';
-  },
+  }
 
   async checkBrokenLinks(): Promise<Record<string, unknown>[]> {
     const { data } = await apiClient.post('/admin/seo/broken-links/check');
     return data?.data || [];
-  },
+  }
 
   async getBrokenLinks(): Promise<Record<string, unknown>[]> {
     const { data } = await apiClient.get('/admin/seo/broken-links');
     return Array.isArray(data) ? data : data?.data || [];
-  },
-};
-
-export interface EventItem {
-  id: string;
-  title: string;
-  description?: string;
-  shortDescription?: string;
-  date: string;
-  time?: string;
-  venue?: string;
-  city?: string;
-  price?: number | string;
-  imageUrl?: string;
-  ticketUrl?: string;
-  status: string;
-  category?: { id: string; name: string };
-  _count?: { subscribers: number };
-  createdAt?: string;
+  }
 }
 
-export interface MediaFile {
-  filename: string;
-  url: string;
-  size: number;
-  createdAt: string;
-  isImage: boolean;
-}
-
-export interface Comment {
-  id: string;
-  text: string;
-  author: { id: string; name: string };
-  articleId?: string;
-  articleTitle?: string;
-  status: string;
-  createdAt: string;
-  likes?: number;
-  dislikes?: number;
-}
+const adminService = new AdminService();
+export default adminService;
+export { AdminService };

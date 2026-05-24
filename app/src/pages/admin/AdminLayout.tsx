@@ -8,7 +8,7 @@ import {
   Menu, X, ChevronRight, Newspaper, MessageSquare, FolderTree, Image,
 } from 'lucide-react';
 import { usersService } from '@/services';
-import type { UserProfile } from '@/services/users.service';
+import type { UserProfile } from '@/models/users/UserProfile';
 
 const navItems = [
   { path: '/admin', icon: LayoutDashboard, label: 'Дашборд', exact: true },

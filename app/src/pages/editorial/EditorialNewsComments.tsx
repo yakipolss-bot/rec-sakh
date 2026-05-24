@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, XCircle, Shield, MessageSquare, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { newsService, adminService } from '@/services';
-import { commentsService } from '@/services/comments.service';
-import type { NewsArticle } from '@/services/news.service';
+import newsService from '@/services/news.service';
+import { adminService } from '@/services';
+import commentsService from '@/services/comments.service';
+import type { Article as NewsArticle } from '@/models/news/Article';
 import type { Comment } from '@/types';
 
 export default function EditorialNewsComments() {

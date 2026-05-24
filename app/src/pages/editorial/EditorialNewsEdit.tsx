@@ -5,10 +5,10 @@ import {
   Save, Send, Globe, ChevronDown, X,
   Loader2,
 } from 'lucide-react';
-import { newsService } from '@/services/news.service';
-import { categoriesService } from '@/services/categories.service';
-import type { Category } from '@/services/categories.service';
-import type { NewsArticle } from '@/services/news.service';
+import newsService from '@/services/news.service';
+import categoriesService from '@/services/categories.service';
+import type { Category } from '@/models/categories/Category';
+import type { Article as NewsArticle } from '@/models/news/Article';
 import RichTextEditor from '@/components/RichTextEditor';
 
 export default function EditorialNewsEdit() {

@@ -4,7 +4,7 @@ import {
   Users, Activity,
   Eye, Clock, MousePointer, Loader2,
 } from 'lucide-react';
-import { adminService } from '../../services/admin.service';
+import { adminService } from '@/services';
 import { toast } from 'sonner';
 
 type Tab = 'traffic' | 'content' | 'authors' | 'search' | 'online';

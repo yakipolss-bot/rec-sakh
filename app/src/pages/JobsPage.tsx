@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Briefcase, Clock, Search, Building2, CircleDollarSign } from 'lucide-react';
 import FilterBar from '@/components/FilterBar';
-import { jobsService } from '@/services/jobs.service';
-import type { Job } from '@/services/jobs.service';
+import jobsService from '@/services/jobs.service';
+import type { Job } from '@/models/jobs/Job';
 import SEOHead from '@/components/SEOHead';
 
 const CITIES = [

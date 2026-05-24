@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 import { Calendar, MapPin, ImageOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { eventsService } from '@/services/events.service';
-import type { ArticleEvent } from '@/services/events.service';
+import eventsService from '@/services/events.service';
+import type { Event as ArticleEvent } from '@/models/events/Event';
 
 function WidgetEventCard({ event }: { event: ArticleEvent }) {
   const [imgError, setImgError] = useState(false);

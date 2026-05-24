@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { AdminUser } from '@/services/admin.service';
+import type { AdminUser } from '@/models/admin/AdminUser';
 import EmptyState from '@/components/EmptyState';
 
 const roleLabels: Record<string, string> = {

@@ -1,6 +1,6 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useState } from 'react';
-import { authService } from '@/services/auth.service';
+import authService from '@/services/auth.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, LogOut } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';

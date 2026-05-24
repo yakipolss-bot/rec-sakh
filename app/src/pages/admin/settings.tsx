@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { ServerLog } from '@/services/admin.service';
+import type { ServerLog } from '@/models/admin/ServerLog';
 
 const sakhalinCities = [
   'Южно-Сахалинск', 'Корсаков', 'Оха', 'Невельск', 'Холмск',

@@ -5,8 +5,8 @@ import {
   Eye, Edit, Trash2, CheckCircle, XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { newsService } from '@/services/news.service';
-import type { NewsArticle } from '@/services/news.service';
+import newsService from '@/services/news.service';
+import type { Article as NewsArticle } from '@/models/news/Article';
 
 const statusLabels: Record<string, string> = {
   draft: 'Черновик',

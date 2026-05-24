@@ -5,7 +5,8 @@ import { ArrowLeft, MapPin, Clock, Eye, Plus, Loader2 } from 'lucide-react';
 import FilterBar from '@/components/FilterBar';
 import EmptyState from '@/components/EmptyState';
 import SEOHead from '@/components/SEOHead';
-import { adsService, type Ad } from '@/services/ads.service';
+import adsService from '@/services/ads.service';
+import type { Ad } from '@/models/ads/Ad';
 
 const AD_CATEGORIES = [
   { value: 'realty', label: 'Недвижимость' },

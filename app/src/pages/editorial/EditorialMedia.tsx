@@ -4,7 +4,8 @@ import {
   Image, Video, FolderOpen, Trash2,
   Upload, CheckSquare, Square, Loader2,
 } from 'lucide-react';
-import { adminService, type MediaFile } from '../../services/admin.service';
+import { adminService } from '@/services';
+import type { MediaFile } from '@/models/admin/MediaFile';
 import { toast } from 'sonner';
 
 type Tab = 'photos' | 'videos' | 'albums';

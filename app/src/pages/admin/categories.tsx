@@ -4,8 +4,8 @@ import {
   FolderTree, Plus, Edit, Trash2, X, Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { categoriesService } from '@/services/categories.service';
-import type { Category } from '@/services/categories.service';
+import categoriesService from '@/services/categories.service';
+import type { Category } from '@/models/categories/Category';
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);

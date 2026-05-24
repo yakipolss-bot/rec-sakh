@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { usersService, type UserProfile } from '@/services/users.service';
-import { authService } from '@/services/auth.service';
+import usersService from '@/services/users.service';
+import authService from '@/services/auth.service';
+import type { UserProfile } from '@/models/users/UserProfile';
 import { useAuth } from '@/services/auth-context';
 
 interface UseUserOptions {

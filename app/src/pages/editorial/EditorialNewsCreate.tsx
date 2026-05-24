@@ -5,9 +5,9 @@ import {
   Save, Send, Video, Globe, ChevronDown, Upload, X,
   Loader2,
 } from 'lucide-react';
-import { newsService } from '@/services/news.service';
-import { categoriesService } from '@/services/categories.service';
-import type { Category } from '@/services/categories.service';
+import newsService from '@/services/news.service';
+import categoriesService from '@/services/categories.service';
+import type { Category } from '@/models/categories/Category';
 
 export default function EditorialNewsCreate() {
   const navigate = useNavigate();

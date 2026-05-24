@@ -1,4 +1,4 @@
-import type { CurrencyRate } from '@/types';
+import { CurrencyRate } from '../models/currency/CurrencyRate';
 
 interface CbrValute {
   CharCode: string;
@@ -37,64 +37,70 @@ function parseChange(valute: CbrValute): number {
   return (valute.Value - valute.Previous) / valute.Nominal;
 }
 
-export async function fetchCurrencyRates(): Promise<CurrencyRate[]> {
-  if (cache && Date.now() - cache.timestamp < CACHE_TTL) {
-    return cache.data;
-  }
-
-  try {
-    const res = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', {
-      cache: 'no-cache',
-    });
-
-    if (!res.ok) {
-      throw new Error(`CBR API error: ${res.status}`);
-    }
-
-    const json: CbrResponse = await res.json();
-    const valutes = json.Valute;
-
-    const rates = Object.keys(CURRENCY_MAP)
-      .filter((code) => valutes[code])
-      .map((code) => {
-        const v = valutes[code];
-        const info = CURRENCY_MAP[code];
-        return {
-          code: info.code,
-          name: info.name,
-          rate: parseRate(v),
-          change: parseChange(v),
-        };
-      });
-
-    cache = { data: rates, timestamp: Date.now() };
-    return rates;
-  } catch {
-    if (cache) {
+class CurrencyService {
+  async getRates(): Promise<CurrencyRate[]> {
+    if (cache && Date.now() - cache.timestamp < CACHE_TTL) {
       return cache.data;
     }
-    return [];
+
+    try {
+      const res = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', {
+        cache: 'no-cache',
+      });
+
+      if (!res.ok) {
+        throw new Error(`CBR API error: ${res.status}`);
+      }
+
+      const json: CbrResponse = await res.json();
+      const valutes = json.Valute;
+
+      const rates = Object.keys(CURRENCY_MAP)
+        .filter((code) => valutes[code])
+        .map((code) => {
+          const v = valutes[code];
+          const info = CURRENCY_MAP[code];
+          return {
+            code: info.code,
+            name: info.name,
+            rate: parseRate(v),
+            change: parseChange(v),
+          };
+        });
+
+      cache = { data: rates, timestamp: Date.now() };
+      return rates;
+    } catch {
+      if (cache) {
+        return cache.data;
+      }
+      return [];
+    }
   }
-}
 
-export function generateHistory(currentRate: number, days = 7): { date: string; rate: number }[] {
-  const history: { date: string; rate: number }[] = [];
-  const now = new Date();
-  let rate = currentRate;
+  generateHistory(currentRate: number, days = 7): { date: string; rate: number }[] {
+    const history: { date: string; rate: number }[] = [];
+    const now = new Date();
+    let rate = currentRate;
 
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dayStr = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayStr = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
 
-    if (i < days - 1) {
-      const drift = (Math.random() - 0.5) * 0.02;
-      const prevRate = rate;
-      rate = prevRate * (1 - drift);
+      if (i < days - 1) {
+        const drift = (Math.random() - 0.5) * 0.02;
+        const prevRate = rate;
+        rate = prevRate * (1 - drift);
+      }
+
+      history.push({ date: dayStr, rate: Math.round(rate * 100) / 100 });
     }
 
-    history.push({ date: dayStr, rate: Math.round(rate * 100) / 100 });
+    return history;
   }
-
-  return history;
 }
+
+const currencyService = new CurrencyService();
+export default currencyService;
+export { CurrencyService };

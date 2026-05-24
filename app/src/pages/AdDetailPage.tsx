@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, Eye, Phone, Share2, Heart, Loader2 } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
-import { adsService, type Ad } from '@/services/ads.service';
+import adsService from '@/services/ads.service';
+import type { Ad } from '@/models/ads/Ad';
 
 function formatPrice(price: number | null): string {
   if (price == null) return '—';

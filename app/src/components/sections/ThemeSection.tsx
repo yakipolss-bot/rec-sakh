@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Sun } from 'lucide-react';
 import { usePolling } from '@/hooks/usePolling';
-import { newsService } from '@/services/news.service';
+import newsService from '@/services/news.service';
 import { useCity } from '@/contexts/useCity';
 import NewsCard from '@/components/NewsCard';
 import type { NewsArticle } from '@/types';

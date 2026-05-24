@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
-import type { Comment } from '@/services/admin.service';
+import type { Comment } from '@/models/admin/Comment';
 
 const statusLabels: Record<string, string> = {
   approved: 'Одобрен',

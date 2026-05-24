@@ -1,16 +1,5 @@
 import axios from 'axios';
-
-export interface AuthResponse {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    avatarUrl: string | null;
-  };
-  accessToken: string;
-  refreshToken: string;
-}
+import { AuthResponse } from '../models/auth/AuthResponse';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
@@ -47,7 +36,7 @@ function dispatchAuthEvent(event: 'login' | 'logout') {
   }
 }
 
-export const authService = {
+class AuthService {
   async register(email: string, password: string, name: string, phone?: string) {
     const { data } = await api.post('/auth/register', { email, password, name, phone });
     if (data.accessToken) {
@@ -61,14 +50,13 @@ export const authService = {
     }
     clearTokens();
     return { user: { id: '', email, name, role: 'authenticated', avatarUrl: null }, accessToken: '', refreshToken: '' };
-  },
+  }
 
   async login(email: string, password: string) {
     const { data } = await api.post('/auth/login', { email, password });
     persistTokens(data.accessToken, data.refreshToken);
     dispatchAuthEvent('login');
 
-    // Fetch user profile with actual role from database
     let result: AuthResponse = {
       user: data.user,
       accessToken: data.accessToken,
@@ -91,7 +79,7 @@ export const authService = {
     }
 
     return result;
-  },
+  }
 
   async logout() {
     const accessToken = getLocalStorage('accessToken');
@@ -102,7 +90,7 @@ export const authService = {
     }
     clearTokens();
     dispatchAuthEvent('logout');
-  },
+  }
 
   async refresh() {
     const refreshToken = getLocalStorage('refreshToken');
@@ -113,9 +101,9 @@ export const authService = {
     const { data } = await api.post('/auth/refresh', { refreshToken });
     persistTokens(data.accessToken, data.refreshToken);
     return { accessToken: data.accessToken, refreshToken: data.refreshToken };
-  },
+  }
 
-  async getSession() {
+  async getSession(): Promise<AuthResponse | null> {
     const accessToken = getLocalStorage('accessToken');
     if (!accessToken) return null;
 
@@ -135,9 +123,9 @@ export const authService = {
     } catch {
       return null;
     }
-  },
+  }
 
-  async getProfile() {
+  async getProfile(): Promise<{ id: string; email: string; name: string; role: string; avatarUrl: string | null } | null> {
     const accessToken = getLocalStorage('accessToken');
     if (!accessToken) {
       const session = await this.getSession();
@@ -162,12 +150,12 @@ export const authService = {
       const session = await this.getSession();
       return session?.user || null;
     }
-  },
+  }
 
   async recover(email: string) {
     const { data } = await api.post('/auth/forgot-password', { email });
     return { message: data.message || 'Ссылка для восстановления отправлена на вашу почту' };
-  },
+  }
 
   async resetPassword(password: string) {
     const accessToken = getLocalStorage('accessToken');
@@ -177,12 +165,12 @@ export const authService = {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     return { message: 'Пароль успешно изменён' };
-  },
+  }
 
   async sendSmsCode(phone: string) {
     await api.post('/auth/send-sms', { phone });
     return { message: 'SMS код отправлен' };
-  },
+  }
 
   async verifySmsCode(phone: string, token: string) {
     const { data } = await api.post('/auth/verify-sms', { phone, token });
@@ -190,15 +178,19 @@ export const authService = {
       persistTokens(data.accessToken, data.refreshToken);
     }
     return { message: 'Телефон подтверждён', verified: true };
-  },
+  }
 
   async signInWithOAuth(provider: 'telegram' | 'vkontakte' | 'yandex') {
     const { getOAuthUrl } = await import('./supabase');
     const url = getOAuthUrl(provider === 'vkontakte' ? 'vk' : provider);
     window.location.href = url;
-  },
+  }
 
   onAuthStateChange(_callback: (event: string, session: AuthResponse | null) => void) {
     return { data: { subscription: { unsubscribe: () => {} } } };
-  },
-};
+  }
+}
+
+const authService = new AuthService();
+export default authService;
+export { AuthService };

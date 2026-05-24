@@ -5,7 +5,9 @@ import {
   ArrowUpRight, Cpu, Server as ServerIcon,
 } from 'lucide-react';
 import { adminService } from '@/services';
-import type { AdminStats, RecentAction, Alert } from '@/services/admin.service';
+import type { AdminStats } from '@/models/admin/AdminStats';
+import type { RecentAction } from '@/models/admin/RecentAction';
+import type { Alert } from '@/models/admin/Alert';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);

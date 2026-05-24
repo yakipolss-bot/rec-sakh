@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
-import { fetchCurrencyRates } from '@/services/currency.service';
+import currencyService from '@/services/currency.service';
 import type { CurrencyRate } from '@/types';
 
 function formatDate(date: Date): string {
@@ -16,7 +16,7 @@ export default function CurrencyWidget() {
     let mounted = true;
 
     const load = async () => {
-      const data = await fetchCurrencyRates();
+      const data = await currencyService.getRates();
       if (mounted) {
         setRates(data);
         setLoading(false);

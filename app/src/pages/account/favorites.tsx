@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bookmark, Image, Building2 } from 'lucide-react';
-import { newsService } from '@/services/news.service';
+import newsService from '@/services/news.service';
 import { useFavorites } from '@/hooks/useFavorites';
 import NewsCard from '@/components/NewsCard';
 import EmptyState from '@/components/EmptyState';

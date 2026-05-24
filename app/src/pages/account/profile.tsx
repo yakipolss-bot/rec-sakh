@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { User, Camera, Loader2 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
-import { usersService } from '@/services/users.service';
+import usersService from '@/services/users.service';
 import { toast } from 'sonner';
 
 export default function AccountProfile() {

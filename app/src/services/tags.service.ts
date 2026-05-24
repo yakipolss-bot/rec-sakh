@@ -1,26 +1,27 @@
 import apiClient from './api-client';
+import { Tag } from '../models/tags/Tag';
 
-export interface Tag {
-  id: string;
-  name: string;
-  slug: string;
-  count?: number;
-}
-
-export const tagsService = {
-  async getTags() {
+class TagsService {
+  async getTags(): Promise<Tag[]> {
     const { data } = await apiClient.get('/tags');
     return (data.data || data) as Tag[];
-  },
-  async createTag(name: string) {
+  }
+
+  async createTag(name: string): Promise<Tag> {
     const { data } = await apiClient.post('/tags', { name });
     return data?.data || data;
-  },
-  async deleteTag(id: string) {
+  }
+
+  async deleteTag(id: string): Promise<void> {
     await apiClient.delete(`/tags/${id}`);
-  },
-  async mergeTags(sourceId: string, targetId: string) {
+  }
+
+  async mergeTags(sourceId: string, targetId: string): Promise<Tag> {
     const { data } = await apiClient.post('/tags/merge', { sourceId, targetId });
     return data?.data || data;
-  },
-};
+  }
+}
+
+const tagsService = new TagsService();
+export default tagsService;
+export { TagsService };

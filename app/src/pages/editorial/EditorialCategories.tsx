@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Edit, Save, X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { categoriesService } from '@/services/categories.service';
-import type { Category } from '@/services/categories.service';
+import categoriesService from '@/services/categories.service';
+import type { Category } from '@/models/categories/Category';
 
 export default function EditorialCategories() {
   const [categories, setCategories] = useState<Category[]>([]);

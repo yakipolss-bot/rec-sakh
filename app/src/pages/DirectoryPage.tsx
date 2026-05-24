@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Search, Phone, MapPin, Star, X, Loader2 } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
-import { directoryService, type DirectoryOrg } from '@/services/directory.service';
+import directoryService from '@/services/directory.service';
+import type { DirectoryOrg } from '@/models/directory/DirectoryOrg';
 
 const DIR_CATEGORIES = [
   { value: 'restaurants', label: 'Рестораны', icon: '🍽️' },

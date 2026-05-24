@@ -1,5 +1,6 @@
 import React from 'react';
 import { HelmetProvider } from 'react-helmet-async';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '../src/hooks/useTheme';
 import { FavoritesProvider } from '../src/hooks/useFavorites';
 import { CityProvider } from '../src/contexts/CityContext';
@@ -11,9 +12,20 @@ import SEOHead from '../src/components/SEOHead';
 import ErrorBoundary from '../src/components/ErrorBoundary';
 import '../src/index.css';
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
     <AuthProvider>
     <ThemeProvider>
       <FavoritesProvider>
@@ -29,6 +41,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </FavoritesProvider>
     </ThemeProvider>
     </AuthProvider>
+    </QueryClientProvider>
     </HelmetProvider>
   );
 }

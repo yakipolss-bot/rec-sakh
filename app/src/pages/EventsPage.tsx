@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, CalendarDays, Clock, Tag, ImageOff } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { eventsService } from '@/services/events.service';
+import eventsService from '@/services/events.service';
 import apiClient from '@/services/api-client';
-import type { ArticleEvent } from '@/services/events.service';
+import type { Event as ArticleEvent } from '@/models/events/Event';
 import SEOHead from '@/components/SEOHead';
 
 interface EventCategory {

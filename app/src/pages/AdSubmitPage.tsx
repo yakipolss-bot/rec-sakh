@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Send, Loader2, AlertCircle } from 'lucide-react';
-import { adsService } from '@/services/ads.service';
-import type { CreateAdPayload } from '@/services/ads.service';
+import adsService from '@/services/ads.service';
+import type { CreateAdPayload } from '@/models/ads/CreateAdPayload';
 import SEOHead from '@/components/SEOHead';
 
 const CATEGORIES: { value: string; label: string }[] = [
