@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Search, Phone, MapPin, Star, X, Loader2 } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
@@ -18,28 +19,16 @@ const DIR_CATEGORIES = [
 export default function DirectoryPage() {
   const [category, setCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [orgs, setOrgs] = useState<DirectoryOrg[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const params: Record<string, string> = { perPage: '100' };
-        if (search) params.search = search;
-        const res = await directoryService.getAll(params);
-        if (!cancelled) setOrgs(res.data || []);
-      } catch {
-        if (!cancelled) setOrgs([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetch();
-    return () => { cancelled = true; };
-  }, [search]);
+  const params: Record<string, string> = { perPage: '100' };
+  if (search) params.search = search;
 
+  const { data, isLoading } = useQuery({
+    queryKey: ['directory', search],
+    queryFn: () => directoryService.getAll(params),
+  });
+
+  const orgs = data?.data || [];
   const filtered = category
     ? orgs.filter(o => o.category?.slug === category)
     : orgs;
@@ -103,7 +92,7 @@ export default function DirectoryPage() {
           ))}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-ocean)]" />
           </div>

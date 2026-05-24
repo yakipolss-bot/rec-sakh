@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, CalendarDays, Clock, Tag, ImageOff } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
@@ -103,59 +104,41 @@ function EventCard({ event }: { event: ArticleEvent }) {
 }
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<ArticleEvent[]>([]);
-  const [categories, setCategories] = useState<EventCategory[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
   const pageSize = 24;
 
-  // Load categories once
-  useEffect(() => {
-    apiClient.get('/categories', { params: { type: 'events' } })
-      .then(res => { setCategories(Array.isArray(res.data) ? res.data : res.data?.data || []); })
-      .catch(() => {});
+  const now = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetch() {
-      try {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const eventsRes = await eventsService.getAll({
-          perPage: pageSize,
-          page,
-          sort: 'startDate',
-          dateFrom: now.toISOString(),
-          ...(activeCategory ? { categoryId: activeCategory } : {}),
-        });
-        if (!cancelled) {
-          if (page === 1) {
-            setEvents(eventsRes.data || []);
-          } else {
-            setEvents(prev => [...prev, ...(eventsRes.data || [])]);
-          }
-          setHasMore(eventsRes.meta?.totalPages > page);
-        }
-      } catch {
-        // silent
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetch();
-    return () => { cancelled = true; };
-  }, [page, activeCategory]);
+  const { data: categoriesData } = useQuery({
+    queryKey: ['eventCategories'],
+    queryFn: () => apiClient.get('/categories', { params: { type: 'events' } }).then(r =>
+      Array.isArray(r.data) ? r.data : r.data?.data || []
+    ),
+    staleTime: 1000 * 60 * 10,
+  });
+  const categories: EventCategory[] = categoriesData || [];
 
-  const filtered = useMemo(() => {
-    if (activeCategory) return events;
-    return events;
-  }, [events, activeCategory]);
+  const { data: eventsData, isLoading } = useQuery({
+    queryKey: ['events', page, activeCategory],
+    queryFn: () => eventsService.getAll({
+      perPage: pageSize,
+      page,
+      sort: 'startDate',
+      dateFrom: now,
+      ...(activeCategory ? { categoryId: activeCategory } : {}),
+    }),
+  });
+
+  const events = eventsData?.data || [];
+  const hasMore = (eventsData?.meta?.totalPages || 0) > page;
 
   const dayGroups: DayGroup[] = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    const sorted = [...events].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
     const groups: DayGroup[] = [];
     for (const ev of sorted) {
       const d = new Date(ev.startDate);
@@ -179,7 +162,7 @@ export default function EventsPage() {
       }
     }
     return groups;
-  }, [filtered]);
+  }, [events]);
 
   const displayedCategories = categories.filter(c =>
     ['kino', 'teatr', 'kontserty', 'ekskursii', 'sport', 'vystavki', 'festivali', 'master-klassy', 'detyam', 'obuchenie'].includes(c.slug)
@@ -226,11 +209,11 @@ export default function EventsPage() {
           ))}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : events.length === 0 ? (
           <div className="text-center py-12">
             <CalendarDays size={48} className="mx-auto text-[var(--text-muted)] mb-4" />
             <p className="sakh-body text-[var(--text-secondary)]">
@@ -270,7 +253,7 @@ export default function EventsPage() {
             ))}
           </div>
         )}
-        {hasMore && !loading && (
+        {hasMore && !isLoading && (
           <div className="flex justify-center mt-8">
             <button
               onClick={() => setPage(p => p + 1)}
