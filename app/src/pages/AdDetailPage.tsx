@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, Eye, Phone, Share2, Heart, Loader2 } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
 import adsService from '@/services/ads.service';
-import type { Ad } from '@/models/ads/Ad';
 
 function formatPrice(price: number | null): string {
   if (price == null) return '—';
@@ -18,32 +17,14 @@ function formatDate(dateStr: string): string {
 
 export default function AdDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [ad, setAd] = useState<Ad | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const data = await adsService.getById(id);
-        if (!cancelled) {
-          if (data) setAd(data);
-          else setNotFound(true);
-        }
-      } catch {
-        if (!cancelled) setNotFound(true);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetch();
-    return () => { cancelled = true; };
-  }, [id]);
+  const { data: ad, isLoading, isError } = useQuery({
+    queryKey: ['ad', id],
+    queryFn: () => adsService.getById(id!),
+    enabled: !!id,
+  });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pt-20 pb-8 flex items-center justify-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-ocean)]" />
@@ -51,7 +32,7 @@ export default function AdDetailPage() {
     );
   }
 
-  if (notFound || !ad) {
+  if (isError || !ad) {
     return (
       <div className="pt-20 pb-8">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6">

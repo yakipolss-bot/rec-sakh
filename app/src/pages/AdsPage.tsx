@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, Eye, Plus, Loader2 } from 'lucide-react';
 import FilterBar from '@/components/FilterBar';
 import EmptyState from '@/components/EmptyState';
 import SEOHead from '@/components/SEOHead';
 import adsService from '@/services/ads.service';
-import type { Ad } from '@/models/ads/Ad';
 
 const AD_CATEGORIES = [
   { value: 'realty', label: 'Недвижимость' },
@@ -54,27 +54,16 @@ const cardVariants = {
 export default function AdsPage() {
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState('date');
-  const [ads, setAds] = useState<Ad[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const params: Record<string, string> = { perPage: '50', sort };
-        if (category) params.categoryId = category;
-        const res = await adsService.getAll(params);
-        if (!cancelled) setAds(res.data || []);
-      } catch {
-        if (!cancelled) setAds([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetch();
-    return () => { cancelled = true; };
-  }, [category, sort]);
+  const params: Record<string, string> = { perPage: '50', sort };
+  if (category) params.categoryId = category;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['ads', category, sort],
+    queryFn: () => adsService.getAll(params),
+  });
+
+  const ads = data?.data || [];
 
   return (
     <div className="pt-20 pb-8">
@@ -124,7 +113,7 @@ export default function AdsPage() {
           </div>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-ocean)]" />
           </div>
