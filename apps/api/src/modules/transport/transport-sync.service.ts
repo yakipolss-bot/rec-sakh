@@ -102,7 +102,8 @@ export class TransportSyncService {
 
     const normStatus = (s: string): string => {
       const st = s.trim().toLowerCase();
-      if (st.includes('вылетел') || st.includes('прибыл')) return 'arrived';
+      if (st.includes('вылетел')) return 'departed';
+      if (st.includes('прибыл')) return 'arrived';
       if (st.includes('посадк') || st.includes('регистраци')) return 'boarding';
       if (st.includes('задерж')) return 'delayed';
       if (st.includes('отмен')) return 'cancelled';

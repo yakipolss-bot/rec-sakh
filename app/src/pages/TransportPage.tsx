@@ -43,13 +43,15 @@ type DayFilter = 'all' | 'weekday' | 'weekend';
 type DatePreset = 'today' | 'tomorrow' | 'custom';
 
 const STATUS_COLORS: Record<string, string> = {
-  arrived: '#34D399', boarding: 'var(--accent-ocean)', scheduled: 'var(--text-muted)',
-  delayed: 'var(--accent-sunset)', cancelled: '#EF4444', 'on-time': '#34D399',
+  departed: '#F59E0B', arrived: '#34D399', boarding: 'var(--accent-ocean)',
+  scheduled: 'var(--text-muted)', delayed: 'var(--accent-sunset)',
+  cancelled: '#EF4444', 'on-time': '#34D399',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  arrived: 'Прибыл', boarding: 'Посадка', scheduled: 'Ожидается',
-  delayed: 'Задержан', cancelled: 'Отменён', 'on-time': 'По расписанию',
+  departed: 'Вылетел', arrived: 'Прибыл', boarding: 'Посадка',
+  scheduled: 'Ожидается', delayed: 'Задержан', cancelled: 'Отменён',
+  'on-time': 'По расписанию',
 };
 
 const DAY_LABELS: Record<DayFilter, string> = {
