@@ -11,6 +11,7 @@ import CommentSection from '@/components/CommentSection';
 import NewsCard from '@/components/NewsCard';
 import ShareButtons from '@/components/ShareButtons';
 import AdSlot from '@/components/AdSlot';
+import SEOHead from '@/components/SEOHead';
 import { newsService } from '@/services/news.service';
 import { commentsService } from '@/services/comments.service';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -73,6 +74,7 @@ export default function ArticlePage({ id }: { id?: string }) {
   }, []);
 
   const [clientShareUrl, setClientShareUrl] = useState('');
+  const [toast, setToast] = useState<string>('');
 
   useEffect(() => {
     if (article) {
@@ -168,7 +170,18 @@ export default function ArticlePage({ id }: { id?: string }) {
   }
 
   return (
-    <div className="pt-20 pb-8">
+    <>
+      <SEOHead
+        title={article.title}
+        description={article.lead || undefined}
+        image={article.mainImageUrl || undefined}
+        url={`/news/${article.slug}`}
+        type="article"
+        publishedAt={article.publishedAt || undefined}
+        updatedAt={article.updatedAt || undefined}
+        authorName={article.author?.name || undefined}
+      />
+      <div className="pt-20 pb-8">
       <div className="max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
         <Link
           to="/"
@@ -287,7 +300,11 @@ export default function ArticlePage({ id }: { id?: string }) {
                       </time>
                     )}
                     <motion.button
-                      onClick={() => toggleFavorite(article.id)}
+                      onClick={() => {
+                        toggleFavorite(article.id);
+                        setToast(fav ? 'Удалено из избранного' : 'Добавлено в избранное');
+                        setTimeout(() => setToast(''), 2000);
+                      }}
                       whileTap={{ scale: 0.8 }}
                       transition={{ type: 'spring', stiffness: 400 }}
                       className="p-2 transition-colors text-[var(--text-muted)] hover:text-[var(--accent-ocean)]"
@@ -389,5 +406,6 @@ export default function ArticlePage({ id }: { id?: string }) {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }

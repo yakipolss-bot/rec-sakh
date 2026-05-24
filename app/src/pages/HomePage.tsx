@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
 import BreakingTicker from '@/components/BreakingTicker';
 import MostReadSidebar from '@/components/MostReadSidebar';
 import WeatherWidget from '@/components/WeatherWidget';
@@ -14,6 +15,7 @@ import ThemeSection from '@/components/sections/ThemeSection';
 export default function HomePage() {
   return (
     <>
+      <SEOHead />
       <BreakingTicker />
       <div className="pt-20 pb-8">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6">

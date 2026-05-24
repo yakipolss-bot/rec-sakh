@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import SEOHead from '@/components/SEOHead';
 import SearchBar from '@/components/SearchBar';
 import EmptyState from '@/components/EmptyState';
 import { newsService } from '@/services/news.service';
@@ -443,7 +444,13 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
   }
 
   return (
-    <main className="pt-20 pb-8">
+    <>
+      <SEOHead
+        title={`Поиск${query ? `: ${query}` : ''}`}
+        description={query ? `Результаты поиска по запросу «${query}» — Sakhcom` : 'Поиск новостей на Sakhcom'}
+        url={`/search${query ? `?q=${encodeURIComponent(query)}` : ''}`}
+      />
+      <main className="pt-20 pb-8">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         {/* Search Header */}
         <motion.div
@@ -908,5 +915,6 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
         )}
       </div>
     </main>
+    </>
   );
 }

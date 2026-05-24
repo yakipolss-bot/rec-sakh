@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Clock, Activity, Eye, MessageSquare, FileText,
-  AlertTriangle, ArrowRight,
+  AlertTriangle, ArrowRight, DollarSign,
   TrendingUp, Users, Zap, Loader2,
 } from 'lucide-react';
 import { newsService } from '@/services/news.service';

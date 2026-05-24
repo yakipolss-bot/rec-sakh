@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Grid3X3, List, RotateCcw, TrendingUp, MapPin, Calendar } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
 import NewsCard from '@/components/NewsCard';
 import FilterBar from '@/components/FilterBar';
 import Pagination from '@/components/Pagination';
@@ -222,7 +223,13 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
   }
 
   return (
-    <div className="pt-20 pb-8">
+    <>
+      <SEOHead
+        title={category?.name ? `Категория: ${category.name}` : 'Все новости'}
+        description={category?.name ? `Новости по категории «${category.name}» — Sakhcom` : 'Все новости Сахалина'}
+        url={category?.slug ? `/category/${category.slug}` : '/category'}
+      />
+      <div className="pt-20 pb-8">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 mb-6">
           <Link
@@ -459,5 +466,6 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
