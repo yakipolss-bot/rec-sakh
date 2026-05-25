@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useLocation, Navigate } from 'react-router-dom';
-import { useAuth } from '../../services/auth-context';
+import { Link, useLocation } from 'react-router-dom';
+import RouteGuard from '@/components/RouteGuard';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3, FileText, Layers, Tag, MessageSquare,
@@ -54,19 +54,13 @@ export default function EditorialLayout({ children }: { children: React.ReactNod
     queryKey: ['editorial', 'me'],
     queryFn: () => usersService.getMe().catch(() => null),
   });
-  const { user: authUser, isLoading } = useAuth();
-
-  if (isLoading) return null;
-  if (!authUser || !['editor', 'chief_editor', 'admin', 'superadmin'].includes(authUser.role)) {
-    return <Navigate to="/" replace />;
-  }
-
   const isActive = (path: string) => {
     if (path === '/editorial') return location.pathname === '/editorial';
     return location.pathname.startsWith(path);
   };
 
   return (
+    <RouteGuard roles={['editor', 'chief_editor', 'admin', 'superadmin']}>
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <AnimatePresence>
         {sidebarOpen && (
@@ -186,5 +180,6 @@ export default function EditorialLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
+    </RouteGuard>
   );
 }

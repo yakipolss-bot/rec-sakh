@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
-import { useAuth } from '../../services/auth-context';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import RouteGuard from '@/components/RouteGuard';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Users, Briefcase, Shield, FileText,
   Megaphone, DollarSign, Settings, Server, ExternalLink,
@@ -30,17 +29,11 @@ const navItems = [
 export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user: authUser, isLoading } = useAuth();
 
   const { data: user } = useQuery<UserProfile | null>({
     queryKey: ['admin', 'me'],
     queryFn: () => usersService.getMe().catch(() => null),
   });
-
-  if (isLoading) return null;
-  if (!authUser || (authUser.role !== 'admin' && authUser.role !== 'superadmin')) {
-    return <Navigate to="/" replace />;
-  }
 
   const isActive = (item: typeof navItems[number]) => {
     if (item.exact) return location.pathname === item.path;
@@ -50,6 +43,7 @@ export default function AdminLayout() {
   const activeItem = navItems.find(isActive);
 
   return (
+    <RouteGuard roles={['admin', 'superadmin']}>
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <AnimatePresence>
         {sidebarOpen && (
@@ -164,5 +158,6 @@ export default function AdminLayout() {
         </main>
       </div>
     </div>
+    </RouteGuard>
   );
 }
