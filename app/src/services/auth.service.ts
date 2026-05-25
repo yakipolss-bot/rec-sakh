@@ -39,13 +39,14 @@ function dispatchAuthEvent(event: 'login' | 'logout') {
 class AuthService {
   async register(email: string, password: string, name: string, phone?: string) {
     const { data } = await api.post('/auth/register', { email, password, name, phone });
-    if (data.accessToken) {
-      persistTokens(data.accessToken, data.refreshToken);
+    const body = data.data || data;
+    if (body.accessToken) {
+      persistTokens(body.accessToken, body.refreshToken);
       dispatchAuthEvent('login');
       return {
-        user: data.user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        user: body.user,
+        accessToken: body.accessToken,
+        refreshToken: body.refreshToken,
       };
     }
     clearTokens();
@@ -54,19 +55,20 @@ class AuthService {
 
   async login(email: string, password: string) {
     const { data } = await api.post('/auth/login', { email, password });
-    persistTokens(data.accessToken, data.refreshToken);
+    const body = data.data || data;
+    persistTokens(body.accessToken, body.refreshToken);
     dispatchAuthEvent('login');
 
     let result: AuthResponse = {
-      user: data.user,
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
+      user: body.user,
+      accessToken: body.accessToken,
+      refreshToken: body.refreshToken,
     };
 
     try {
       const axiosInstance = axios.create({
         baseURL: API_BASE_URL,
-        headers: { Authorization: `Bearer ${data.accessToken}` },
+        headers: { Authorization: `Bearer ${body.accessToken}` },
       });
       const { data: profileData } = await axiosInstance.get('/users/me');
       const userProfile = profileData.data || profileData;
@@ -99,8 +101,9 @@ class AuthService {
       throw new Error('No refresh token');
     }
     const { data } = await api.post('/auth/refresh', { refreshToken });
-    persistTokens(data.accessToken, data.refreshToken);
-    return { accessToken: data.accessToken, refreshToken: data.refreshToken };
+    const body = data.data || data;
+    persistTokens(body.accessToken, body.refreshToken);
+    return { accessToken: body.accessToken, refreshToken: body.refreshToken };
   }
 
   async getSession(): Promise<AuthResponse | null> {
@@ -111,10 +114,11 @@ class AuthService {
       const { data } = await api.get('/auth/session', {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      if (data.user) {
+      const body = data.data || data;
+      if (body.user) {
         persistTokens(accessToken, getLocalStorage('refreshToken') || '');
         return {
-          user: data.user,
+          user: body.user,
           accessToken,
           refreshToken: getLocalStorage('refreshToken') || '',
         } as AuthResponse;
@@ -154,7 +158,8 @@ class AuthService {
 
   async recover(email: string) {
     const { data } = await api.post('/auth/forgot-password', { email });
-    return { message: data.message || 'Ссылка для восстановления отправлена на вашу почту' };
+    const body = data.data || data;
+    return { message: body.message || 'Ссылка для восстановления отправлена на вашу почту' };
   }
 
   async resetPassword(password: string) {
@@ -174,8 +179,9 @@ class AuthService {
 
   async verifySmsCode(phone: string, token: string) {
     const { data } = await api.post('/auth/verify-sms', { phone, token });
-    if (data.accessToken) {
-      persistTokens(data.accessToken, data.refreshToken);
+    const body = data.data || data;
+    if (body.accessToken) {
+      persistTokens(body.accessToken, body.refreshToken);
     }
     return { message: 'Телефон подтверждён', verified: true };
   }

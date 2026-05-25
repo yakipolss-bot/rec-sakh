@@ -1,17 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar } from 'lucide-react';
+import { Calendar, MapPin, Clock } from 'lucide-react';
+import eventsService from '@/services/events.service';
 import EmptyState from '@/components/EmptyState';
+import type { Event } from '@/models/events/Event';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
-type TabId = 'my' | 'favorites';
+type TabId = 'all' | 'my';
 
 const tabs: { id: TabId; label: string }[] = [
+  { id: 'all', label: 'Все события' },
   { id: 'my', label: 'Мои события' },
-  { id: 'favorites', label: 'Избранные' },
 ];
 
 export default function AccountEvents() {
-  const [activeTab, setActiveTab] = useState<TabId>('my');
+  const [activeTab, setActiveTab] = useState<TabId>('all');
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      try {
+        const res = await eventsService.getAll({ perPage: 20, sort: 'date' });
+        if (!cancelled) {
+          setEvents(res.data || []);
+        }
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="w-6 h-6 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -39,11 +71,54 @@ export default function AccountEvents() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
         >
-          <EmptyState
-            title="Модуль событий скоро появится"
-            description="Следите за обновлениями — календарь событий Сахалина уже в разработке"
-            icon={<Calendar size={48} />}
-          />
+          {activeTab === 'all' && (
+            events.length === 0 ? (
+              <EmptyState title="Нет событий" description="События появятся здесь после добавления" icon={<Calendar size={48} />} />
+            ) : (
+              <div className="space-y-3">
+                {events.map(event => (
+                  <div key={event.id} className="sakh-card p-4 flex items-start gap-4">
+                    {event.image && (
+                      <img src={event.image} alt="" className="w-20 h-20 object-cover shrink-0 hidden sm:block" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-[var(--text-primary)]">{event.title}</h4>
+                      <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{event.description}</p>
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <span className="sakh-meta text-xs flex items-center gap-1">
+                          <Calendar size={10} />
+                          {format(new Date(event.date), 'd MMM yyyy', { locale: ru })}
+                        </span>
+                        {event.time && (
+                          <span className="sakh-meta text-xs flex items-center gap-1">
+                            <Clock size={10} />
+                            {event.time}
+                          </span>
+                        )}
+                        {event.venue && (
+                          <span className="sakh-meta text-xs flex items-center gap-1">
+                            <MapPin size={10} />
+                            {event.venue}
+                          </span>
+                        )}
+                        {event.price && (
+                          <span className="sakh-tag sakh-tag--accent text-xs">{event.price}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {activeTab === 'my' && (
+            <EmptyState
+              title="Мои события"
+              description="События, на которые вы записались, появятся здесь"
+              icon={<Calendar size={48} />}
+            />
+          )}
         </motion.div>
       </AnimatePresence>
     </motion.div>
