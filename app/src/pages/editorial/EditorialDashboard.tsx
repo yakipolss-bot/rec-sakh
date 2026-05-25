@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -10,23 +10,11 @@ import newsService from '@/services/news.service';
 import type { Article as NewsArticle } from '@/models/news/Article';
 
 export default function EditorialDashboard() {
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const res = await newsService.getNews({ perPage: 50, sortBy: 'publishedAt', sortOrder: 'desc' });
-        if (mounted) setArticles(res.data || []);
-      } catch {
-        /* noop */
-      }
-      if (mounted) setLoading(false);
-    };
-    load();
-    return () => { mounted = false; };
-  }, []);
+  const { data: articlesRes, isLoading } = useQuery({
+    queryKey: ['editorial', 'dashboard-news'],
+    queryFn: () => newsService.getNews({ perPage: 50, sortBy: 'publishedAt', sortOrder: 'desc' }),
+  });
+  const articles = (articlesRes?.data || []) as NewsArticle[];
 
   const urgentNews = articles.filter((n) => n.isUrgent);
   const todayViews = articles.reduce((sum, n) => sum + (n.viewsCount || 0), 0);
@@ -34,7 +22,7 @@ export default function EditorialDashboard() {
     (n) => n.publishedAt && new Date(n.publishedAt).toDateString() === new Date().toDateString(),
   ).length;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 size={24} className="animate-spin text-[var(--text-muted)]" />

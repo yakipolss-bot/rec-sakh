@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, XCircle, Shield, MessageSquare, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,25 +11,22 @@ import type { Article as NewsArticle } from '@/models/news/Article';
 import type { Comment } from '@/types';
 
 export default function EditorialNewsComments() {
+  const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
-  const [article, setArticle] = useState<NewsArticle | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
 
-  useEffect(() => {
-    if (!id) return;
-    Promise.all([
-      newsService.getNewsById(id).catch(() => null),
-      commentsService.getComments(id).catch(() => [] as Comment[]),
-    ])
-      .then(([articleData, commentsData]) => {
-        setArticle(articleData);
-        setComments(commentsData);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [id]);
+  const { data: article, isLoading } = useQuery({
+    queryKey: ['editorial', 'news-comments-article', id],
+    queryFn: () => id ? newsService.getNewsById(id).catch(() => null) : null,
+    enabled: !!id,
+  });
+
+  const { data: commentsData } = useQuery({
+    queryKey: ['editorial', 'news-comments', id],
+    queryFn: () => id ? commentsService.getComments(id).catch(() => [] as Comment[]) : [],
+    enabled: !!id,
+  });
+  const comments = Array.isArray(commentsData) ? (commentsData as Comment[]) : [];
 
   const filtered = filter === 'all' ? comments : comments.filter((c) => c.status === filter);
 
@@ -46,13 +44,7 @@ export default function EditorialNewsComments() {
   const updateStatus = async (commentId: string, status: 'approved' | 'rejected') => {
     try {
       await adminService.moderateComment(commentId, status);
-      const update = (items: Comment[]): Comment[] =>
-        items.map((c) => {
-          if (c.id === commentId) return { ...c, status };
-          if (c.replies) return { ...c, replies: update(c.replies) };
-          return c;
-        });
-      setComments(update(comments));
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'news-comments', id] });
       toast.success(status === 'approved' ? 'Комментарий одобрен' : 'Комментарий отклонён');
     } catch {
       toast.error('Ошибка при модерации');
@@ -63,18 +55,14 @@ export default function EditorialNewsComments() {
     if (!confirm('Удалить комментарий?')) return;
     try {
       await commentsService.deleteComment(commentId);
-      const remove = (items: Comment[]): Comment[] =>
-        items
-          .filter((c) => c.id !== commentId)
-          .map((c) => c.replies ? { ...c, replies: remove(c.replies) } : c);
-      setComments(remove(comments));
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'news-comments', id] });
       toast.success('Комментарий удалён');
     } catch {
       toast.error('Ошибка при удалении');
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <p className="sakh-meta text-center py-8">Загрузка...</p>;
   }
 

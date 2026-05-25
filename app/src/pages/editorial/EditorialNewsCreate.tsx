@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -11,8 +12,11 @@ import type { Category } from '@/models/categories/Category';
 
 export default function EditorialNewsCreate() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: categoriesData, isLoading } = useQuery({
+    queryKey: ['editorial', 'categories'],
+    queryFn: () => categoriesService.getCategories().catch(() => [] as Category[]),
+  });
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [title, setTitle] = useState('');
@@ -27,13 +31,6 @@ export default function EditorialNewsCreate() {
   const [seoDesc, setSeoDesc] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagsInput, setTagsInput] = useState('');
-
-  useEffect(() => {
-    categoriesService.getCategories().then((cats) => {
-      setCategories(cats || []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
 
   const addTag = () => {
     const trimmed = tagsInput.trim();
@@ -88,7 +85,7 @@ export default function EditorialNewsCreate() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 size={24} className="animate-spin text-[var(--text-muted)]" />

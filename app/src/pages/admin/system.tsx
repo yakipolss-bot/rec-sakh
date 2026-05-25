@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Database, ListOrdered, Search, Image,
@@ -44,18 +45,16 @@ const statusClass: Record<string, string> = {
 
 export default function AdminSystem() {
   const [activeTab, setActiveTab] = useState('cache');
-  const [health, setHealth] = useState<SystemHealthData | null>(null);
-  const [audit, setAudit] = useState<AuditLogEntry[]>([]);
+  const { data: health } = useQuery({
+    queryKey: ['admin', 'health'],
+    queryFn: () => adminService.getHealth().catch(() => null),
+  });
+  const { data: auditData } = useQuery({
+    queryKey: ['admin', 'audit-log'],
+    queryFn: () => adminService.getAuditLog({ perPage: 50 }).then(r => r.data).catch(() => [] as AuditLogEntry[]),
+  });
 
-  useEffect(() => {
-    adminService.getHealth()
-      .then(setHealth)
-      .catch(() => {});
-
-    adminService.getAuditLog({ perPage: 50 })
-      .then(({ data }) => setAudit(data))
-      .catch(() => {});
-  }, []);
+  const audit = Array.isArray(auditData) ? (auditData as AuditLogEntry[]) : [];
 
   const securityLogs = audit.filter(
     (log) => log.action.toLowerCase().includes('login') || log.action.toLowerCase().includes('block') || log.action.toLowerCase().includes('security')

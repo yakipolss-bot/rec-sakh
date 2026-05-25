@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Calendar, Check, X,
@@ -22,24 +23,20 @@ const defaultMatrix: Record<string, boolean[]> = {
 };
 
 export default function AdminStaff() {
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [schedule, setSchedule] = useState<StaffScheduleItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [matrix, setMatrix] = useState(defaultMatrix);
   const [activeTab, setActiveTab] = useState<'staff' | 'schedule' | 'permissions'>('staff');
 
-  useEffect(() => {
-    Promise.all([
-      adminService.getStaff({ perPage: 50 }),
-      adminService.getStaffSchedule().catch(() => []),
-    ])
-      .then(([staffRes, scheduleData]) => {
-        setStaff(staffRes.data);
-        setSchedule(scheduleData);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: staffRes, isLoading } = useQuery({
+    queryKey: ['admin', 'staff'],
+    queryFn: () => adminService.getStaff({ perPage: 50 }).then(r => r.data),
+  });
+  const { data: scheduleData } = useQuery({
+    queryKey: ['admin', 'staff-schedule'],
+    queryFn: () => adminService.getStaffSchedule().catch(() => [] as StaffScheduleItem[]),
+  });
+
+  const staff = Array.isArray(staffRes) ? (staffRes as StaffMember[]) : [];
+  const schedule = Array.isArray(scheduleData) ? (scheduleData as StaffScheduleItem[]) : [];
 
   const tabs = [
     { key: 'staff', label: 'Сотрудники' },
@@ -63,9 +60,9 @@ export default function AdminStaff() {
         ))}
       </div>
 
-      {loading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
+      {isLoading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
 
-      {!loading && activeTab === 'staff' && (
+      {!isLoading && activeTab === 'staff' && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>
@@ -114,7 +111,7 @@ export default function AdminStaff() {
         </div>
       )}
 
-      {!loading && activeTab === 'schedule' && (
+      {!isLoading && activeTab === 'schedule' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {schedule.length === 0 && (
             <p className="sakh-meta col-span-full text-center py-8">Нет записей графика</p>
@@ -138,7 +135,7 @@ export default function AdminStaff() {
         </div>
       )}
 
-      {!loading && activeTab === 'permissions' && (
+      {!isLoading && activeTab === 'permissions' && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>

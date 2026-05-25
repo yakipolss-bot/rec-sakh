@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Edit3, Ban, LogIn, Mail, Phone, MapPin,
   Calendar, MessageSquare, FileText, Heart, Clock, X,
@@ -24,25 +25,25 @@ const roleBadge: Record<string, string> = {
 
 export default function AdminUserId() {
   const { id } = useParams();
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: user, isLoading } = useQuery({
+    queryKey: ['admin', 'user', id],
+    queryFn: () => id ? adminService.getUserById(id).catch(() => null) : null,
+    enabled: !!id,
+  });
   const [showEdit, setShowEdit] = useState(false);
   const [editName, setEditName] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editStatus, setEditStatus] = useState('');
 
-  useEffect(() => {
-    if (!id) return;
-    adminService.getUserById(id)
-      .then(u => {
-        setUser(u);
-        setEditName(u.name);
-        setEditRole(u.role);
-        setEditStatus(u.status);
-      })
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, [id]);
+  const openEdit = () => {
+    if (user) {
+      setEditName(user.name);
+      setEditRole(user.role);
+      setEditStatus(user.status);
+      setShowEdit(true);
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -52,7 +53,7 @@ export default function AdminUserId() {
         role: editRole,
         status: editStatus,
       });
-      setUser(prev => prev ? { ...prev, name: editName, role: editRole, status: editStatus } : prev);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
       setShowEdit(false);
       toast.success('Пользователь обновлён');
     } catch {
@@ -65,7 +66,7 @@ export default function AdminUserId() {
     if (!confirm(`Заблокировать пользователя "${user.name}"?`)) return;
     try {
       await adminService.changeUserStatus(user.id, 'blocked');
-      setUser(prev => prev ? { ...prev, status: 'blocked' } : prev);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
       toast.success(`Пользователь "${user.name}" заблокирован`);
     } catch {
       toast.error('Ошибка при блокировке');
@@ -83,7 +84,7 @@ export default function AdminUserId() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <div className="sakh-meta text-center py-8">Загрузка...</div>;
   }
 
@@ -135,7 +136,7 @@ export default function AdminUserId() {
           </div>
 
           <div className="flex flex-col gap-2 mt-6">
-            <button className="sakh-btn sakh-btn--primary sakh-btn--sm w-full" onClick={() => setShowEdit(true)}>
+            <button className="sakh-btn sakh-btn--primary sakh-btn--sm w-full" onClick={openEdit}>
               <Edit3 size={14} />
               Редактировать
             </button>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Search, Tag, Merge, ArrowRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -6,25 +7,15 @@ import tagsService from '@/services/tags.service';
 import type { Tag as TagType } from '@/models/tags/Tag';
 
 export default function EditorialTags() {
-  const [tags, setTags] = useState<TagType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: tagsData, isLoading } = useQuery({
+    queryKey: ['editorial', 'tags'],
+    queryFn: () => tagsService.getTags().catch(() => [] as TagType[]),
+  });
+  const tags = Array.isArray(tagsData) ? tagsData : [];
   const [search, setSearch] = useState('');
   const [sourceTag, setSourceTag] = useState('');
   const [targetTag, setTargetTag] = useState('');
-
-  const loadTags = () => {
-    tagsService.getTags()
-      .then(setTags)
-      .catch(() => {
-        setTags([]);
-        toast.error('Ошибка загрузки тегов');
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadTags();
-  }, []);
 
   const filtered = useMemo(
     () => tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase())),
@@ -42,7 +33,7 @@ export default function EditorialTags() {
       toast.success(`Тег "${source.name}" объединён с "${target.name}"`);
       setSourceTag('');
       setTargetTag('');
-      loadTags();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'tags'] });
     } catch {
       toast.error('Ошибка при объединении тегов');
     }
@@ -52,7 +43,7 @@ export default function EditorialTags() {
     if (!confirm(`Удалить тег "${tag.name}"?`)) return;
     try {
       await tagsService.deleteTag(tag.id);
-      setTags((prev) => prev.filter((t) => t.id !== tag.id));
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'tags'] });
       toast.success(`Тег "${tag.name}" удалён`);
     } catch {
       toast.error('Ошибка при удалении тега');
@@ -68,7 +59,7 @@ export default function EditorialTags() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <p className="sakh-meta text-center py-8">Загрузка...</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

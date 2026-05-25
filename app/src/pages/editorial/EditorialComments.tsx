@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { MessageSquare, CheckCircle, XCircle, Shield, Ban, Search } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,25 +31,22 @@ const statusBadge: Record<string, string> = {
 };
 
 export default function EditorialComments() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('all');
-  const [allComments, setAllComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [blacklist, setBlacklist] = useState<{ word: string }[]>([]);
   const [newWord, setNewWord] = useState('');
 
-  useEffect(() => {
-    Promise.all([
-      adminService.getComments({ perPage: 200 }),
-      adminService.getCommentBlacklist().catch(() => []),
-    ])
-      .then(([commentsData, bl]) => {
-        setAllComments(commentsData.data);
-        setBlacklist(bl);
-      })
-      .catch(() => toast.error('Ошибка загрузки комментариев'))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: commentsData, isLoading } = useQuery({
+    queryKey: ['editorial', 'comments'],
+    queryFn: () => adminService.getComments({ perPage: 200 }).then(r => r.data).catch(() => [] as Comment[]),
+  });
+  const allComments = Array.isArray(commentsData) ? (commentsData as Comment[]) : [];
+
+  const { data: blacklistData } = useQuery({
+    queryKey: ['editorial', 'comment-blacklist'],
+    queryFn: () => adminService.getCommentBlacklist().catch(() => [] as { word: string }[]),
+  });
+  const blacklist = Array.isArray(blacklistData) ? (blacklistData as { word: string }[]) : [];
 
   const filtered = useMemo(() => {
     let result = [...allComments];
@@ -67,7 +65,7 @@ export default function EditorialComments() {
   const handleModerate = async (comment: Comment, status: 'approved' | 'rejected') => {
     try {
       await adminService.moderateComment(comment.id, status);
-      setAllComments((prev) => prev.map((c) => c.id === comment.id ? { ...c, status } : c));
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'comments'] });
       toast.success(status === 'approved' ? 'Комментарий одобрен' : 'Комментарий отклонён');
     } catch {
       toast.error('Ошибка при модерации');
@@ -78,7 +76,7 @@ export default function EditorialComments() {
     if (!confirm('Удалить комментарий?')) return;
     try {
       await adminService.deleteComment(comment.id);
-      setAllComments((prev) => prev.filter((c) => c.id !== comment.id));
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'comments'] });
       toast.success('Комментарий удалён');
     } catch {
       toast.error('Ошибка при удалении');
@@ -99,7 +97,7 @@ export default function EditorialComments() {
     if (!newWord.trim()) return;
     try {
       await adminService.addCommentBlacklistWord(newWord.trim());
-      setBlacklist((prev) => [...prev, { word: newWord.trim() }]);
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'comment-blacklist'] });
       setNewWord('');
       toast.success('Слово добавлено в чёрный список');
     } catch {
@@ -110,7 +108,7 @@ export default function EditorialComments() {
   const handleRemoveBlacklistWord = async (word: string) => {
     try {
       await adminService.removeCommentBlacklistWord(word);
-      setBlacklist((prev) => prev.filter((w) => w.word !== word));
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'comment-blacklist'] });
       toast.success(`Слово "${word}" удалено из чёрного списка`);
     } catch {
       toast.error('Ошибка при удалении слова');
@@ -177,7 +175,7 @@ export default function EditorialComments() {
         </motion.div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <p className="sakh-meta text-center py-8">Загрузка...</p>
       ) : (
         <div className="space-y-3">

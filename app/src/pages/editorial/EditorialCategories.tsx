@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Edit, Save, X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -6,28 +7,16 @@ import categoriesService from '@/services/categories.service';
 import type { Category } from '@/models/categories/Category';
 
 export default function EditorialCategories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ['editorial', 'categories'],
+    queryFn: () => categoriesService.getCategories().catch(() => [] as Category[]),
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<Category>>({});
   const [showAdd, setShowAdd] = useState(false);
   const [newCat, setNewCat] = useState({ name: '', slug: '', description: '' });
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  const loadCategories = () => {
-    setLoading(true);
-    categoriesService.getCategories()
-      .then(setCategories)
-      .catch(() => {
-        setCategories([]);
-        toast.error('Ошибка загрузки рубрик');
-      })
-      .finally(() => setLoading(false));
-  };
 
   const startEdit = (cat: Category) => {
     setEditingId(cat.id);
@@ -49,7 +38,7 @@ export default function EditorialCategories() {
       await categoriesService.updateCategory(id, editValues);
       toast.success('Рубрика обновлена');
       cancelEdit();
-      loadCategories();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'categories'] });
     } catch {
       toast.error('Ошибка при сохранении');
     } finally {
@@ -68,7 +57,7 @@ export default function EditorialCategories() {
       toast.success('Рубрика создана');
       setShowAdd(false);
       setNewCat({ name: '', slug: '', description: '' });
-      loadCategories();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'categories'] });
     } catch {
       toast.error('Ошибка при создании');
     } finally {
@@ -80,12 +69,14 @@ export default function EditorialCategories() {
     if (!confirm(`Удалить рубрику "${cat.name}"?`)) return;
     try {
       await categoriesService.deleteCategory(cat.id);
-      loadCategories();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'categories'] });
       toast.success(`Рубрика "${cat.name}" удалена`);
     } catch {
       toast.error('Нельзя удалить рубрику — возможно, к ней привязаны новости');
     }
   };
+
+  const cats = Array.isArray(categories) ? categories : [];
 
   return (
     <div>
@@ -150,7 +141,7 @@ export default function EditorialCategories() {
         </motion.div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <p className="sakh-meta text-center py-8">Загрузка...</p>
       ) : (
         <div className="overflow-x-auto">
@@ -165,14 +156,14 @@ export default function EditorialCategories() {
               </tr>
             </thead>
             <tbody>
-              {categories.length === 0 && (
+              {cats.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center py-8">
                     <p className="sakh-meta">Рубрики не найдены</p>
                   </td>
                 </tr>
               )}
-              {categories.map((cat, i) => (
+              {cats.map((cat, i) => (
                 <motion.tr
                   key={cat.id}
                   initial={{ opacity: 0, y: 4 }}

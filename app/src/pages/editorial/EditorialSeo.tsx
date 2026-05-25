@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, RefreshCw, Download, AlertTriangle, Info, Plus, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,40 +31,28 @@ const tabs: { value: Tab; label: string }[] = [
 ];
 
 export default function EditorialSeo() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('redirects');
-  const [redirects, setRedirects] = useState<RedirectData[]>([]);
-  const [redirectLoading, setRedirectLoading] = useState(true);
   const [showAddRedirect, setShowAddRedirect] = useState(false);
   const [newSource, setNewSource] = useState('');
   const [newTarget, setNewTarget] = useState('');
   const [sitemapUrl, setSitemapUrl] = useState('/sitemap.xml');
   const [sitemapLoading, setSitemapLoading] = useState(false);
-  const [brokenLinks, setBrokenLinks] = useState<BrokenLinkData[]>([]);
-  const [brokenLoading, setBrokenLoading] = useState(false);
   const [brokenChecking, setBrokenChecking] = useState(false);
 
-  const fetchRedirects = useCallback(async () => {
-    setRedirectLoading(true);
-    try {
-      const data = await adminService.getRedirects();
-      setRedirects(data);
-    } catch { setRedirects([]); }
-    finally { setRedirectLoading(false); }
-  }, []);
+  const { data: redirectsData, isLoading: redirectLoading } = useQuery({
+    queryKey: ['editorial', 'redirects'],
+    queryFn: () => adminService.getRedirects().catch(() => [] as RedirectData[]),
+    enabled: activeTab === 'redirects',
+  });
+  const redirects = Array.isArray(redirectsData) ? (redirectsData as RedirectData[]) : [];
 
-  const fetchBrokenLinks = useCallback(async () => {
-    setBrokenLoading(true);
-    try {
-      const data = await adminService.getBrokenLinks();
-      setBrokenLinks(data || []);
-    } catch { setBrokenLinks([]); }
-    finally { setBrokenLoading(false); }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'redirects') fetchRedirects();
-    if (activeTab === 'broken') fetchBrokenLinks();
-  }, [activeTab, fetchRedirects, fetchBrokenLinks]);
+  const { data: brokenData, isLoading: brokenLoading } = useQuery({
+    queryKey: ['editorial', 'broken-links'],
+    queryFn: () => adminService.getBrokenLinks().catch(() => [] as BrokenLinkData[]),
+    enabled: activeTab === 'broken',
+  });
+  const brokenLinks = Array.isArray(brokenData) ? (brokenData as BrokenLinkData[]) : [];
 
   const handleAddRedirect = async () => {
     if (!newSource.trim() || !newTarget.trim()) {
@@ -76,7 +65,7 @@ export default function EditorialSeo() {
       setShowAddRedirect(false);
       setNewSource('');
       setNewTarget('');
-      fetchRedirects();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'redirects'] });
     } catch (e) {
       toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка создания редиректа');
     }
@@ -86,7 +75,7 @@ export default function EditorialSeo() {
     try {
       await adminService.deleteRedirect(id);
       toast.success('Редирект удалён');
-      fetchRedirects();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'redirects'] });
     } catch (e) {
       toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка удаления');
     }
@@ -113,7 +102,7 @@ export default function EditorialSeo() {
       const bad = results.filter((r) => r.status !== 200 && r.status !== null).length;
       const err = results.filter((r) => r.error && r.status === null).length;
       toast.success(`Проверка завершена: ${ok} OK, ${bad} битых, ${err} ошибок`);
-      fetchBrokenLinks();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'broken-links'] });
     } catch (e) {
       toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка проверки');
     } finally {

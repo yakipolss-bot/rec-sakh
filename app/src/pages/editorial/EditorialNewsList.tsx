@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -35,34 +36,20 @@ const statusList = [
 ];
 
 export default function EditorialNewsList() {
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: newsRes, isLoading } = useQuery({
+    queryKey: ['editorial', 'news-list'],
+    queryFn: () => newsService.getNews({ perPage: 100, sortBy: 'publishedAt', sortOrder: 'desc' }),
+  });
+  const { data: catsData } = useQuery({
+    queryKey: ['editorial', 'categories'],
+    queryFn: () => categoriesService.getCategories().catch(() => [] as Category[]),
+  });
+  const articles = (newsRes?.data || []) as NewsArticle[];
+  const categories = Array.isArray(catsData) ? (catsData as Category[]) : [];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [authorFilter, setAuthorFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const [newsRes, cats] = await Promise.all([
-          newsService.getNews({ perPage: 100, sortBy: 'publishedAt', sortOrder: 'desc' }),
-          categoriesService.getCategories(),
-        ]);
-        if (mounted) {
-          setArticles(newsRes.data || []);
-          setCategories(cats || []);
-        }
-      } catch {
-        /* noop */
-      }
-      if (mounted) setLoading(false);
-    };
-    load();
-    return () => { mounted = false; };
-  }, []);
 
   const authors = useMemo(() =>
     [...new Set(articles.map((a) => a.author?.name).filter(Boolean))] as string[],
@@ -88,7 +75,7 @@ export default function EditorialNewsList() {
     return result;
   }, [articles, search, statusFilter, authorFilter, categoryFilter]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 size={24} className="animate-spin text-[var(--text-muted)]" />

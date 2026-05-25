@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Users, Activity,
@@ -22,34 +23,22 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialAnalytics() {
   const [activeTab, setActiveTab] = useState<Tab>('traffic');
-  const [traffic, setTraffic] = useState<Record<string, unknown> | null>(null);
-  const [content, setContent] = useState<Record<string, unknown> | null>(null);
-  const [realtime, setRealtime] = useState<Record<string, unknown> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async (silent = false) => {
-      if (!silent) setIsLoading(true);
-      try {
-        const [trafficRes, contentRes, realtimeRes] = await Promise.allSettled([
-          adminService.getAnalyticsTraffic(),
-          adminService.getAnalyticsContent({ perPage: 10 }),
-          adminService.getRealtimeAnalytics(),
-        ]);
-
-        if (trafficRes.status === 'fulfilled') setTraffic(trafficRes.value);
-        if (contentRes.status === 'fulfilled') setContent(contentRes.value);
-        if (realtimeRes.status === 'fulfilled') setRealtime(realtimeRes.value);
-      } catch {
-        if (!silent) toast.error('Ошибка загрузки аналитики');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load(false);
-    const id = setInterval(() => load(true), 30000);
-    return () => clearInterval(id);
-  }, []);
+  const { data: traffic, isLoading } = useQuery({
+    queryKey: ['editorial', 'analytics-traffic'],
+    queryFn: () => adminService.getAnalyticsTraffic().catch(() => null),
+    refetchInterval: 30000,
+  });
+  const { data: content } = useQuery({
+    queryKey: ['editorial', 'analytics-content'],
+    queryFn: () => adminService.getAnalyticsContent({ perPage: 10 }).catch(() => null),
+    refetchInterval: 30000,
+  });
+  const { data: realtime } = useQuery({
+    queryKey: ['editorial', 'analytics-realtime'],
+    queryFn: () => adminService.getRealtimeAnalytics().catch(() => null),
+    refetchInterval: 30000,
+  });
 
   if (isLoading) {
     return (

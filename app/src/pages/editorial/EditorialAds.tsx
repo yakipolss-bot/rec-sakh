@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { DollarSign, CheckCircle, XCircle, Eye, BarChart3, Loader2 } from 'lucide-react';
 import apiClient from '../../services/api-client';
@@ -31,45 +32,37 @@ interface AdStats {
 }
 
 export default function EditorialAds() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('moderation');
-  const [pendingAds, setPendingAds] = useState<AdItem[]>([]);
-  const [stats, setStats] = useState<AdStats | null>(null);
-  const [categories, setCategories] = useState<{ name: string; count: number }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const loadData = async (silent = false) => {
-    if (!silent) setIsLoading(true);
-    try {
-      const [pendingRes, statsRes] = await Promise.allSettled([
-        apiClient.get('/ads', { params: { status: 'pending', perPage: 50 } }),
-        apiClient.get('/ads/stats'),
-      ]);
+  const { data: pendingData, isLoading: pendingLoading } = useQuery({
+    queryKey: ['editorial', 'ads-pending'],
+    queryFn: () => apiClient.get('/ads', { params: { status: 'pending', perPage: 50 } }).then(r => {
+      const d = r.data;
+      return (d?.data || d || []) as AdItem[];
+    }),
+    refetchInterval: 30000,
+  });
+  const pendingAds = Array.isArray(pendingData) ? pendingData : [];
 
-      if (pendingRes.status === 'fulfilled') {
-        const data = pendingRes.value.data;
-        setPendingAds(data?.data || data || []);
-      }
+  const { data: statsData } = useQuery({
+    queryKey: ['editorial', 'ads-stats'],
+    queryFn: () => apiClient.get('/ads/stats').then(r => {
+      const d = r.data;
+      return (d?.data || d) as AdStats;
+    }),
+    refetchInterval: 30000,
+  });
+  const stats = statsData || null;
+  const categories = stats?.byCategory || [];
 
-      if (statsRes.status === 'fulfilled') {
-        const data = statsRes.value.data;
-        const s = data?.data || data;
-        setStats(s);
-        setCategories(s?.byCategory || []);
-      }
-    } catch {
-      if (!silent) toast.error('Ошибка загрузки объявлений');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => { loadData(false); const id = setInterval(() => loadData(true), 30000); return () => clearInterval(id); }, []);
+  const isLoading = pendingLoading;
 
   const handleModerate = async (id: string, status: 'approved' | 'rejected') => {
     try {
       await apiClient.patch(`/ads/${id}/status`, { status });
       toast.success(`Объявление ${status === 'approved' ? 'одобрено' : 'отклонено'}`);
-      setPendingAds((prev) => prev.filter((a) => a.id !== id));
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'ads-pending'] });
     } catch {
       toast.error('Ошибка при модерации');
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -14,9 +15,17 @@ import RichTextEditor from '@/components/RichTextEditor';
 export default function EditorialNewsEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [article, setArticle] = useState<NewsArticle | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const { data: art, isLoading } = useQuery({
+    queryKey: ['editorial', 'news-edit', id],
+    queryFn: () => Promise.all([
+      newsService.getNewsById(id || ''),
+      categoriesService.getCategories(),
+    ]).then(([article, cats]) => ({ article, cats })),
+    enabled: !!id,
+  });
+
+  const article = art?.article ?? null;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,31 +39,17 @@ export default function EditorialNewsEdit() {
   const [tags, setTags] = useState<string[]>([]);
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const [art, cats] = await Promise.all([
-          newsService.getNewsById(id || ''),
-          categoriesService.getCategories(),
-        ]);
-        if (mounted) {
-          setArticle(art);
-          setTitle(art.title);
-          setLead(art.lead || '');
-          setContent(art.content);
-          setCategory(art.categoryId || '');
-          setCity(art.city || '');
-          setTags((art.tags as string[]) || []);
-          setCategories(cats || []);
-        }
-      } catch {
-        /* noop */
-      }
-      if (mounted) setLoading(false);
-    };
-    load();
-    return () => { mounted = false; };
-  }, [id]);
+    if (article) {
+      setTitle(article.title);
+      setLead(article.lead || '');
+      setContent(article.content);
+      setCategory(article.categoryId || '');
+      setCity(article.city || '');
+      setTags((article.tags as string[]) || []);
+    }
+  }, [article]);
+
+  const categories = Array.isArray(art?.cats) ? art.cats : [];
 
   const addTag = () => {
     const trimmed = tagsInput.trim();
@@ -99,7 +94,7 @@ export default function EditorialNewsEdit() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 size={24} className="animate-spin text-[var(--text-muted)]" />

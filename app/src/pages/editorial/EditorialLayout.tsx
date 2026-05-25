@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../services/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -49,16 +50,11 @@ const navSections = [
 export default function EditorialLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { data: user } = useQuery({
+    queryKey: ['editorial', 'me'],
+    queryFn: () => usersService.getMe().catch(() => null),
+  });
   const { user: authUser, isLoading } = useAuth();
-
-  useEffect(() => {
-    let mounted = true;
-    usersService.getMe().then((u) => {
-      if (mounted) setUser(u);
-    }).catch(() => {});
-    return () => { mounted = false; };
-  }, []);
 
   if (isLoading) return null;
   if (!authUser || !['editor', 'chief_editor', 'admin', 'superadmin'].includes(authUser.role)) {

@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, User } from 'lucide-react';
 import newsService from '@/services/news.service';
@@ -7,20 +7,13 @@ import type { Article as NewsArticle } from '@/models/news/Article';
 
 export default function EditorialNewsHistory() {
   const { id } = useParams<{ id: string }>();
-  const [article, setArticle] = useState<NewsArticle | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: article, isLoading } = useQuery({
+    queryKey: ['editorial', 'news-history', id],
+    queryFn: () => id ? newsService.getNewsById(id).catch(() => null) : null,
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    newsService.getNewsById(id)
-      .then((article) => { if (!cancelled) setArticle(article); })
-      .catch(() => { if (!cancelled) setArticle(null); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [id]);
-
-  if (loading) {
+  if (isLoading) {
     return <p className="sakh-meta text-center py-8">Загрузка...</p>;
   }
 

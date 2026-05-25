@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Plus, Mail, RefreshCw, BarChart3, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,27 +29,18 @@ const statusColors: Record<string, string> = {
 };
 
 export default function EditorialNewsletters() {
-  const [newsletters, setNewsletters] = useState<NewsletterData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: newslettersData, isLoading } = useQuery({
+    queryKey: ['editorial', 'newsletters'],
+    queryFn: () => adminService.getNewsletters().catch(() => [] as NewsletterData[]),
+  });
+  const newsletters = Array.isArray(newslettersData) ? (newslettersData as NewsletterData[]) : [];
   const [showCreate, setShowCreate] = useState(false);
   const [subject, setSubject] = useState('');
   const [type, setType] = useState<'digest' | 'urgent' | 'thematic'>('digest');
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [selected, setSelected] = useState<NewsletterData | null>(null);
-
-  const fetch = useCallback(async () => {
-    try {
-      const data = await adminService.getNewsletters();
-      setNewsletters(data);
-    } catch {
-      setNewsletters([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetch(); }, [fetch]);
 
   const handleCreate = async () => {
     if (!subject.trim() || !content.trim()) {
@@ -63,7 +55,7 @@ export default function EditorialNewsletters() {
       setSubject('');
       setContent('');
       setType('digest');
-      fetch();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'newsletters'] });
     } catch (e) {
       toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка создания');
     } finally {
@@ -75,7 +67,7 @@ export default function EditorialNewsletters() {
     try {
       await adminService.sendNewsletter(id);
       toast.success('Рассылка отправлена');
-      fetch();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'newsletters'] });
     } catch (e) {
       toast.error((e as {response?: {data?: {message?: string}}}).response?.data?.message || 'Ошибка отправки');
     }
@@ -152,7 +144,7 @@ export default function EditorialNewsletters() {
         )}
       </AnimatePresence>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent rounded-full animate-spin" />
         </div>

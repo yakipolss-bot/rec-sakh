@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Shield, Plus } from 'lucide-react';
@@ -18,28 +19,22 @@ const defaultPermissions: Record<string, boolean[]> = {
 };
 
 export default function AdminUsersRoles() {
-  const [roleCounts, setRoleCounts] = useState<{ role: string; label: string; count: number }[]>([]);
+  const { data: allUsers } = useQuery({
+    queryKey: ['admin', 'users-all'],
+    queryFn: () =>
+      adminService.getUsers({ perPage: 1 })
+        .then(async ({ meta }) => {
+          const { data } = await adminService.getUsers({ perPage: meta?.total || 100 });
+          return data;
+        })
+        .catch(() => []),
+  });
 
-  useEffect(() => {
-    adminService.getUsers({ perPage: 1 })
-      .then(async ({ meta }) => {
-        const { data: allUsers } = await adminService.getUsers({ perPage: meta?.total || 100 });
-        return allUsers;
-      })
-      .then(users => {
-        const counts = Object.keys(roleLabels).map(role => ({
-          role,
-          label: roleLabels[role],
-          count: users.filter(u => u.role === role).length,
-        }));
-        setRoleCounts(counts);
-      })
-      .catch(() => {
-        setRoleCounts(Object.keys(roleLabels).map(role => ({
-          role, label: roleLabels[role], count: 0,
-        })));
-      });
-  }, []);
+  const roleCounts = Object.keys(roleLabels).map(role => ({
+    role,
+    label: roleLabels[role],
+    count: Array.isArray(allUsers) ? allUsers.filter((u: { role: string }) => u.role === role).length : 0,
+  }));
 
   const roles = Object.keys(roleLabels);
 

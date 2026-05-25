@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Image, Video, FolderOpen, Trash2,
@@ -17,28 +18,20 @@ const tabs: { value: Tab; label: string }[] = [
 ];
 
 export default function EditorialMedia() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('photos');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [files, setFiles] = useState<MediaFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const loadFiles = async (silent = false) => {
-    if (!silent) setIsLoading(true);
-    try {
-      const data = await adminService.getMediaList();
-      setFiles(data || []);
-    } catch {
-      if (!silent) toast.error('Ошибка загрузки медиатеки');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => { loadFiles(false); const id = setInterval(() => loadFiles(true), 60000); return () => clearInterval(id); }, []);
+  const { data: filesData, isLoading } = useQuery({
+    queryKey: ['editorial', 'media'],
+    queryFn: () => adminService.getMediaList().catch(() => [] as MediaFile[]),
+    refetchInterval: 60000,
+  });
+  const files = Array.isArray(filesData) ? (filesData as MediaFile[]) : [];
 
   const toggleSelect = (id: string) => {
     const next = new Set(selected);
@@ -68,7 +61,7 @@ export default function EditorialMedia() {
       setUploadProgress(Math.round((done / total) * 100));
     }
     setIsUploading(false);
-    loadFiles();
+    queryClient.invalidateQueries({ queryKey: ['editorial', 'media'] });
   };
 
   const handleDelete = async () => {
@@ -80,7 +73,7 @@ export default function EditorialMedia() {
       }
     }
     setSelected(new Set());
-    loadFiles();
+    queryClient.invalidateQueries({ queryKey: ['editorial', 'media'] });
   };
 
   const formatSize = (bytes: number) => {

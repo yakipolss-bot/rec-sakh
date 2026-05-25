@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Calendar, Info, Plus, Edit2, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,31 +15,19 @@ const tabs: { value: Tab; label: string }[] = [
 ];
 
 export default function EditorialEvents() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('all');
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: eventsData, isLoading } = useQuery({
+    queryKey: ['editorial', 'events'],
+    queryFn: () => adminService.getEvents().then(r => (r.data || []) as EventItem[]),
+    refetchInterval: 30000,
+  });
+  const events = Array.isArray(eventsData) ? eventsData : [];
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', description: '', shortDescription: '', date: '', time: '',
     venue: '', city: '', price: '', ticketUrl: '',
   });
-
-  const loadEvents = async () => {
-    try {
-      const res = await adminService.getEvents();
-      setEvents(res.data || []);
-    } catch {
-      // silent
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-    const id = setInterval(loadEvents, 30000);
-    return () => clearInterval(id);
-  }, []);
 
   const resetForm = () => {
     setForm({ title: '', description: '', shortDescription: '', date: '', time: '', venue: '', city: '', price: '', ticketUrl: '' });
@@ -60,7 +49,7 @@ export default function EditorialEvents() {
       }
       resetForm();
       setActiveTab('all');
-      loadEvents();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'events'] });
     } catch {
       toast.error('Ошибка сохранения');
     }
@@ -86,7 +75,7 @@ export default function EditorialEvents() {
     try {
       await adminService.deleteEvent(id);
       toast.success('Событие удалено');
-      loadEvents();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'events'] });
     } catch {
       toast.error('Ошибка удаления');
     }
@@ -96,7 +85,7 @@ export default function EditorialEvents() {
     try {
       await adminService.updateEventStatus(id, status);
       toast.success(`Статус изменён на «${status === 'published' ? 'Опубликовано' : 'Отклонено'}»`);
-      loadEvents();
+      queryClient.invalidateQueries({ queryKey: ['editorial', 'events'] });
     } catch {
       toast.error('Ошибка изменения статуса');
     }

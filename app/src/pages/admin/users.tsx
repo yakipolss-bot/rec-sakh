@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -42,20 +43,17 @@ const ITEMS_PER_PAGE = 6;
 
 export default function AdminUsers() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: usersData, isLoading } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: () => adminService.getUsers({ perPage: 100 }).then(r => r.data).catch(() => [] as AdminUser[]),
+  });
+  const users = Array.isArray(usersData) ? (usersData as AdminUser[]) : [];
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('Все');
   const [statusFilter, setStatusFilter] = useState('Все');
   const [cityFilter, setCityFilter] = useState('Все');
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    adminService.getUsers({ perPage: 100 })
-      .then(({ data }) => setUsers(data))
-      .catch(() => setUsers([]))
-      .finally(() => setLoading(false));
-  }, []);
 
   const cities = useMemo(() => ['Все', ...new Set(users.map(u => u.city || '').filter(Boolean))], [users]);
 
@@ -76,7 +74,7 @@ export default function AdminUsers() {
     if (!confirm(`Заблокировать пользователя "${u.name}"?`)) return;
     try {
       await adminService.changeUserStatus(u.id, 'blocked');
-      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, status: 'blocked' as const } : x));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       toast.success(`Пользователь "${u.name}" заблокирован`);
     } catch {
       toast.error('Ошибка при блокировке');
@@ -87,7 +85,7 @@ export default function AdminUsers() {
     if (!confirm(`Удалить пользователя "${u.name}"? Это действие необратимо.`)) return;
     try {
       await adminService.blockUser(u.id);
-      setUsers(prev => prev.filter(x => x.id !== u.id));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       toast.success(`Пользователь "${u.name}" удалён`);
     } catch {
       toast.error('Ошибка при удалении');
@@ -138,7 +136,7 @@ export default function AdminUsers() {
         </select>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <p className="sakh-meta text-center py-8">Загрузка...</p>
       ) : (
         <div className="overflow-x-auto">
