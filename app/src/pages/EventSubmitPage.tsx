@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -22,7 +23,6 @@ const CATEGORIES = [
 
 export default function EventSubmitPage() {
   const [submitted, setSubmitted] = useState(false);
-  const [sending, setSending] = useState(false);
   const { data: catMap = {} } = useQuery({
     queryKey: ['event-categories'],
     queryFn: () => apiClient.get('/categories', { params: { type: 'events' } }).then((res) => {
@@ -35,58 +35,51 @@ export default function EventSubmitPage() {
     }),
   });
 
-  const [form, setForm] = useState({
-    categorySlug: '',
-    title: '',
-    description: '',
-    date: '',
-    time: '',
-    venue: '',
-    venueAddress: '',
-    city: 'Южно-Сахалинск',
-    price: '',
-    ageRestriction: '0+',
-    imageUrl: '',
-    phone: '',
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+    defaultValues: {
+      categorySlug: '',
+      title: '',
+      description: '',
+      date: '',
+      time: '',
+      venue: '',
+      venueAddress: '',
+      city: 'Южно-Сахалинск',
+      price: '',
+      ageRestriction: '0+',
+      imageUrl: '',
+      phone: '',
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.title || !form.date || !form.categorySlug) {
-      toast.error('Заполните название, дату и категорию');
-      return;
-    }
-
-    const categoryId = catMap[form.categorySlug];
+  const onSubmit = async (data: Record<string, string>) => {
+    const categoryId = catMap[data.categorySlug];
     if (!categoryId) {
       toast.error('Выберите категорию из списка');
       return;
     }
 
-    setSending(true);
     try {
       const payload: Record<string, unknown> = {
-        title: form.title,
-        description: form.description || 'Описание события',
-        shortDescription: form.description?.slice(0, 200) || undefined,
+        title: data.title,
+        description: data.description || 'Описание события',
+        shortDescription: data.description?.slice(0, 200) || undefined,
         categoryId,
-        city: form.city,
-        venueName: form.venue || undefined,
-        venueAddress: form.venueAddress || undefined,
-        startDate: form.time
-          ? new Date(`${form.date}T${form.time}:00`).toISOString()
-          : new Date(`${form.date}T19:00:00`).toISOString(),
-        isFree: !form.price,
-        price: form.price ? Number(form.price) : undefined,
-        imageUrl: form.imageUrl || undefined,
+        city: data.city,
+        venueName: data.venue || undefined,
+        venueAddress: data.venueAddress || undefined,
+        startDate: data.time
+          ? new Date(`${data.date}T${data.time}:00`).toISOString()
+          : new Date(`${data.date}T19:00:00`).toISOString(),
+        isFree: !data.price,
+        price: data.price ? Number(data.price) : undefined,
+        imageUrl: data.imageUrl || undefined,
       };
 
       await apiClient.post('/events', payload);
       setSubmitted(true);
     } catch {
       toast.error('Ошибка отправки. Попробуйте позже.');
-    } finally {
-      setSending(false);
     }
   };
 
@@ -132,19 +125,18 @@ export default function EventSubmitPage() {
           <h1 className="sakh-heading mb-2">Добавить событие</h1>
           <p className="sakh-body mb-8">Заполните форму — после модерации событие появится в афише</p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="sakh-caption block mb-2">Категория *</label>
               <select
                 className="sakh-select"
-                value={form.categorySlug}
-                onChange={(e) => setForm({ ...form, categorySlug: e.target.value })}
-                required
+                {...register('categorySlug', { required: 'Выберите категорию' })}
               >
                 {CATEGORIES.map(c => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
+              {errors.categorySlug && <p className="text-xs text-red-500 mt-1">{errors.categorySlug.message}</p>}
             </div>
 
             <div>
@@ -153,10 +145,9 @@ export default function EventSubmitPage() {
                 type="text"
                 className="sakh-input"
                 placeholder="Введите название"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                required
+                {...register('title', { required: 'Обязательное поле' })}
               />
+              {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>}
             </div>
 
             <div>
@@ -164,8 +155,7 @@ export default function EventSubmitPage() {
               <textarea
                 className="sakh-textarea"
                 placeholder="Подробное описание события"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                {...register('description')}
                 rows={5}
               />
             </div>
@@ -176,18 +166,16 @@ export default function EventSubmitPage() {
                 <input
                   type="date"
                   className="sakh-input"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  required
+                  {...register('date', { required: 'Обязательное поле' })}
                 />
+                {errors.date && <p className="text-xs text-red-500 mt-1">{errors.date.message}</p>}
               </div>
               <div>
                 <label className="sakh-caption block mb-2">Время</label>
                 <input
                   type="time"
                   className="sakh-input"
-                  value={form.time}
-                  onChange={(e) => setForm({ ...form, time: e.target.value })}
+                  {...register('time')}
                 />
               </div>
             </div>
@@ -199,8 +187,7 @@ export default function EventSubmitPage() {
                   type="text"
                   className="sakh-input"
                   placeholder="Название площадки"
-                  value={form.venue}
-                  onChange={(e) => setForm({ ...form, venue: e.target.value })}
+                  {...register('venue')}
                 />
               </div>
               <div>
@@ -208,8 +195,7 @@ export default function EventSubmitPage() {
                 <input
                   type="text"
                   className="sakh-input"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  {...register('city')}
                 />
               </div>
             </div>
@@ -221,16 +207,14 @@ export default function EventSubmitPage() {
                   type="number"
                   className="sakh-input"
                   placeholder="Например: 500"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  {...register('price')}
                 />
               </div>
               <div>
                 <label className="sakh-caption block mb-2">Возрастное ограничение</label>
                 <select
                   className="sakh-select"
-                  value={form.ageRestriction}
-                  onChange={(e) => setForm({ ...form, ageRestriction: e.target.value })}
+                  {...register('ageRestriction')}
                 >
                   <option value="0+">0+</option>
                   <option value="6+">6+</option>
@@ -247,8 +231,7 @@ export default function EventSubmitPage() {
                 type="url"
                 className="sakh-input"
                 placeholder="https://example.com/image.jpg"
-                value={form.imageUrl}
-                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                {...register('imageUrl')}
               />
             </div>
 
@@ -258,18 +241,17 @@ export default function EventSubmitPage() {
                 type="text"
                 className="sakh-input"
                 placeholder="ул. Ленина, 1"
-                value={form.venueAddress}
-                onChange={(e) => setForm({ ...form, venueAddress: e.target.value })}
+                {...register('venueAddress')}
               />
             </div>
 
             <button
               type="submit"
               className="sakh-btn sakh-btn--primary sakh-btn--lg w-full"
-              disabled={sending}
+              disabled={isSubmitting}
             >
-              {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-              {sending ? 'Отправка...' : 'Отправить на модерацию'}
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              {isSubmitting ? 'Отправка...' : 'Отправить на модерацию'}
             </button>
           </form>
         </motion.div>

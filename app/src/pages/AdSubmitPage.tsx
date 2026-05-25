@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Send, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Send, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import adsService from '@/services/ads.service';
 import type { CreateAdPayload } from '@/models/ads/CreateAdPayload';
 import SEOHead from '@/components/SEOHead';
@@ -16,33 +18,32 @@ const CATEGORIES: { value: string; label: string }[] = [
 ];
 
 export default function AdSubmitPage() {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [price, setPrice] = useState('');
-  const [city, setCity] = useState('');
-  const [phone, setPhone] = useState('');
-  const [photoUrl, setPhotoUrl] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+    defaultValues: {
+      title: '',
+      description: '',
+      category: '',
+      price: '',
+      city: '',
+      phone: '',
+      photoUrl: '',
+    },
+  });
 
+  const onSubmit = async (data: Record<string, string>) => {
     try {
       const payload: CreateAdPayload = {
-        title,
-        description,
-        city,
-        phone,
+        title: data.title,
+        description: data.description,
+        city: data.city,
+        phone: data.phone,
       };
-      if (category) payload.categoryId = category;
-      const parsedPrice = Number(price.replace(/\s/g, '').replace('₽', ''));
+      if (data.category) payload.categoryId = data.category;
+      const parsedPrice = Number(data.price.replace(/\s/g, '').replace('₽', ''));
       if (parsedPrice > 0) payload.price = parsedPrice;
-      if (photoUrl) payload.images = [photoUrl];
+      if (data.photoUrl) payload.images = [data.photoUrl];
 
       await adsService.create(payload);
       setSubmitted(true);
@@ -51,9 +52,7 @@ export default function AdSubmitPage() {
         err && typeof err === 'object' && 'response' in err
           ? (err as { response: { data?: { message?: string } } }).response?.data?.message || 'Ошибка при отправке'
           : 'Ошибка при отправке';
-      setError(msg);
-    } finally {
-      setLoading(false);
+      toast.error(msg);
     }
   };
 
@@ -95,26 +94,12 @@ export default function AdSubmitPage() {
           <h1 className="sakh-heading mb-2">Подать объявление</h1>
           <p className="sakh-body mb-8">Заполните форму — после модерации объявление появится на сайте</p>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-start gap-3 p-4 mb-6 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg"
-              role="alert"
-            >
-              <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-            </motion.div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="sakh-caption block mb-2">Категория</label>
               <select
                 className="sakh-select"
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                required
+                {...register('category')}
               >
                 <option value="">Выберите категорию</option>
                 {CATEGORIES.map(c => (
@@ -129,10 +114,9 @@ export default function AdSubmitPage() {
                 type="text"
                 className="sakh-input"
                 placeholder="Например: Продам iPhone 15 Pro"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                required
+                {...register('title', { required: 'Обязательное поле' })}
               />
+              {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>}
             </div>
 
             <div>
@@ -141,10 +125,9 @@ export default function AdSubmitPage() {
                 className="sakh-textarea"
                 placeholder="Подробное описание"
                 rows={5}
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                required
+                {...register('description', { required: 'Обязательное поле' })}
               />
+              {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description.message}</p>}
             </div>
 
             <div>
@@ -153,8 +136,7 @@ export default function AdSubmitPage() {
                 type="text"
                 className="sakh-input"
                 placeholder="Например: 95 000 ₽"
-                value={price}
-                onChange={e => setPrice(e.target.value)}
+                {...register('price')}
               />
             </div>
 
@@ -164,9 +146,9 @@ export default function AdSubmitPage() {
                 type="text"
                 className="sakh-input"
                 placeholder="Южно-Сахалинск"
-                value={city}
-                onChange={e => setCity(e.target.value)}
+                {...register('city', { required: 'Обязательное поле' })}
               />
+              {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city.message}</p>}
             </div>
 
             <div>
@@ -175,8 +157,7 @@ export default function AdSubmitPage() {
                 type="tel"
                 className="sakh-input"
                 placeholder="+7 (962) 123-45-67"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
+                {...register('phone')}
               />
             </div>
 
@@ -186,22 +167,21 @@ export default function AdSubmitPage() {
                 type="url"
                 className="sakh-input"
                 placeholder="https://example.com/photo.jpg"
-                value={photoUrl}
-                onChange={e => setPhotoUrl(e.target.value)}
+                {...register('photoUrl')}
               />
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isSubmitting}
               className="sakh-btn sakh-btn--primary sakh-btn--lg w-full"
             >
-              {loading ? (
+              {isSubmitting ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
                 <Send size={16} />
               )}
-              {loading ? 'Отправка...' : 'Отправить на модерацию'}
+              {isSubmitting ? 'Отправка...' : 'Отправить на модерацию'}
             </button>
           </form>
         </motion.div>
