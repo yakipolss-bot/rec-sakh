@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Plus, Bookmark, Tag, User, Key } from 'lucide-react';
 import categoriesService from '@/services/categories.service';
+import tagsService from '@/services/tags.service';
 import { useUserSubscriptions } from '@/hooks/useUser';
 import usersService from '@/services/users.service';
 import { toast } from 'sonner';
 import EmptyState from '@/components/EmptyState';
 import type { Category } from '@/types';
+import type { Tag } from '@/models/tags/Tag';
 
 type TabId = 'categories' | 'tags' | 'authors' | 'keywords';
 
@@ -17,13 +19,13 @@ const tabs: { id: TabId; label: string; icon: React.FC<{ size?: number }> }[] = 
   { id: 'keywords', label: 'Ключевые слова', icon: Key },
 ];
 
-const popularTags = ['шторм', 'спорт', 'транспорт', 'экономика', 'образование', 'медицина', 'экология', 'культура', 'происшествия', 'политика'];
-
 export default function AccountSubscriptions() {
   const [activeTab, setActiveTab] = useState<TabId>('categories');
   const { subscriptions, error, refetch } = useUserSubscriptions();
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(true);
   const [subscribedCategories, setSubscribedCategories] = useState<string[]>([]);
   const [subscribedTags, setSubscribedTags] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
@@ -39,6 +41,22 @@ export default function AccountSubscriptions() {
         // silent
       } finally {
         if (!cancelled) setCategoriesLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      try {
+        const data = await tagsService.getTags();
+        if (!cancelled) setTags(data);
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setTagsLoading(false);
       }
     }
     fetch();
@@ -207,24 +225,37 @@ export default function AccountSubscriptions() {
                 />
               </div>
               <div className="sakh-card p-4">
-                <p className="sakh-caption mb-3">Популярные теги</p>
-                <div className="flex flex-wrap gap-2">
-                  {popularTags.map(tag => {
-                    const subscribed = subscribedTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        onClick={() => toggleTag(tag)}
-                        className={`sakh-tag transition-colors cursor-pointer ${
-                          subscribed ? 'sakh-tag--accent' : 'sakh-tag--outline hover:border-[var(--accent-ocean)] hover:text-[var(--accent-ocean)]'
-                        }`}
-                      >
-                        {tag}
-                        {subscribed && <X size={10} />}
-                      </button>
-                    );
-                  })}
-                </div>
+                <p className="sakh-caption mb-3">
+                  {tagsLoading ? 'Загрузка тегов...' : `Все теги (${tags.length})`}
+                </p>
+                {tagsLoading ? (
+                  <div className="flex justify-center py-6">
+                    <div className="w-5 h-5 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
+                  </div>
+                ) : tags.length === 0 ? (
+                  <p className="sakh-meta text-sm">Теги пока не добавлены</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map(tag => {
+                      const subscribed = subscribedTags.includes(tag.name);
+                      return (
+                        <button
+                          key={tag.id}
+                          onClick={() => toggleTag(tag.name)}
+                          className={`sakh-tag transition-colors cursor-pointer ${
+                            subscribed ? 'sakh-tag--accent' : 'sakh-tag--outline hover:border-[var(--accent-ocean)] hover:text-[var(--accent-ocean)]'
+                          }`}
+                        >
+                          {tag.name}
+                          {tag.newsCount != null && (
+                            <span className="ml-1 opacity-60">({tag.newsCount})</span>
+                          )}
+                          {subscribed && <X size={10} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               {subscribedTags.length > 0 && (
                 <div className="sakh-card p-4">

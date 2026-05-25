@@ -16,8 +16,6 @@ export default function AccountProfile() {
     email: '',
     phone: '',
     city: '',
-    birthDate: '',
-    gender: 'male',
     about: '',
   });
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -29,8 +27,6 @@ export default function AccountProfile() {
         email: user.email || '',
         phone: user.phone || '',
         city: user.city || '',
-        birthDate: '',
-        gender: 'male',
         about: '',
       });
       setAvatarUrl(user.avatarUrl || user.avatar || null);
@@ -46,9 +42,9 @@ export default function AccountProfile() {
       setIsSaving(true);
       await usersService.updateProfile({
         name: form.name,
-        email: form.email,
         phone: form.phone,
         city: form.city,
+        bio: form.about,
       });
       toast.success('Профиль обновлен');
       refetch?.();
@@ -176,9 +172,10 @@ export default function AccountProfile() {
             <input
               type="email"
               value={form.email}
-              onChange={e => handleChange('email', e.target.value)}
               className="sakh-input"
+              disabled
             />
+            <p className="sakh-meta text-xs mt-1">Email нельзя изменить. Для смены обратитесь в поддержку.</p>
           </div>
           <div>
             <label className="sakh-caption block mb-1">Телефон</label>
@@ -197,27 +194,6 @@ export default function AccountProfile() {
               onChange={e => handleChange('city', e.target.value)}
               className="sakh-input"
             />
-          </div>
-          <div>
-            <label className="sakh-caption block mb-1">Дата рождения</label>
-            <input
-              type="date"
-              value={form.birthDate}
-              onChange={e => handleChange('birthDate', e.target.value)}
-              className="sakh-input"
-            />
-          </div>
-          <div>
-            <label className="sakh-caption block mb-1">Пол</label>
-            <select
-              value={form.gender}
-              onChange={e => handleChange('gender', e.target.value)}
-              className="sakh-select"
-            >
-              <option value="male">Мужской</option>
-              <option value="female">Женский</option>
-              <option value="other">Другой</option>
-            </select>
           </div>
         </div>
 

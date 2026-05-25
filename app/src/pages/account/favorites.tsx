@@ -22,10 +22,14 @@ export default function AccountFavorites() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (favorites.length === 0) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     async function fetch() {
       try {
-        const res = await newsService.getNews();
+        const res = await newsService.getNews({ perPage: 50, sort: 'createdAt' });
         if (!cancelled) setAllNews(res.data || []);
       } catch {
         // silent
@@ -35,7 +39,7 @@ export default function AccountFavorites() {
     }
     fetch();
     return () => { cancelled = true; };
-  }, []);
+  }, [favorites.length]);
 
   const favoriteArticles = allNews.filter(a => favorites.includes(a.id));
 

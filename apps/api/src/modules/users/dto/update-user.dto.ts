@@ -12,4 +12,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional()
   phone?: string;
+
+  @ApiPropertyOptional()
+  city?: string;
 }
