@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,7 +23,17 @@ const CATEGORIES = [
 export default function EventSubmitPage() {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
-  const [catMap, setCatMap] = useState<Record<string, string>>({});
+  const { data: catMap = {} } = useQuery({
+    queryKey: ['event-categories'],
+    queryFn: () => apiClient.get('/categories', { params: { type: 'events' } }).then((res) => {
+      const cats = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      const map: Record<string, string> = {};
+      for (const c of cats) {
+        map[c.slug] = c.id;
+      }
+      return map;
+    }),
+  });
 
   const [form, setForm] = useState({
     categorySlug: '',
@@ -38,17 +49,6 @@ export default function EventSubmitPage() {
     imageUrl: '',
     phone: '',
   });
-
-  useEffect(() => {
-    apiClient.get('/categories', { params: { type: 'events' } }).then((res) => {
-      const cats = Array.isArray(res.data) ? res.data : res.data?.data || [];
-      const map: Record<string, string> = {};
-      for (const c of cats) {
-        map[c.slug] = c.id;
-      }
-      setCatMap(map);
-    }).catch(() => {});
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

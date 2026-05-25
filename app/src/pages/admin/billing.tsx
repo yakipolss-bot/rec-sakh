@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   CreditCard, RotateCcw, FileText, Clock,
   CheckCircle,
@@ -44,22 +45,20 @@ const statusLabels: Record<string, string> = {
 
 export default function AdminBilling() {
   const [tab, setTab] = useState<BillingTab>('transactions');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [tariffs, setTariffs] = useState<Tariff[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      adminService.getTransactions({ perPage: 50 }),
-      adminService.getTariffs(),
-    ])
-      .then(([txData, tariffData]) => {
-        setTransactions(txData.data);
-        setTariffs(tariffData);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'billing'],
+    queryFn: async () => {
+      const [txData, tariffData] = await Promise.all([
+        adminService.getTransactions({ perPage: 50 }),
+        adminService.getTariffs(),
+      ]);
+      return { transactions: txData.data as Transaction[], tariffs: tariffData as Tariff[] };
+    },
+  });
+
+  const transactions = data?.transactions ?? [];
+  const tariffs = data?.tariffs ?? [];
 
   const refunds = transactions.filter(t => t.type === 'refund');
 
@@ -105,9 +104,9 @@ export default function AdminBilling() {
         ))}
       </div>
 
-      {loading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
+      {isLoading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
 
-      {!loading && (tab === 'transactions' || tab === 'refunds') && (
+      {!isLoading && (tab === 'transactions' || tab === 'refunds') && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>
@@ -153,7 +152,7 @@ export default function AdminBilling() {
         </div>
       )}
 
-      {!loading && tab === 'reports' && (
+      {!isLoading && tab === 'reports' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: CreditCard, label: 'Доход', value: reportsData.totalRevenue.toLocaleString('ru-RU'), suffix: ' ₽' },
@@ -180,7 +179,7 @@ export default function AdminBilling() {
         </div>
       )}
 
-      {!loading && tab === 'tariffs' && (
+      {!isLoading && tab === 'tariffs' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {tariffs.length === 0 && (
             <p className="sakh-meta col-span-full text-center py-8">Нет тарифов</p>

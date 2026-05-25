@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../services/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Users, Briefcase, Shield, FileText,
   Megaphone, DollarSign, Settings, Server, ExternalLink,
@@ -29,12 +30,12 @@ const navItems = [
 export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
   const { user: authUser, isLoading } = useAuth();
 
-  useEffect(() => {
-    usersService.getMe().then(setUser).catch(() => setUser(null));
-  }, []);
+  const { data: user } = useQuery<UserProfile | null>({
+    queryKey: ['admin', 'me'],
+    queryFn: () => usersService.getMe().catch(() => null),
+  });
 
   if (isLoading) return null;
   if (!authUser || (authUser.role !== 'admin' && authUser.role !== 'superadmin')) {

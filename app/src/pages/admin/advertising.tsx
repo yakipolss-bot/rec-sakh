@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   MapPin, TrendingUp, MousePointerClick,
   DollarSign, Eye, Layout,
@@ -17,25 +18,16 @@ const tabs: { key: AdTab; label: string }[] = [
   { key: 'stats', label: 'Статистика' },
 ];
 
-
-
 export default function AdminAdvertising() {
   const [tab, setTab] = useState<AdTab>('campaigns');
-  const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
-  const [placements, setPlacements] = useState<AdPlacement[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      adminService.getAnalyticsContent().catch(() => null),
-    ])
-      .then(() => {
-        setCampaigns([]);
-        setPlacements([]);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: _data, isLoading } = useQuery({
+    queryKey: ['admin', 'advertising'],
+    queryFn: () => adminService.getAnalyticsContent().catch(() => null),
+  });
+
+  const campaigns: AdCampaign[] = [];
+  const placements: AdPlacement[] = [];
 
   const clients = (() => {
     const map = new Map<string, { name: string; campaigns: number; totalBudget: number; totalSpent: number }>();
@@ -80,9 +72,9 @@ export default function AdminAdvertising() {
         ))}
       </div>
 
-      {loading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
+      {isLoading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
 
-      {!loading && tab === 'campaigns' && (
+      {!isLoading && tab === 'campaigns' && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>
@@ -132,7 +124,7 @@ export default function AdminAdvertising() {
         </div>
       )}
 
-      {!loading && tab === 'placements' && (
+      {!isLoading && tab === 'placements' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {placements.length === 0 && (
             <p className="sakh-meta col-span-full text-center py-8">Нет рекламных мест</p>
@@ -170,7 +162,7 @@ export default function AdminAdvertising() {
         </div>
       )}
 
-      {!loading && tab === 'clients' && (
+      {!isLoading && tab === 'clients' && (
         <div className="overflow-x-auto">
           <table className="sakh-table w-full text-sm">
             <thead>
@@ -206,7 +198,7 @@ export default function AdminAdvertising() {
         </div>
       )}
 
-      {!loading && tab === 'stats' && (
+      {!isLoading && tab === 'stats' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: Eye, label: 'Показы', value: totalStats.impressions.toLocaleString('ru-RU'), suffix: '' },

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Eye, MessageSquare, Clock, Bookmark,
@@ -31,39 +32,22 @@ export default function ArticlePage({ id }: { id?: string }) {
   const params = useParams<{ id: string }>();
   const articleId = id || params.id;
 
-  const [article, setArticle] = useState<NewsArticle | null>(null);
-  const [articleComments, setArticleComments] = useState<Comment[]>([]);
-  const [relatedNews, setRelatedNews] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useQuery({
+    queryKey: ['article-full', articleId],
+    queryFn: async () => {
+      const result = await newsService.getNewsById(articleId!);
+      const [comments, related] = await Promise.all([
+        commentsService.getComments(result.id).catch(() => []),
+        newsService.getRelatedNews(result.id, 3).catch(() => []),
+      ]);
+      return { article: result, comments, related };
+    },
+    enabled: !!articleId,
+  });
 
-  useEffect(() => {
-    if (!articleId) return;
-    let cancelled = false;
-
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const result = await newsService.getNewsById(articleId);
-        if (cancelled) return;
-        setArticle(result);
-
-        const [comments, related] = await Promise.all([
-          commentsService.getComments(result.id).catch(() => [] as Comment[]),
-          newsService.getRelatedNews(result.id, 3).catch(() => [] as NewsArticle[]),
-        ]);
-        if (cancelled) return;
-        setArticleComments(comments);
-        setRelatedNews(related);
-      } catch {
-        if (!cancelled) setArticle(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    fetchData();
-    return () => { cancelled = true; };
-  }, [articleId]);
+  const article = data?.article ?? null;
+  const articleComments = data?.comments ?? [];
+  const relatedNews = data?.related ?? [];
 
   const { isFavorite, toggleFavorite } = useFavorites();
 
@@ -82,7 +66,7 @@ export default function ArticlePage({ id }: { id?: string }) {
     }
   }, [article]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pt-24 pb-8 max-w-[var(--container-max)] mx-auto px-4 sm:px-6">
         <div className="flex justify-center py-12">

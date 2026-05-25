@@ -1,5 +1,6 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Grid3X3, List, RotateCcw, TrendingUp, MapPin, Calendar } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
@@ -9,8 +10,6 @@ import Pagination from '@/components/Pagination';
 import EmptyState from '@/components/EmptyState';
 import newsService from '@/services/news.service';
 import categoriesService from '@/services/categories.service';
-import type { NewsArticle } from '@/types';
-import type { Category } from '@/types';
 
 const SORT_OPTIONS = [
   { value: 'date', label: 'По дате' },
@@ -95,31 +94,19 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [baseArticles, setBaseArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useQuery({
+    queryKey: ['category-page', slug],
+    queryFn: async () => {
+      const [catsData, newsData] = await Promise.all([
+        categoriesService.getCategories(),
+        slug ? newsService.getNews({ category: slug }) : newsService.getNews({ status: 'published' }),
+      ]);
+      return { categories: catsData, articles: newsData.data || [] };
+    },
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetch() {
-      setLoading(true);
-      try {
-        const [catsData, newsData] = await Promise.all([
-          categoriesService.getCategories(),
-          slug ? newsService.getNews({ category: slug }) : newsService.getNews({ status: 'published' }),
-        ]);
-        if (cancelled) return;
-        setCategories(catsData);
-        setBaseArticles(newsData.data || []);
-      } catch {
-        // silent
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetch();
-    return () => { cancelled = true; };
-  }, [slug]);
+  const categories = data?.categories ?? [];
+  const baseArticles = data?.articles ?? [];
 
   const sortBy = searchParams.get('sort') || 'date';
   const city = searchParams.get('city') || 'all';
@@ -212,7 +199,7 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
     return Array.from(tagSet).slice(0, 12);
   }, [baseArticles]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pt-24 pb-8 max-w-[1440px] mx-auto px-4 sm:px-6">
         <div className="flex justify-center py-12">

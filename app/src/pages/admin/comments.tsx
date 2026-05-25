@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ChevronLeft, ChevronRight,
   CheckCircle, XCircle, Trash2, Ban, UserX,
@@ -25,8 +26,7 @@ const statusBadge: Record<string, string> = {
 const ITEMS_PER_PAGE = 10;
 
 export default function AdminComments() {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Все');
   const [page, setPage] = useState(1);
@@ -34,18 +34,19 @@ export default function AdminComments() {
   const [blacklist, setBlacklist] = useState<{ word: string }[]>([]);
   const [newWord, setNewWord] = useState('');
 
-  useEffect(() => {
-    Promise.all([
-      adminService.getComments({ perPage: 100 }),
-      adminService.getCommentBlacklist().catch(() => []),
-    ])
-      .then(([commentsData, bl]) => {
-        setComments(commentsData.data);
-        setBlacklist(bl);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: commentsData, isLoading } = useQuery({
+    queryKey: ['admin', 'comments'],
+    queryFn: async () => {
+      const [commentsResult, bl] = await Promise.all([
+        adminService.getComments({ perPage: 100 }),
+        adminService.getCommentBlacklist().catch(() => []),
+      ]);
+      setBlacklist(bl);
+      return commentsResult.data as Comment[];
+    },
+  });
+
+  const comments = commentsData ?? [];
 
   const statuses = useMemo(() => ['Все', ...new Set(comments.map(c => c.status))], [comments]);
 
@@ -64,7 +65,7 @@ export default function AdminComments() {
     if (!confirm('Удалить комментарий?')) return;
     try {
       await adminService.deleteComment(comment.id);
-      setComments(prev => prev.filter(c => c.id !== comment.id));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'comments'] });
       toast.success('Комментарий удалён');
     } catch {
       toast.error('Ошибка при удалении');
@@ -74,7 +75,7 @@ export default function AdminComments() {
   const handleModerate = async (comment: Comment, status: 'approved' | 'rejected') => {
     try {
       await adminService.moderateComment(comment.id, status);
-      setComments(prev => prev.map(c => c.id === comment.id ? { ...c, status } : c));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'comments'] });
       toast.success(status === 'approved' ? 'Комментарий одобрен' : 'Комментарий отклонён');
     } catch {
       toast.error('Ошибка при модерации');
@@ -172,7 +173,7 @@ export default function AdminComments() {
         </select>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <p className="sakh-meta text-center py-8">Загрузка...</p>
       ) : (
         <div className="overflow-x-auto">

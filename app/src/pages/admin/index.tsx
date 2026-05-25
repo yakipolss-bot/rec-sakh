@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Clock, AlertTriangle, Users as UsersIcon,
   ArrowUpRight, Cpu, Server as ServerIcon,
@@ -10,29 +10,25 @@ import type { RecentAction } from '@/models/admin/RecentAction';
 import type { Alert } from '@/models/admin/Alert';
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [actions, setActions] = useState<RecentAction[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: dashboard, isLoading } = useQuery({
+    queryKey: ['admin', 'dashboard'],
+    queryFn: async () => {
+      const [dashboardData, recentActionsData, alertsData] = await Promise.all([
+        adminService.getDashboard(),
+        adminService.getRecentActions(),
+        adminService.getAlerts(),
+      ]);
+      return {
+        stats: dashboardData.stats as AdminStats | null,
+        actions: recentActionsData as RecentAction[],
+        alerts: alertsData as Alert[],
+      };
+    },
+  });
 
-  useEffect(() => {
-    Promise.all([
-      adminService.getDashboard(),
-      adminService.getRecentActions(),
-      adminService.getAlerts(),
-    ])
-      .then(([dashboard, recentActionsData, alertsData]) => {
-        setStats(dashboard.stats);
-        setActions(recentActionsData);
-        setAlerts(alertsData);
-      })
-      .catch(() => {
-        setStats(null);
-        setActions([]);
-        setAlerts([]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const stats = dashboard?.stats ?? null;
+  const actions = dashboard?.actions ?? [];
+  const alerts = dashboard?.alerts ?? [];
 
   const statCards = stats ? [
     { label: 'Uptime', value: stats.uptime, icon: Clock, color: 'var(--accent-ocean)' },
@@ -45,7 +41,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="sakh-heading">Дашборд</h1>
-        <span className="sakh-meta">Обновлено: {loading ? 'загрузка...' : 'только что'}</span>
+        <span className="sakh-meta">Обновлено: {isLoading ? 'загрузка...' : 'только что'}</span>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

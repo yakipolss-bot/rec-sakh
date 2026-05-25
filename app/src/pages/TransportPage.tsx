@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Bus, Plane, Ship, Route, Loader2, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import apiClient from '../services/api-client';
 import SEOHead from '@/components/SEOHead';
 
@@ -80,61 +81,47 @@ const tabContentVariants = {
 export default function TransportPage() {
   const [tab, setTab] = useState<TransportTab>('schedule');
   const [flightTab, setFlightTab] = useState<'arrival' | 'departure'>('arrival');
-  const [flights, setFlights] = useState<Flight[]>([]);
-  const [ferries, setFerries] = useState<Ferry[]>([]);
-  const [roads, setRoads] = useState<Road[]>([]);
-  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [dayFilter, setDayFilter] = useState<DayFilter>('all');
   const [scheduleTypeFilter, setScheduleTypeFilter] = useState<'all' | 'bus' | 'train'>('all');
   const [datePreset, setDatePreset] = useState<DatePreset>('today');
   const [customDate, setCustomDate] = useState('');
   const [ferryDatePreset, setFerryDatePreset] = useState<DatePreset>('today');
 
+  const flightsQuery = useQuery({
+    queryKey: ['transport', 'flights'],
+    queryFn: () => apiClient.get('/transport/flights').then(res => res.data?.data || res.data || []),
+    refetchInterval: 60000,
+  });
+
+  const ferriesQuery = useQuery({
+    queryKey: ['transport', 'ferry'],
+    queryFn: () => apiClient.get('/transport/ferry').then(res => res.data?.data || res.data || []),
+    refetchInterval: 60000,
+  });
+
+  const roadsQuery = useQuery({
+    queryKey: ['transport', 'roads'],
+    queryFn: () => apiClient.get('/transport/roads').then(res => res.data?.data || res.data || []),
+    refetchInterval: 60000,
+  });
+
+  const schedulesQuery = useQuery({
+    queryKey: ['transport', 'schedule'],
+    queryFn: () => apiClient.get('/transport/schedule').then(res => res.data?.data || res.data || []),
+    refetchInterval: 60000,
+  });
+
+  const flights = flightsQuery.data ?? [];
+  const ferries = ferriesQuery.data ?? [];
+  const roads = roadsQuery.data ?? [];
+  const schedules = schedulesQuery.data ?? [];
+  const isLoading = flightsQuery.isLoading || ferriesQuery.isLoading || roadsQuery.isLoading || schedulesQuery.isLoading;
+
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-  const loadAll = async () => {
-    setIsLoading(true);
-    try {
-      const [flightsRes, ferriesRes, roadsRes, schedulesRes] = await Promise.allSettled([
-        apiClient.get('/transport/flights'),
-        apiClient.get('/transport/ferry'),
-        apiClient.get('/transport/roads'),
-        apiClient.get('/transport/schedule'),
-      ]);
-
-      if (flightsRes.status === 'fulfilled') {
-        const d = flightsRes.value.data;
-        setFlights(d?.data || d || []);
-      }
-      if (ferriesRes.status === 'fulfilled') {
-        const d = ferriesRes.value.data;
-        setFerries(d?.data || d || []);
-      }
-      if (roadsRes.status === 'fulfilled') {
-        const d = roadsRes.value.data;
-        setRoads(d?.data || d || []);
-      }
-      if (schedulesRes.status === 'fulfilled') {
-        const d = schedulesRes.value.data;
-        setSchedules(d?.data || d || []);
-      }
-    } catch {
-      // silent
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAll();
-    const id = setInterval(loadAll, 60000);
-    return () => clearInterval(id);
-  }, []);
 
   const formatTime = (iso: string) => {
     const d = new Date(iso);

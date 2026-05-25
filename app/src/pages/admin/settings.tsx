@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Settings, MapPin, Globe, Share2, Key, Shield, FileText,
   Save, Upload, Eye, EyeOff,
@@ -32,29 +33,28 @@ export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('main');
   const [activeCities, setActiveCities] = useState(cityNames);
   const [showApi, setShowApi] = useState<Record<string, boolean>>({});
-  const [logEntries, setLogEntries] = useState<ServerLog[]>([]);
-  const [settings, setSettings] = useState<Record<string, unknown>>({});
 
-  useEffect(() => {
-    adminService.getSettings()
-      .then(s => {
-        const map: Record<string, unknown> = {};
-        s.forEach(item => { map[item.key] = item.value; });
-        setSettings(map);
-      })
-      .catch(() => {});
+  const { data: settingsData } = useQuery({
+    queryKey: ['admin', 'settings'],
+    queryFn: async () => {
+      const [settingsItems, auditData] = await Promise.all([
+        adminService.getSettings(),
+        adminService.getAuditLog({ perPage: 20 }),
+      ]);
+      const map: Record<string, unknown> = {};
+      settingsItems.forEach((item: { key: string; value: unknown }) => { map[item.key] = item.value; });
+      const logEntries: ServerLog[] = (auditData.data ?? []).map((log: Record<string, unknown>) => ({
+        id: String(log.id ?? ''),
+        level: 'info',
+        message: `${String(log.action ?? '')}: ${String(log.target ?? '')}`,
+        timestamp: String(log.timestamp ?? ''),
+      }));
+      return { settings: map, logEntries };
+    },
+  });
 
-    adminService.getAuditLog({ perPage: 20 })
-      .then(({ data }) => {
-        setLogEntries(data.map((log: Record<string, unknown>) => ({
-          id: String(log.id ?? ''),
-          level: 'info',
-          message: `${String(log.action ?? '')}: ${String(log.target ?? '')}`,
-          timestamp: String(log.timestamp ?? ''),
-        })));
-      })
-      .catch(() => {});
-  }, []);
+  const settings = settingsData?.settings ?? {};
+  const logEntries = settingsData?.logEntries ?? [];
 
   const toggleCity = (city: string) => {
     setActiveCities(prev => ({ ...prev, [city]: !prev[city] }));

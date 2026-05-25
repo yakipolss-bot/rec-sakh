@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, X, SlidersHorizontal, Eye, MessageSquare,
@@ -208,30 +209,20 @@ const itemVariants = {
 export default function SearchPage({ q: propQ }: { q?: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const newsQuery = useQuery({
+    queryKey: ['news', 'published'],
+    queryFn: () => newsService.getNews({ status: 'published' }),
+    select: (data) => data.data || [],
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetch() {
-      try {
-        const [newsData, catsData] = await Promise.all([
-          newsService.getNews({ status: 'published' }),
-          categoriesService.getCategories(),
-        ]);
-        if (cancelled) return;
-        setNewsArticles(newsData.data || []);
-        setCategories(catsData);
-      } catch {
-        // silent
-      } finally {
-        if (!cancelled) setDataLoading(false);
-      }
-    }
-    fetch();
-    return () => { cancelled = true; };
-  }, []);
+  const categoriesQuery = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoriesService.getCategories(),
+  });
+
+  const newsArticles = newsQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const isLoading = newsQuery.isLoading || categoriesQuery.isLoading;
 
   const [query, setQuery] = useState(propQ || searchParams.get('q') || '');
   const [debouncedQuery, setDebouncedQuery] = useState(propQ || searchParams.get('q') || '');
@@ -431,7 +422,7 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
     setDisplayCount(ITEMS_PER_PAGE);
   }, []);
 
-  if (dataLoading) {
+  if (isLoading) {
     return (
       <main className="pt-24 pb-8">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6">

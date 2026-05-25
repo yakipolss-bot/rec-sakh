@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Briefcase, Clock, Search, Building2, CircleDollarSign } from 'lucide-react';
@@ -41,29 +42,17 @@ const cardVariants = {
 };
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<'vacancy' | 'resume'>('vacancy');
   const [city, setCity] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetch() {
-      try {
-        const res = await jobsService.getAll({ type: mode, perPage: 50 });
-        if (!cancelled) setJobs(res.data || []);
-      } catch {
-        // silent
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetch();
-    return () => { cancelled = true; };
-  }, [mode]);
+  const { data, isLoading } = useQuery({
+    queryKey: ['jobs', mode],
+    queryFn: () => jobsService.getAll({ type: mode, perPage: 50 }),
+  });
 
+  const jobs = data?.data || [];
   let filtered = jobs;
   if (city) filtered = filtered.filter(j => j.city === city);
   if (schedule) filtered = filtered.filter(j => j.schedule === schedule);
@@ -140,7 +129,7 @@ export default function JobsPage() {
           </div>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
           </div>

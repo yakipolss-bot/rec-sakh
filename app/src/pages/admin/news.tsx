@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search, ChevronLeft, ChevronRight, Plus,
   Eye, Edit, Trash2, CheckCircle, XCircle,
@@ -27,18 +28,16 @@ const statusBadge: Record<string, string> = {
 const ITEMS_PER_PAGE = 10;
 
 export default function AdminNews() {
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Все');
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    newsService.getNews({ perPage: 50, sort: 'createdAt' })
-      .then(({ data }) => setArticles(data))
-      .catch(() => setArticles([]))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: articles = [], isLoading } = useQuery<NewsArticle[]>({
+    queryKey: ['admin', 'news'],
+    queryFn: () => newsService.getNews({ perPage: 50, sort: 'createdAt' })
+      .then(({ data }) => data ?? []),
+  });
 
   const statuses = useMemo(() => ['Все', ...new Set(articles.map(a => a.status))], [articles]);
 
@@ -57,7 +56,7 @@ export default function AdminNews() {
     if (!confirm(`Удалить новость "${article.title}"?`)) return;
     try {
       await newsService.deleteNews(article.id);
-      setArticles(prev => prev.filter(a => a.id !== article.id));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] });
       toast.success('Новость удалена');
     } catch {
       toast.error('Ошибка при удалении');
@@ -67,7 +66,7 @@ export default function AdminNews() {
   const handleStatus = async (article: NewsArticle, status: string) => {
     try {
       await newsService.updateStatus(article.id, status);
-      setArticles(prev => prev.map(a => a.id === article.id ? { ...a, status } : a));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'news'] });
       toast.success(`Статус изменён на «${statusLabels[status]}»`);
     } catch {
       toast.error('Ошибка при смене статуса');
@@ -105,7 +104,7 @@ export default function AdminNews() {
         </select>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <p className="sakh-meta text-center py-8">Загрузка...</p>
       ) : (
         <div className="overflow-x-auto">

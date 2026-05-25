@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sun, Cloud, CloudRain, Snowflake, Wind, Droplets, Gauge, AlertTriangle, ArrowLeft, MapPin, Loader2, Umbrella } from 'lucide-react';
 import weatherService from '@/services/weather.service';
-import type { WeatherData, ForecastDay } from '@/types';
+import type { WeatherData } from '@/types';
 import SEOHead from '@/components/SEOHead';
 
 const weatherIcons: Record<WeatherData['condition'], React.ReactNode> = {
@@ -34,38 +35,27 @@ const conditionColors: Record<WeatherData['condition'], string> = {
 };
 
 export default function WeatherPage() {
-  const [allWeather, setAllWeather] = useState<WeatherData[]>([]);
-  const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const { data: allWeather = [], isLoading } = useQuery({
+    queryKey: ['weather', 'all'],
+    queryFn: () => weatherService.getAll(),
+    refetchInterval: 10 * 60 * 1000,
+  });
+
+  const selectedCity = selectedIndex !== null ? allWeather[selectedIndex] : null;
+
+  const { data: forecast = [] } = useQuery({
+    queryKey: ['weather', 'forecast', selectedCity?.cityCode],
+    queryFn: () => weatherService.getForecast(selectedCity!.cityCode),
+    enabled: !!selectedCity,
+  });
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const data = await weatherService.getAll();
-      if (mounted) {
-        setAllWeather(data);
-        if (data.length > 0) setSelectedIndex(0);
-        setLoading(false);
-      }
-    };
-    load();
-    const interval = setInterval(load, 10 * 60 * 1000);
-    return () => { mounted = false; clearInterval(interval); };
-  }, []);
-
-  useEffect(() => {
-    if (selectedIndex === null) return;
-    const city = allWeather[selectedIndex];
-    if (!city) return;
-    let mounted = true;
-    const loadForecast = async () => {
-      const data = await weatherService.getForecast(city.cityCode);
-      if (mounted) setForecast(data);
-    };
-    loadForecast();
-    return () => { mounted = false; };
-  }, [selectedIndex, allWeather]);
+    if (allWeather.length > 0 && selectedIndex === null) {
+      setSelectedIndex(0);
+    }
+  }, [allWeather, selectedIndex]);
 
   const currentWeather = selectedIndex !== null ? allWeather[selectedIndex] : null;
   const stormWarnings = currentWeather?.condition === 'storm';
@@ -106,7 +96,7 @@ export default function WeatherPage() {
           ))}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 size={24} className="animate-spin" style={{ color: 'var(--text-secondary)' }} />
           </div>

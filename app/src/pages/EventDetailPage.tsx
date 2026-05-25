@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, CalendarDays, Clock, Tag } from 'lucide-react';
 import { format } from 'date-fns';
@@ -9,28 +9,14 @@ import SEOHead from '@/components/SEOHead';
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [event, setEvent] = useState<ArticleEvent | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    async function fetch() {
-      try {
-        const data = await eventsService.getById(id);
-        if (!cancelled) setEvent(data);
-      } catch {
-        if (!cancelled) setError(true);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetch();
-    return () => { cancelled = true; };
-  }, [id]);
+  const { data: event, isLoading, isError } = useQuery({
+    queryKey: ['event', id],
+    queryFn: () => eventsService.getById(id!),
+    enabled: !!id,
+  });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pt-24 pb-8 flex justify-center">
         <div className="w-8 h-8 border-2 border-[var(--accent-ocean)] border-t-transparent animate-spin" />
@@ -38,7 +24,7 @@ export default function EventDetailPage() {
     );
   }
 
-  if (error || !event) {
+  if (isError || !event) {
     return (
       <div className="pt-20 pb-8">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6">

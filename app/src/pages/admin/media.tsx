@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Upload, Trash2, Image, FileText, Copy, Download, Search, X, ChevronLeft, ChevronRight,
 } from 'lucide-react';
@@ -10,8 +11,7 @@ import type { MediaFile } from '@/models/admin/MediaFile';
 const PER_PAGE = 20;
 
 export default function AdminMedia() {
-  const [files, setFiles] = useState<MediaFile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -20,30 +20,25 @@ export default function AdminMedia() {
   const dropRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { data: files = [], isLoading } = useQuery<MediaFile[]>({
+    queryKey: ['admin', 'media'],
+    queryFn: () => adminService.getMediaList().catch(() => []),
+  });
+
   const filtered = files.filter(f =>
     !search || f.filename.toLowerCase().includes(search.toLowerCase())
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  useEffect(() => { setPage(1); }, [search]);
-
-  const loadFiles = useCallback(() => {
-    setLoading(true);
-    adminService.getMediaList()
-      .then(setFiles)
-      .catch(() => setFiles([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { loadFiles(); }, [loadFiles]);
+  const resetPage = () => setPage(1);
 
   const upload = async (file: File) => {
     setUploading(true);
     try {
       await adminService.uploadFile(file);
       toast.success(`Загружен: ${file.name}`);
-      loadFiles();
+      queryClient.invalidateQueries({ queryKey: ['admin', 'media'] });
     } catch {
       toast.error(`Ошибка: ${file.name}`);
     } finally {
@@ -67,7 +62,7 @@ export default function AdminMedia() {
     if (!confirm(`Удалить "${name}"?`)) return;
     try {
       await adminService.deleteMedia(name);
-      setFiles(prev => prev.filter(f => f.filename !== name));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'media'] });
       setSelected(prev => { const next = new Set(prev); next.delete(name); return next; });
       toast.success('Удалён');
     } catch {
@@ -79,12 +74,10 @@ export default function AdminMedia() {
     if (selected.size === 0) return;
     if (!confirm(`Удалить ${selected.size} файл(ов)?`)) return;
     for (const name of selected) {
-      try {
-        await adminService.deleteMedia(name);
-      } catch { /* skip */ }
+      try { await adminService.deleteMedia(name); } catch { /* skip */ }
     }
     setSelected(new Set());
-    loadFiles();
+    queryClient.invalidateQueries({ queryKey: ['admin', 'media'] });
     toast.success(`Удалено ${selected.size} файл(ов)`);
   };
 
@@ -142,16 +135,16 @@ export default function AdminMedia() {
           <Search className="sakh-search__icon" size={14} />
           <input
             type="text" placeholder="Поиск файлов..." className="sakh-search__input !h-9 !text-xs !pl-8"
-            value={search} onChange={e => setSearch(e.target.value)}
+            value={search} onChange={e => { setSearch(e.target.value); resetPage(); }}
           />
           {search && (
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]" onClick={() => setSearch('')}>
+            <button className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]" onClick={() => { setSearch(''); resetPage(); }}>
               <X size={12} />
             </button>
           )}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <p className="sakh-meta text-center py-8">Загрузка...</p>
         ) : filtered.length === 0 ? (
           <div className="sakh-card p-8 text-center">

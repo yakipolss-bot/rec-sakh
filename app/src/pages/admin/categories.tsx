@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FolderTree, Plus, Edit, Trash2, X, Check,
 } from 'lucide-react';
@@ -8,24 +9,16 @@ import categoriesService from '@/services/categories.service';
 import type { Category } from '@/models/categories/Category';
 
 export default function AdminCategories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', slug: '', description: '', parentId: '' });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  const loadCategories = () => {
-    setLoading(true);
-    categoriesService.getCategories()
-      .then(setCategories)
-      .catch(() => setCategories([]))
-      .finally(() => setLoading(false));
-  };
+  const { data: categories = [], isLoading } = useQuery<Category[]>({
+    queryKey: ['admin', 'categories'],
+    queryFn: () => categoriesService.getCategories().catch(() => []),
+  });
 
   const resetForm = () => {
     setForm({ name: '', slug: '', description: '', parentId: '' });
@@ -51,7 +44,7 @@ export default function AdminCategories() {
         toast.success('Рубрика создана');
       }
       resetForm();
-      loadCategories();
+      queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
     } catch {
       toast.error('Ошибка при сохранении');
     } finally {
@@ -63,7 +56,7 @@ export default function AdminCategories() {
     if (!confirm(`Удалить рубрику "${cat.name}"?`)) return;
     try {
       await categoriesService.deleteCategory(cat.id);
-      loadCategories();
+      queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
       toast.success(`Рубрика "${cat.name}" удалена`);
     } catch {
       toast.error('Нельзя удалить рубрику — возможно, к ней привязаны новости');
@@ -128,7 +121,7 @@ export default function AdminCategories() {
         </motion.div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <p className="sakh-meta text-center py-8">Загрузка...</p>
       ) : categories.length === 0 ? (
         <div className="sakh-card p-8 text-center">

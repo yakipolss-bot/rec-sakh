@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Shield, CheckCircle, XCircle, AlertTriangle,
   Activity, Ban, Flag, Sliders,
@@ -36,23 +37,25 @@ const actionStyle: Record<string, string> = {
 };
 
 export default function AdminModeration() {
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState(0);
-  const [queue, setQueue] = useState<ModerationQueueItem[]>([]);
-  const [rules, setRules] = useState<ModerationRule[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      adminService.getModerationQueue({ perPage: 50 }),
-      adminService.getModerationRules(),
-    ])
-      .then(([queueData, rulesData]) => {
-        setQueue(queueData.data);
-        setRules(rulesData);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'moderation'],
+    queryFn: async () => {
+      const [queueData, rulesData] = await Promise.all([
+        adminService.getModerationQueue({ perPage: 50 }),
+        adminService.getModerationRules(),
+      ]);
+      return {
+        queue: (queueData.data ?? []) as ModerationQueueItem[],
+        rules: (rulesData ?? []) as ModerationRule[],
+      };
+    },
+  });
+
+  const queue = data?.queue ?? [];
+  const rules = data?.rules ?? [];
 
   const contentReports = queue.filter(r => r.contentType !== 'Пользователь' && r.contentType !== 'user');
   const userReports = queue.filter(r => r.contentType === 'Пользователь' || r.contentType === 'user');
@@ -61,7 +64,7 @@ export default function AdminModeration() {
   const handleReview = async (itemId: string, status: 'approved' | 'rejected') => {
     try {
       await adminService.reviewModeration(itemId, { status });
-      setQueue(prev => prev.map(r => r.id === itemId ? { ...r, status } : r));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'moderation'] });
       toast.success(`Жалоба ${status === 'approved' ? 'одобрена' : 'отклонена'}`);
     } catch {
       toast.error('Ошибка при обработке жалобы');
@@ -71,7 +74,7 @@ export default function AdminModeration() {
   const toggleRule = async (rule: ModerationRule) => {
     try {
       await adminService.updateModerationRule(rule.id, { isActive: !rule.isActive });
-      setRules(prev => prev.map(r => r.id === rule.id ? { ...r, isActive: !r.isActive } : r));
+      queryClient.invalidateQueries({ queryKey: ['admin', 'moderation'] });
       toast.success(`Правило "${rule.ruleType}" ${rule.isActive ? 'отключено' : 'активировано'}`);
     } catch {
       toast.error('Ошибка при обновлении правила');
@@ -111,9 +114,9 @@ export default function AdminModeration() {
         ))}
       </div>
 
-      {loading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
+      {isLoading && <p className="sakh-meta text-center py-8">Загрузка...</p>}
 
-      {!loading && tab === 0 && (
+      {!isLoading && tab === 0 && (
         <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -177,7 +180,7 @@ export default function AdminModeration() {
         </motion.div>
       )}
 
-      {!loading && tab === 1 && (
+      {!isLoading && tab === 1 && (
         <motion.div key="users" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -241,7 +244,7 @@ export default function AdminModeration() {
         </motion.div>
       )}
 
-      {!loading && tab === 2 && (
+      {!isLoading && tab === 2 && (
         <motion.div key="auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {autoStats.map((stat, i) => {
@@ -314,7 +317,7 @@ export default function AdminModeration() {
         </motion.div>
       )}
 
-      {!loading && tab === 3 && (
+      {!isLoading && tab === 3 && (
         <motion.div key="rules" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

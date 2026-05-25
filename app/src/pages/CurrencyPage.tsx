@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, TrendingUp, TrendingDown, ArrowRightLeft, Loader2 } from 'lucide-react';
@@ -18,26 +19,12 @@ export default function CurrencyPage() {
   const [amount, setAmount] = useState('100');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('RUB');
-  const [rates, setRates] = useState<CurrencyRate[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const loadRates = async () => {
-    try {
-      setLoading(true);
-      const data = await currencyService.getRates();
-      if (data.length > 0) {
-        setRates(data);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadRates();
-    const interval = setInterval(loadRates, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data: rates = [], isLoading } = useQuery<CurrencyRate[]>({
+    queryKey: ['currency', 'rates'],
+    queryFn: () => currencyService.getRates(),
+    refetchInterval: 5 * 60 * 1000,
+  });
 
   const history = useMemo(() => rates.length > 0
     ? currencyService.generateHistory(rates.find(r => r.code === 'USD')?.rate ?? 0)
@@ -94,7 +81,7 @@ export default function CurrencyPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {loading && rates.length === 0 && (
+                    {isLoading && rates.length === 0 && (
                       <tr>
                         <td colSpan={3} className="p-8 text-center">
                           <Loader2 size={20} className="inline animate-spin text-[var(--accent-ocean)]" />
@@ -145,7 +132,7 @@ export default function CurrencyPage() {
             >
               <h3 className="sakh-caption mb-4">График динамики USD</h3>
               <div className="bg-[var(--bg-primary)] p-4 border border-[var(--border-color)]">
-                {loading && history.length === 0 ? (
+                {isLoading && history.length === 0 ? (
                   <div className="flex items-center justify-center" style={{ height: 160 }}>
                     <Loader2 size={20} className="animate-spin text-[var(--accent-ocean)]" />
                   </div>
