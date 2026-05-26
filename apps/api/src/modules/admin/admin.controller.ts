@@ -150,7 +150,7 @@ export class AdminController {
   // ====== Staff ======
 
   @Get('staff')
-  @Roles('admin', 'superadmin', 'chief_editor')
+  @Roles('admin', 'superadmin')
   @ApiOperation({ summary: 'Сотрудники редакции' })
   async getStaff(@Query() query: AdminQueryDto) {
     return this.staffService.findAll(query);
@@ -164,7 +164,7 @@ export class AdminController {
   }
 
   @Get('staff/:id')
-  @Roles('admin', 'superadmin', 'chief_editor')
+  @Roles('admin', 'superadmin')
   @ApiOperation({ summary: 'Карточка сотрудника' })
   async getStaffById(@Param('id') id: string) {
     return this.staffService.findById(id);
@@ -189,7 +189,7 @@ export class AdminController {
   }
 
   @Post('staff/:id/kpi')
-  @Roles('admin', 'superadmin', 'chief_editor')
+  @Roles('admin', 'superadmin')
   @ApiOperation({ summary: 'Обновить KPI' })
   async updateStaffKpi(
     @Param('id') id: string,
@@ -312,7 +312,7 @@ export class AdminController {
   // ====== Staff Schedule ======
 
   @Get('staff/schedule')
-  @Roles('admin', 'superadmin', 'chief_editor')
+  @Roles('admin', 'superadmin')
   @ApiOperation({ summary: 'График работы сотрудников' })
   async getStaffSchedule() {
     const staff = await this.staffService.findAll({});
@@ -332,7 +332,7 @@ export class AdminController {
   }
 
   @Post('staff/schedule')
-  @Roles('admin', 'superadmin', 'chief_editor')
+  @Roles('admin', 'superadmin')
   @ApiOperation({ summary: 'Обновить смену сотрудника' })
   async createStaffSchedule(@Body() dto: { staffId: string; date: string; shift: string }) {
     const staff = await this.staffService.findById(dto.staffId);
