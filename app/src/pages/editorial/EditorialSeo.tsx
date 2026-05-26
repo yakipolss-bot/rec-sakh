@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, RefreshCw, Download, AlertTriangle, Info, Plus, Trash2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -32,8 +33,14 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialSeo() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>('redirects');
+  const { section } = useParams();
+  const sectionToTab: Record<string, Tab> = { redirects: 'redirects', 'broken-links': 'broken', sitemap: 'sitemap', 'structured-data': 'schema' };
+  const [activeTab, setActiveTab] = useState<Tab>((section && sectionToTab[section]) || 'redirects');
   const [showAddRedirect, setShowAddRedirect] = useState(false);
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
   const [newSource, setNewSource] = useState('');
   const [newTarget, setNewTarget] = useState('');
   const [sitemapUrl, setSitemapUrl] = useState('/sitemap.xml');

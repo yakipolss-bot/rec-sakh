@@ -26,8 +26,8 @@ const navSections = [
     label: 'Контент',
     items: [
       { path: '/editorial/events', icon: Calendar, label: 'Афиша' },
-      { path: '/editorial/media', icon: Camera, label: 'Фото' },
-      { path: '/editorial/media?tab=video', icon: Video, label: 'Видео' },
+      { path: '/editorial/media/photos', icon: Camera, label: 'Фото' },
+      { path: '/editorial/media/videos', icon: Video, label: 'Видео' },
       { path: '/editorial/comments', icon: MessageSquare, label: 'Комментарии' },
       { path: '/editorial/ads', icon: DollarSign, label: 'Объявления' },
     ],

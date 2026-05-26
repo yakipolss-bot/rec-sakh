@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -38,7 +39,13 @@ const actionStyle: Record<string, string> = {
 
 export default function AdminModeration() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState(0);
+  const { section } = useParams();
+  const sectionToIndex: Record<string, number> = { content: 0, users: 1, automated: 2, rules: 3 };
+  const [tab, setTab] = useState((section && sectionToIndex[section] !== undefined) ? sectionToIndex[section] : 0);
+
+  useEffect(() => {
+    if (section && sectionToIndex[section] !== undefined) setTab(sectionToIndex[section]);
+  }, [section]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'moderation'],

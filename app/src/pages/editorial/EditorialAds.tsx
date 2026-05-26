@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { DollarSign, CheckCircle, XCircle, Eye, BarChart3, Loader2 } from 'lucide-react';
@@ -33,7 +34,13 @@ interface AdStats {
 
 export default function EditorialAds() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>('moderation');
+  const { section } = useParams();
+  const sectionToTab: Record<string, Tab> = { moderation: 'moderation', categories: 'categories', stats: 'stats' };
+  const [activeTab, setActiveTab] = useState<Tab>((section && sectionToTab[section]) || 'moderation');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
 
   const { data: pendingData, isLoading: pendingLoading } = useQuery({
     queryKey: ['editorial', 'ads-pending'],

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -19,7 +20,13 @@ const tabs: { key: AdTab; label: string }[] = [
 ];
 
 export default function AdminAdvertising() {
-  const [tab, setTab] = useState<AdTab>('campaigns');
+  const { section } = useParams();
+  const sectionToTab: Record<string, AdTab> = { campaigns: 'campaigns', placements: 'placements', clients: 'clients', stats: 'stats' };
+  const [tab, setTab] = useState<AdTab>((section && sectionToTab[section]) || 'campaigns');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setTab(sectionToTab[section]);
+  }, [section]);
 
   const { data: _data, isLoading } = useQuery({
     queryKey: ['admin', 'advertising'],

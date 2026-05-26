@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -30,7 +31,13 @@ const cityNames: Record<string, boolean> = Object.fromEntries(
 );
 
 export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState('main');
+  const { section } = useParams();
+  const sectionToTab: Record<string, string> = { general: 'main', regions: 'regions', seo: 'seo', social: 'social', api: 'api', backup: 'backup', logs: 'logs' };
+  const [activeTab, setActiveTab] = useState((section && sectionToTab[section]) || 'main');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
   const [activeCities, setActiveCities] = useState(cityNames);
   const [showApi, setShowApi] = useState<Record<string, boolean>>({});
 

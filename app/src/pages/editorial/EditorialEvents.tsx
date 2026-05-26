@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Calendar, Info, Plus, Edit2, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react';
@@ -16,7 +17,13 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialEvents() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>('all');
+  const { section } = useParams();
+  const sectionToTab: Record<string, Tab> = { all: 'all', moderation: 'moderation', create: 'create' };
+  const [activeTab, setActiveTab] = useState<Tab>((section && sectionToTab[section]) || 'all');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
   const { data: eventsData, isLoading } = useQuery({
     queryKey: ['editorial', 'events'],
     queryFn: () => adminService.getEvents().then(r => (r.data || []) as EventItem[]),

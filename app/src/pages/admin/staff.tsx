@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -23,8 +24,14 @@ const defaultMatrix: Record<string, boolean[]> = {
 };
 
 export default function AdminStaff() {
+  const { section } = useParams();
+  const sectionToTab: Record<string, 'staff' | 'schedule' | 'permissions'> = { list: 'staff', schedule: 'schedule', permissions: 'permissions' };
   const [matrix, setMatrix] = useState(defaultMatrix);
-  const [activeTab, setActiveTab] = useState<'staff' | 'schedule' | 'permissions'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'schedule' | 'permissions'>((section && sectionToTab[section]) || 'staff');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
 
   const { data: staffRes, isLoading } = useQuery({
     queryKey: ['admin', 'staff'],

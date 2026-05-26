@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -19,7 +20,13 @@ const tabs: { value: Tab; label: string }[] = [
 
 export default function EditorialMedia() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>('photos');
+  const { section } = useParams();
+  const sectionToTab: Record<string, Tab> = { photos: 'photos', videos: 'videos', albums: 'albums' };
+  const [activeTab, setActiveTab] = useState<Tab>((section && sectionToTab[section]) || 'photos');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);

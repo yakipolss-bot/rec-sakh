@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -44,7 +45,13 @@ const statusClass: Record<string, string> = {
 };
 
 export default function AdminSystem() {
-  const [activeTab, setActiveTab] = useState('cache');
+  const { section } = useParams();
+  const sectionToTab: Record<string, string> = { cache: 'cache', queue: 'queue', search: 'search', media: 'media', security: 'security', updates: 'updates' };
+  const [activeTab, setActiveTab] = useState((section && sectionToTab[section]) || 'cache');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
   const { data: health } = useQuery({
     queryKey: ['admin', 'health'],
     queryFn: () => adminService.getHealth().catch(() => null),

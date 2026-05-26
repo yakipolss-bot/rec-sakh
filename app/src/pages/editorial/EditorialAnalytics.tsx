@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -38,7 +39,13 @@ const tabs: { value: Tab; label: string }[] = [
 ];
 
 export default function EditorialAnalytics() {
-  const [activeTab, setActiveTab] = useState<Tab>('traffic');
+  const { section } = useParams();
+  const sectionToTab: Record<string, Tab> = { traffic: 'traffic', content: 'content', authors: 'authors', search: 'search', realtime: 'online' };
+  const [activeTab, setActiveTab] = useState<Tab>((section && sectionToTab[section]) || 'traffic');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
 
   const { data: traffic, isLoading } = useQuery({
     queryKey: ['editorial', 'analytics-traffic'],

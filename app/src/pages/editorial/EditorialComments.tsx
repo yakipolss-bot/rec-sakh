@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { MessageSquare, CheckCircle, XCircle, Shield, Ban, Search } from 'lucide-react';
@@ -32,9 +33,15 @@ const statusBadge: Record<string, string> = {
 
 export default function EditorialComments() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>('all');
+  const { section } = useParams();
+  const sectionToTab: Record<string, Tab> = { moderation: 'pending', reported: 'reported', banned: 'banned', blacklist: 'blacklist' };
+  const [activeTab, setActiveTab] = useState<Tab>((section && sectionToTab[section]) || 'all');
   const [search, setSearch] = useState('');
   const [newWord, setNewWord] = useState('');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setActiveTab(sectionToTab[section]);
+  }, [section]);
 
   const { data: commentsData, isLoading } = useQuery({
     queryKey: ['editorial', 'comments'],

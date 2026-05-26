@@ -140,14 +140,23 @@ function AnimatedRoutes() {
               <Route path=":id/comments" element={<EditorialNewsComments />} />
             </Route>
             <Route path="categories" element={<EditorialCategories />} />
+            <Route path="categories/:section" element={<EditorialCategories />} />
             <Route path="tags" element={<EditorialTags />} />
+            <Route path="tags/:section" element={<EditorialTags />} />
             <Route path="media" element={<EditorialMedia />} />
+            <Route path="media/:section" element={<EditorialMedia />} />
             <Route path="comments" element={<EditorialComments />} />
+            <Route path="comments/:section" element={<EditorialComments />} />
             <Route path="analytics" element={<EditorialAnalytics />} />
+            <Route path="analytics/:section" element={<EditorialAnalytics />} />
             <Route path="seo" element={<EditorialSeo />} />
+            <Route path="seo/:section" element={<EditorialSeo />} />
             <Route path="ads" element={<EditorialAds />} />
+            <Route path="ads/:section" element={<EditorialAds />} />
             <Route path="events" element={<EditorialEvents />} />
+            <Route path="events/:section" element={<EditorialEvents />} />
             <Route path="newsletters" element={<EditorialNewsletters />} />
+            <Route path="newsletters/:section" element={<EditorialNewsletters />} />
           </Route>
 
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['chief_editor', 'moderator', 'admin', 'superadmin']}><AdminLayout /></ProtectedRoute>}>
@@ -155,17 +164,25 @@ function AnimatedRoutes() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="users/:id" element={<AdminUserId />} />
             <Route path="users/roles" element={<AdminUsersRoles />} />
+            <Route path="users/groups" element={<AdminUsers />} />
             <Route path="staff" element={<AdminStaff />} />
+            <Route path="staff/:section" element={<AdminStaff />} />
             <Route path="moderation" element={<AdminModeration />} />
+            <Route path="moderation/:section" element={<AdminModeration />} />
             <Route path="content" element={<AdminContent />} />
+            <Route path="content/:section" element={<AdminContent />} />
             <Route path="advertising" element={<AdminAdvertising />} />
+            <Route path="advertising/:section" element={<AdminAdvertising />} />
             <Route path="billing" element={<AdminBilling />} />
+            <Route path="billing/:section" element={<AdminBilling />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="settings/:section" element={<AdminSettings />} />
             <Route path="news" element={<AdminNews />} />
             <Route path="comments" element={<AdminComments />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="media" element={<AdminMedia />} />
             <Route path="system" element={<AdminSystem />} />
+            <Route path="system/:section" element={<AdminSystem />} />
           </Route>
         </Routes>
       </motion.div>

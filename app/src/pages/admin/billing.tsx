@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -44,7 +45,13 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function AdminBilling() {
-  const [tab, setTab] = useState<BillingTab>('transactions');
+  const { section } = useParams();
+  const sectionToTab: Record<string, BillingTab> = { transactions: 'transactions', refunds: 'refunds', reports: 'reports', tariffs: 'tariffs' };
+  const [tab, setTab] = useState<BillingTab>((section && sectionToTab[section]) || 'transactions');
+
+  useEffect(() => {
+    if (section && sectionToTab[section]) setTab(sectionToTab[section]);
+  }, [section]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'billing'],
