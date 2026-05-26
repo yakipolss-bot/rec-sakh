@@ -36,6 +36,7 @@ export default function MediaPage() {
   }, []);
 
   const photos = mediaFiles.filter(f => /\.(jpg|jpeg|png|webp|gif)$/i.test(f.filename));
+  const videos = mediaFiles.filter(f => /\.(mp4|webm|mov|avi|mkv)$/i.test(f.filename));
 
   return (
     <div className="pt-20 pb-8">
@@ -130,13 +131,38 @@ export default function MediaPage() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="sakh-card p-6">
-                <div className="sakh-empty">
-                  <Video size={48} className="sakh-empty__icon" />
-                  <h3 className="sakh-empty__title">Видео пока не добавлены</h3>
-                  <p className="sakh-empty__description">Видеоматериалы появятся после публикации.</p>
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 size={20} className="animate-spin text-[var(--accent-ocean)]" />
                 </div>
-              </div>
+              ) : videos.length === 0 ? (
+                <div className="sakh-card p-6">
+                  <div className="sakh-empty">
+                    <Video size={48} className="sakh-empty__icon" />
+                    <h3 className="sakh-empty__title">Видео пока не добавлены</h3>
+                    <p className="sakh-empty__description">Видеоматериалы появятся после публикации.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {videos.map(video => (
+                    <a
+                      key={video.filename}
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="sakh-card group overflow-hidden"
+                    >
+                      <div className="relative aspect-video bg-[var(--bg-primary)] flex items-center justify-center">
+                        <Video size={32} className="text-[var(--accent-ocean)] opacity-40 group-hover:opacity-80 transition-opacity" />
+                      </div>
+                      <div className="p-3">
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">{video.filename}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Database, ListOrdered, Search, Image,
+  Database, Search, Image,
   ShieldAlert, RefreshCw, Trash2, Thermometer,
   CheckCircle, Zap, Download,
 } from 'lucide-react';
@@ -14,7 +14,6 @@ import type { AuditLogEntry } from '@/models/admin/AuditLogEntry';
 
 const tabs = [
   { id: 'cache', label: 'Кэш', icon: Database },
-  { id: 'queue', label: 'Очереди', icon: ListOrdered },
   { id: 'search', label: 'Поиск', icon: Search },
   { id: 'media', label: 'Медиа', icon: Image },
   { id: 'security', label: 'Безопасность', icon: ShieldAlert },
@@ -23,7 +22,7 @@ const tabs = [
 
 export default function AdminSystem() {
   const { section } = useParams();
-  const sectionToTab: Record<string, string> = { cache: 'cache', queue: 'queue', search: 'search', media: 'media', security: 'security', updates: 'updates' };
+  const sectionToTab: Record<string, string> = { cache: 'cache', search: 'search', media: 'media', security: 'security', updates: 'updates' };
   const [activeTab, setActiveTab] = useState((section && sectionToTab[section]) || 'cache');
 
   useEffect(() => {
@@ -103,18 +102,6 @@ export default function AdminSystem() {
             <div className="flex gap-3">
               <button className="sakh-btn sakh-btn--primary sakh-btn--md" onClick={() => handleAction(adminService.clearCache, 'Кэш очищен')}><Trash2 size={14} /> Очистить кэш</button>
               <button className="sakh-btn sakh-btn--secondary sakh-btn--md" onClick={() => handleAction(adminService.warmCache, 'Кэш прогрет')}><Zap size={14} /> Прогреть кэш</button>
-            </div>
-          </motion.div>
-        )}
-
-        {activeTab === 'queue' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="sakh-card p-6">
-              <div className="sakh-empty">
-                <ListOrdered size={48} className="sakh-empty__icon" />
-                <h3 className="sakh-empty__title">Нет активных задач</h3>
-                <p className="sakh-empty__description">Фоновые задачи и очередь обработки появятся здесь.</p>
-              </div>
             </div>
           </motion.div>
         )}
