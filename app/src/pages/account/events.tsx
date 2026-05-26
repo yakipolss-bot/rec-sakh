@@ -23,7 +23,7 @@ export default function AccountEvents() {
     let cancelled = false;
     async function fetch() {
       try {
-        const res = await eventsService.getAll({ perPage: 20, sort: 'date' });
+        const res = await eventsService.getAll({ perPage: 20, sort: 'startDate' });
         if (!cancelled) {
           setEvents(res.data || []);
         }
@@ -78,8 +78,8 @@ export default function AccountEvents() {
               <div className="space-y-3">
                 {events.map(event => (
                   <div key={event.id} className="sakh-card p-4 flex items-start gap-4">
-                    {event.image && (
-                      <img src={event.image} alt="" className="w-20 h-20 object-cover shrink-0 hidden sm:block" />
+                    {event.imageUrl && (
+                      <img src={event.imageUrl} alt="" className="w-20 h-20 object-cover shrink-0 hidden sm:block" />
                     )}
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-[var(--text-primary)]">{event.title}</h4>
@@ -87,22 +87,20 @@ export default function AccountEvents() {
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
                         <span className="sakh-meta text-xs flex items-center gap-1">
                           <Calendar size={10} />
-                          {format(new Date(event.date), 'd MMM yyyy', { locale: ru })}
+                          {format(new Date(event.startDate), 'd MMM yyyy', { locale: ru })}
                         </span>
-                        {event.time && (
-                          <span className="sakh-meta text-xs flex items-center gap-1">
-                            <Clock size={10} />
-                            {event.time}
-                          </span>
-                        )}
-                        {event.venue && (
+                        <span className="sakh-meta text-xs flex items-center gap-1">
+                          <Clock size={10} />
+                          {format(new Date(event.startDate), 'HH:mm', { locale: ru })}
+                        </span>
+                        {event.venueName && (
                           <span className="sakh-meta text-xs flex items-center gap-1">
                             <MapPin size={10} />
-                            {event.venue}
+                            {event.venueName}
                           </span>
                         )}
-                        {event.price && (
-                          <span className="sakh-tag sakh-tag--accent text-xs">{event.price}</span>
+                        {event.price != null && (
+                          <span className="sakh-tag sakh-tag--accent text-xs">{event.price} {event.currency}</span>
                         )}
                       </div>
                     </div>

@@ -5,12 +5,14 @@ import { Send, Plus, Mail, RefreshCw, BarChart3, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
 
+interface NewsletterStats { sentCount: number; openedCount: number; clickedCount: number; unsubscribedCount: number; }
+
 interface NewsletterData {
   id: string;
   title: string;
   type: string;
   status: string;
-  stats?: { sentCount: number; openedCount: number };
+  stats?: NewsletterStats;
   createdAt: string;
 }
 
@@ -81,7 +83,7 @@ export default function EditorialNewsletters() {
           <p className="sakh-meta mt-1">Управление email-рассылками</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={fetch} className="sakh-btn sakh-btn--ghost sakh-btn--md" title="Обновить">
+          <button onClick={() => queryClient.invalidateQueries({ queryKey: ['editorial', 'newsletters'] })} className="sakh-btn sakh-btn--ghost sakh-btn--md" title="Обновить">
             <RefreshCw size={14} />
           </button>
           <button onClick={() => setShowCreate(!showCreate)} className="sakh-btn sakh-btn--primary sakh-btn--md">
@@ -196,7 +198,7 @@ export default function EditorialNewsletters() {
                       <button
                         onClick={async () => {
                           try {
-                            const stats = await adminService.getNewsletterStats(n.id);
+                            const stats = await adminService.getNewsletterStats(n.id) as unknown as NewsletterStats;
                             setSelected({ ...n, stats });
                           } catch { setSelected(n); }
                         }}

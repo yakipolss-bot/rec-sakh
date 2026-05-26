@@ -4,6 +4,7 @@ export interface UserProfile {
   email: string;
   phone?: string;
   city?: string;
+  bio?: string;
   role: string;
   avatarUrl: string | null;
   avatar?: string;

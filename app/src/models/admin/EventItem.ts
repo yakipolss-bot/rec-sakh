@@ -12,6 +12,7 @@ export interface EventItem {
   ticketUrl?: string;
   status: string;
   category?: { id: string; name: string };
+  organizer?: { id: string; name: string };
   _count?: { subscribers: number };
   createdAt?: string;
 }

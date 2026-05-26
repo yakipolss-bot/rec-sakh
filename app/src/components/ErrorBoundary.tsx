@@ -42,7 +42,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           >
             Обновить страницу
           </button>
-          {process.env.NODE_ENV === 'development' && this.state.error && (
+          {import.meta.env.DEV && this.state.error && (
             <pre className="mt-6 text-left text-sm text-red-500 max-w-xl overflow-auto">
               {this.state.error.message}
               {'\n'}

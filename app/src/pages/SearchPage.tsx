@@ -310,7 +310,7 @@ export default function SearchPage({ q: propQ }: { q?: string }) {
     return ['шторм', 'транспорт', 'погода', 'спорт', 'Корсаков', 'рыболовство'];
   }, [debouncedQuery]);
 
-  const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     debounceTimer.current = setTimeout(() => {

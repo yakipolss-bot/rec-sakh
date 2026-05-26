@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('auth:logout', handleAuthChange);
     window.addEventListener('storage', (e) => {
       if (e.key === 'accessToken' || e.key === 'refreshToken') {
-        doInit();
+        init();
       }
     });
 

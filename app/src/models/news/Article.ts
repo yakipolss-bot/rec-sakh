@@ -6,9 +6,9 @@ export interface Article {
   content: string;
   mainImageUrl: string | null;
   categoryId: string | null;
-  category?: { id: string; name: string; slug: string } | null;
+  category: { id: string; name: string; slug: string } | null;
   authorId: string | null;
-  author?: { id: string; name: string; avatarUrl: string | null; role?: string } | null;
+  author: { id: string; name: string; avatarUrl: string | null; role?: string } | null;
   city: string | null;
   status: string;
   isUrgent: boolean;

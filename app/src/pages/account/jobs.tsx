@@ -77,10 +77,10 @@ export default function AccountJobs() {
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium text-[var(--text-primary)]">{job.title}</h4>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          {job.company && (
+                          {job.companyName && (
                             <span className="sakh-meta text-xs flex items-center gap-1">
                               <Building2 size={10} />
-                              {job.company}
+                              {job.companyName}
                             </span>
                           )}
                           {job.city && (
@@ -89,10 +89,10 @@ export default function AccountJobs() {
                               {job.city}
                             </span>
                           )}
-                          {job.salary && (
+                          {(job.salaryMin != null || job.salaryMax != null) && (
                             <span className="sakh-tag sakh-tag--accent text-xs flex items-center gap-1">
                               <Wallet size={10} />
-                              {job.salary}
+                              {job.salaryMin != null ? job.salaryMin : 'до'} – {job.salaryMax != null ? `${job.salaryMax} ${job.currency}` : `${job.currency}`}
                             </span>
                           )}
                         </div>

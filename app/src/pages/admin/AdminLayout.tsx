@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import RouteGuard from '@/components/RouteGuard';
+import { useQuery } from '@tanstack/react-query';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Briefcase, Shield, FileText,
@@ -8,6 +8,7 @@ import {
   Menu, X, ChevronRight, Newspaper, MessageSquare, FolderTree, Image,
 } from 'lucide-react';
 import { usersService } from '@/services';
+import RouteGuard from '@/components/RouteGuard';
 import type { UserProfile } from '@/models/users/UserProfile';
 
 const navItems = [
@@ -40,10 +41,21 @@ export default function AdminLayout() {
     return location.pathname.startsWith(item.path);
   };
 
-  const activeItem = navItems.find(isActive);
+  const userRole = user?.role;
+  const visibleNavItems = navItems.filter(item => {
+    if (userRole === 'chief_editor') {
+      return ['/admin', '/admin/news', '/admin/comments', '/admin/categories', '/admin/media', '/admin/content'].includes(item.path);
+    }
+    if (userRole === 'moderator') {
+      return ['/admin', '/admin/moderation'].includes(item.path);
+    }
+    return true;
+  });
+
+  const activeItem = visibleNavItems.find(isActive);
 
   return (
-    <RouteGuard roles={['admin', 'superadmin']}>
+    <RouteGuard roles={['chief_editor', 'moderator', 'admin', 'superadmin']}>
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <AnimatePresence>
         {sidebarOpen && (
@@ -89,12 +101,12 @@ export default function AdminLayout() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="sakh-caption text-[var(--text-primary)] truncate">{user?.name || 'Загрузка...'}</p>
-            <p className="sakh-meta">{user?.role === 'admin' ? 'Администратор' : user?.role || ''}</p>
+            <p className="sakh-meta">{user?.role === 'admin' ? 'Администратор' : user?.role === 'chief_editor' ? 'Главный редактор' : user?.role === 'moderator' ? 'Модератор' : user?.role || ''}</p>
           </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5 custom-scrollbar">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item);
             return (
@@ -150,7 +162,7 @@ export default function AdminLayout() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
             className="max-w-[1600px] mx-auto"
           >
             <Outlet />

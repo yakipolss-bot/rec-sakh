@@ -16,10 +16,10 @@ export default function NewsCard({ article, variant = 'default', index = 0 }: Ne
   const { isFavorite, toggleFavorite } = useFavorites();
   const fav = isFavorite(article.id);
 
-  const formattedDate = formatDistanceToNow(new Date(article.publishedAt), {
+  const formattedDate = article.publishedAt ? formatDistanceToNow(new Date(article.publishedAt), {
     addSuffix: true,
     locale: ru,
-  });
+  }) : '';
 
   if (variant === 'hero') {
     return (
@@ -49,7 +49,7 @@ export default function NewsCard({ article, variant = 'default', index = 0 }: Ne
           <div className="p-4 flex flex-col flex-1">
             <div className="flex items-center gap-3 mb-2">
               <span className="sakh-meta sakh-meta--accent">
-                {article.category.name}
+                {article.category?.name}
               </span>
               <span className="sakh-meta">
                 <Clock size={10} />
@@ -143,7 +143,7 @@ export default function NewsCard({ article, variant = 'default', index = 0 }: Ne
         <div className="p-4 flex flex-col flex-1">
           <div className="flex items-center gap-3 mb-2">
             <span className="sakh-meta sakh-meta--accent">
-              {article.category.name}
+              {article.category?.name}
             </span>
             <span className="sakh-meta sakh-meta--with-icon">
               <Clock size={10} />

@@ -27,7 +27,7 @@ export default function EditorialNewsPreview() {
   }
 
   const tagList = Array.isArray(article.tags)
-    ? article.tags.map(t => (typeof t === 'string' ? t : t.tag.name))
+    ? article.tags.map(t => (typeof t === 'string' ? t : ''))
     : [];
 
   return (

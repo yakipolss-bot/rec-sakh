@@ -9,7 +9,7 @@ export default function BreakingTicker() {
   const { currentCity } = useCity();
   const { data: items } = usePolling<{ id: string; slug: string; title: string }[]>(
     async () => {
-      const res = await newsService.getNews({ status: 'published', isUrgent: true, perPage: 20, city: currentCity.name });
+      const res = await newsService.getNews({ status: 'published', isUrgent: 'true', perPage: 20, city: currentCity.name });
       return (res.data ?? []).map((a: NewsArticle) => ({ id: a.id, slug: a.slug, title: a.title }));
     },
     30000,

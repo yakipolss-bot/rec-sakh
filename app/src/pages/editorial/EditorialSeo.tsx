@@ -97,7 +97,7 @@ export default function EditorialSeo() {
   const handleCheckBrokenLinks = async () => {
     setBrokenChecking(true);
     try {
-      const results: BrokenLinkData[] = await adminService.checkBrokenLinks() as BrokenLinkData[];
+      const results = await adminService.checkBrokenLinks() as unknown as BrokenLinkData[];
       const ok = results.filter((r) => r.status === 200).length;
       const bad = results.filter((r) => r.status !== 200 && r.status !== null).length;
       const err = results.filter((r) => r.error && r.status === null).length;

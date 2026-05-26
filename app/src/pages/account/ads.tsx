@@ -82,10 +82,10 @@ export default function AccountAds() {
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-[var(--text-primary)] truncate">{ad.title}</h4>
                       <p className="text-sm text-[var(--accent-ocean)] font-mono font-medium">
-                        {ad.price} {ad.currency || '₽'}
+                        {ad.price ? `${ad.price} ₽` : 'Цена не указана'}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="sakh-meta text-xs">{ad.city || ad.location}</span>
+                        <span className="sakh-meta text-xs">{ad.city || ''}</span>
                         <span className={`sakh-tag text-xs ${ad.status === 'active' ? 'sakh-tag--accent' : ''}`}>
                           {ad.status}
                         </span>

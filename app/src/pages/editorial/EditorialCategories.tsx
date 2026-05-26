@@ -35,7 +35,7 @@ export default function EditorialCategories() {
     }
     setSaving(true);
     try {
-      await categoriesService.updateCategory(id, editValues);
+      await categoriesService.updateCategory(id, { name: editValues.name, slug: editValues.slug, description: editValues.description ?? undefined });
       toast.success('Рубрика обновлена');
       cancelEdit();
       queryClient.invalidateQueries({ queryKey: ['editorial', 'categories'] });

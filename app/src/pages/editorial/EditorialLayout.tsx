@@ -59,8 +59,20 @@ export default function EditorialLayout({ children }: { children: React.ReactNod
     return location.pathname.startsWith(path);
   };
 
+  const userRole = user?.role;
+  const visibleSections = navSections.map(section => ({
+    ...section,
+    items: section.items.filter(item => {
+      if (userRole === 'moderator') {
+        const allowed = ['/editorial/comments', '/editorial/ads'];
+        return allowed.includes(item.path);
+      }
+      return true;
+    }),
+  })).filter(section => section.items.length > 0);
+
   return (
-    <RouteGuard roles={['editor', 'chief_editor', 'admin', 'superadmin']}>
+    <RouteGuard roles={['journalist', 'proofreader', 'editor', 'chief_editor', 'moderator', 'admin', 'superadmin']}>
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <AnimatePresence>
         {sidebarOpen && (
@@ -113,7 +125,7 @@ export default function EditorialLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar">
-          {navSections.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.label}>
               <p className="sakh-meta px-2 mb-1">{section.label}</p>
               <div className="space-y-0.5">
@@ -172,7 +184,7 @@ export default function EditorialLayout({ children }: { children: React.ReactNod
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
             className="max-w-[1600px] mx-auto"
           >
             {children}

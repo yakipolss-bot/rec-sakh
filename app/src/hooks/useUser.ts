@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import usersService from '@/services/users.service';
 import authService from '@/services/auth.service';
 import type { UserProfile } from '@/models/users/UserProfile';
+import type { ActivityEntry } from '@/models/users/ActivityEntry';
+import type { BillingOperation } from '@/models/users/BillingOperation';
+import type { Subscription } from '@/models/users/Subscription';
 import { useAuth } from '@/services/auth-context';
 
 interface UseUserOptions {
@@ -47,7 +50,7 @@ export function useUser(options: UseUserOptions = {}) {
       } catch {
         try {
           const fallback = await authService.getProfile();
-          if (mounted) {
+          if (mounted && fallback) {
             setUser({
               id: fallback.id,
               email: fallback.email,
@@ -88,18 +91,20 @@ export function useUser(options: UseUserOptions = {}) {
     } catch {
       try {
         const fallback = await authService.getProfile();
-        setUser({
-          id: fallback.id,
-          email: fallback.email,
-          name: fallback.name,
-          role: fallback.role || 'authenticated',
-          avatarUrl: fallback.avatarUrl,
-          karma: 0,
-          level: 'user',
-          registeredAt: new Date().toISOString(),
-          commentsCount: 0,
-          adsCount: 0,
-        });
+        if (fallback) {
+          setUser({
+            id: fallback.id,
+            email: fallback.email,
+            name: fallback.name,
+            role: fallback.role || 'authenticated',
+            avatarUrl: fallback.avatarUrl,
+            karma: 0,
+            level: 'user',
+            registeredAt: new Date().toISOString(),
+            commentsCount: 0,
+            adsCount: 0,
+          });
+        }
       } catch {
         // Silently fall back to auth context user
         if (authUser) {
@@ -116,7 +121,7 @@ export function useUser(options: UseUserOptions = {}) {
 }
 
 export function useUserActivity() {
-  const [activity, setActivity] = useState([]);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -153,7 +158,7 @@ export function useUserActivity() {
 }
 
 export function useUserBilling() {
-  const [billing, setBilling] = useState([]);
+  const [billing, setBilling] = useState<BillingOperation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -190,38 +195,35 @@ export function useUserBilling() {
 }
 
 export function useUserSubscriptions() {
-  const [subscriptions, setSubscriptions] = useState([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchSubscriptions = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const data = await usersService.getSubscriptions();
-        if (mounted) {
-          setSubscriptions(data);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err : new Error('Failed to fetch subscriptions'));
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+  const refetch = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await usersService.getSubscriptions();
+      if (mountedRef.current) {
+        setSubscriptions(data);
       }
-    };
-
-    fetchSubscriptions();
-
-    return () => {
-      mounted = false;
-    };
+    } catch (err) {
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err : new Error('Failed to fetch subscriptions'));
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
+    }
   }, []);
 
-  return { subscriptions, isLoading, error };
+  useEffect(() => {
+    mountedRef.current = true;
+    refetch();
+    return () => { mountedRef.current = false; };
+  }, [refetch]);
+
+  return { subscriptions, isLoading, error, refetch };
 }

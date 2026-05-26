@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Plus, Bookmark, Tag, User, Key } from 'lucide-react';
+import { Search, X, Plus, Bookmark, User, Key, Tag as TagIcon } from 'lucide-react';
 import categoriesService from '@/services/categories.service';
 import tagsService from '@/services/tags.service';
 import { useUserSubscriptions } from '@/hooks/useUser';
@@ -14,7 +14,7 @@ type TabId = 'categories' | 'tags' | 'authors' | 'keywords';
 
 const tabs: { id: TabId; label: string; icon: React.FC<{ size?: number }> }[] = [
   { id: 'categories', label: 'Рубрики', icon: Bookmark },
-  { id: 'tags', label: 'Теги', icon: Tag },
+  { id: 'tags', label: 'Теги', icon: TagIcon },
   { id: 'authors', label: 'Авторы', icon: User },
   { id: 'keywords', label: 'Ключевые слова', icon: Key },
 ];

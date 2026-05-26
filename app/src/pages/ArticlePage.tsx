@@ -379,7 +379,7 @@ export default function ArticlePage({ id }: { id?: string }) {
             initial={{ opacity: 0, y: 20, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 20, x: '-50%' }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] as const }}
             className="sakh-toast sakh-toast--success fixed bottom-4 left-1/2"
             role="status"
             aria-live="polite"

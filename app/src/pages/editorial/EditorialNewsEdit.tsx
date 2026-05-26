@@ -59,7 +59,7 @@ export default function EditorialNewsEdit() {
     }
   };
 
-  const removeTag = (tag: string) => setTags.filter((t) => t !== tag);
+  const removeTag = (tag: string) => setTags(prev => prev.filter((t) => t !== tag));
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { e.preventDefault(); addTag(); }
   };

@@ -24,7 +24,7 @@ export default function AdminUsersRoles() {
     queryFn: () =>
       adminService.getUsers({ perPage: 1 })
         .then(async ({ meta }) => {
-          const { data } = await adminService.getUsers({ perPage: meta?.total || 100 });
+          const { data } = await adminService.getUsers({ perPage: Number(meta?.total) || 100 });
           return data;
         })
         .catch(() => []),

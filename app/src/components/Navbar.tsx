@@ -5,6 +5,7 @@ import { useTheme } from '@/hooks/useTheme';
 import CitySelector from '@/components/CitySelector';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/services/auth-context';
+import type { ThemeMode } from '@/types';
 
 const mainCategories = [
   { label: 'ОБЩЕСТВО', href: '/category/obshchestvo' },
@@ -54,7 +55,7 @@ const themeIcons: Record<string, React.ReactNode> = {
   night: <Moon size={16} />,
 };
 
-const themeCycle: string[] = ['night', 'morning', 'day', 'evening', 'focus'];
+const themeCycle: ThemeMode[] = ['night', 'morning', 'day', 'evening', 'focus'];
 const themeLabels: Record<string, string> = {
   night: 'Ночь',
   morning: 'Утро',

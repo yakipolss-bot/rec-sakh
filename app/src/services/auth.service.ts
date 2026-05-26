@@ -1,4 +1,5 @@
 import axios from 'axios';
+import apiClient from './api-client';
 import { AuthResponse } from '../models/auth/AuthResponse';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
@@ -111,9 +112,7 @@ class AuthService {
     if (!accessToken) return null;
 
     try {
-      const { data } = await api.get('/auth/session', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const { data } = await apiClient.get('/auth/session');
       const body = data.data || data;
       if (body.user) {
         persistTokens(accessToken, getLocalStorage('refreshToken') || '');
@@ -137,11 +136,7 @@ class AuthService {
     }
 
     try {
-      const axiosInstance = axios.create({
-        baseURL: API_BASE_URL,
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const { data: profileData } = await axiosInstance.get('/users/me');
+      const { data: profileData } = await apiClient.get('/users/me');
       const profile = profileData.data || profileData;
       return {
         id: profile.id,

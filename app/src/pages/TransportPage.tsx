@@ -69,12 +69,12 @@ const containerVariants = {
 
 const rowVariants = {
   hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
 const tabContentVariants = {
   initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] as const } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
@@ -111,10 +111,10 @@ export default function TransportPage() {
     refetchInterval: 60000,
   });
 
-  const flights = flightsQuery.data ?? [];
-  const ferries = ferriesQuery.data ?? [];
-  const roads = roadsQuery.data ?? [];
-  const schedules = schedulesQuery.data ?? [];
+  const flights: Flight[] = flightsQuery.data ?? [];
+  const ferries: Ferry[] = ferriesQuery.data ?? [];
+  const roads: Road[] = roadsQuery.data ?? [];
+  const schedules: ScheduleItem[] = schedulesQuery.data ?? [];
   const isLoading = flightsQuery.isLoading || ferriesQuery.isLoading || roadsQuery.isLoading || schedulesQuery.isLoading;
 
   const today = new Date();

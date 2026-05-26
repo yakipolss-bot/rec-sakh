@@ -26,11 +26,12 @@ export default function AccountComments() {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.id) return;
+    const userId = user?.id;
+    if (!userId) return;
     let cancelled = false;
     async function fetch() {
       try {
-        const { data } = await apiClient.get('/comments', { params: { authorId: user.id, perPage: 50 } });
+        const { data } = await apiClient.get('/comments', { params: { authorId: userId, perPage: 50 } });
         const body = data.data || data || [];
         setComments(Array.isArray(body) ? body : []);
       } catch {

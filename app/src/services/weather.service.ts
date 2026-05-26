@@ -134,7 +134,7 @@ class WeatherService {
 
       if (!cache) {
         const allData = await this.getAll();
-        cache = { data: allData, forecast: new Map(), timestamp: cache?.timestamp || Date.now() };
+        cache = { data: allData, forecast: new Map(), timestamp: Date.now() };
       }
       cache.forecast.set(cityCode, forecast);
       return forecast;

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import newsService from '@/services/news.service';
 import categoriesService from '@/services/categories.service';
+import RichTextEditor from '@/components/RichTextEditor';
 import type { Category } from '@/models/categories/Category';
 
 export default function EditorialNewsCreate() {
@@ -31,6 +32,9 @@ export default function EditorialNewsCreate() {
   const [seoDesc, setSeoDesc] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagsInput, setTagsInput] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [slug, setSlug] = useState('');
 
   const addTag = () => {
     const trimmed = tagsInput.trim();
@@ -40,7 +44,7 @@ export default function EditorialNewsCreate() {
     }
   };
 
-  const removeTag = (tag: string) => setTags.filter((t) => t !== tag);
+  const removeTag = (tag: string) => setTags(prev => prev.filter((t) => t !== tag));
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { e.preventDefault(); addTag(); }

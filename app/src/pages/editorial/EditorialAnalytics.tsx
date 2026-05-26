@@ -6,6 +6,22 @@ import {
   Eye, Clock, MousePointer, Loader2,
 } from 'lucide-react';
 import { adminService } from '@/services';
+
+interface AnalyticsTraffic {
+  totalViews: number;
+  totalArticles: number;
+  topCategories: TopCategory[];
+  period: { from: string; to: string };
+}
+interface AnalyticsContentRes {
+  data: ArticleSummary[];
+}
+interface AnalyticsRealtime {
+  onlineUsers: number;
+  recentComments: unknown[];
+  recentActivity: unknown[];
+}
+
 import { toast } from 'sonner';
 
 type Tab = 'traffic' | 'content' | 'authors' | 'search' | 'online';
@@ -26,17 +42,17 @@ export default function EditorialAnalytics() {
 
   const { data: traffic, isLoading } = useQuery({
     queryKey: ['editorial', 'analytics-traffic'],
-    queryFn: () => adminService.getAnalyticsTraffic().catch(() => null),
+    queryFn: () => adminService.getAnalyticsTraffic().catch(() => null) as Promise<AnalyticsTraffic | null>,
     refetchInterval: 30000,
   });
   const { data: content } = useQuery({
     queryKey: ['editorial', 'analytics-content'],
-    queryFn: () => adminService.getAnalyticsContent({ perPage: 10 }).catch(() => null),
+    queryFn: () => adminService.getAnalyticsContent({ perPage: 10 }).catch(() => null) as Promise<AnalyticsContentRes | null>,
     refetchInterval: 30000,
   });
   const { data: realtime } = useQuery({
     queryKey: ['editorial', 'analytics-realtime'],
-    queryFn: () => adminService.getRealtimeAnalytics().catch(() => null),
+    queryFn: () => adminService.getRealtimeAnalytics().catch(() => null) as Promise<AnalyticsRealtime | null>,
     refetchInterval: 30000,
   });
 
@@ -73,10 +89,10 @@ export default function EditorialAnalytics() {
                 </motion.div>
               ))}
             </div>
-            {traffic?.topCategories?.length > 0 && (
+            {(traffic?.topCategories?.length ?? 0) > 0 && (
               <div className="sakh-card p-4">
                 <h3 className="sakh-caption text-[var(--text-secondary)] mb-3">Топ категорий по просмотрам</h3>
-                {traffic.topCategories.map((cat: TopCategory, i: number) => (
+                {traffic?.topCategories?.map((cat: TopCategory, i: number) => (
                   <div key={cat.id || i} className="flex items-center justify-between py-1.5 border-b border-[var(--border-color)] last:border-0">
                     <span className="text-sm text-[var(--text-primary)]">{cat.name}</span>
                     <span className="font-mono text-xs text-[var(--text-muted)]">{cat.views?.toLocaleString('ru-RU')}</span>
@@ -90,8 +106,8 @@ export default function EditorialAnalytics() {
         return (
           <div className="sakh-card p-4">
             <h3 className="sakh-caption text-[var(--text-secondary)] mb-4">Топ материалов</h3>
-            {content?.data?.length > 0 ? (
-              content.data.slice(0, 10).map((article: ArticleSummary, i: number) => (
+            {(content?.data?.length ?? 0) > 0 ? (
+              content?.data?.slice(0, 10).map((article: ArticleSummary, i: number) => (
                 <div key={article.id} className="flex items-center gap-3 py-2 border-b border-[var(--border-color)] last:border-0">
                   <span className="sakh-meta sakh-meta--accent font-bold w-5">{String(i + 1).padStart(2, '0')}</span>
                   <span className="flex-1 text-sm text-[var(--text-primary)] truncate">{article.title}</span>
@@ -116,9 +132,9 @@ export default function EditorialAnalytics() {
                 </tr>
               </thead>
               <tbody>
-                {content?.data?.length > 0 ? (
+                {(content?.data?.length ?? 0) > 0 ? (
                   Object.entries(
-                    content.data.reduce((acc: Record<string, { name: string; count: number; views: number }>, a: ArticleSummary) => {
+                    (content?.data ?? []).reduce((acc: Record<string, { name: string; count: number; views: number }>, a: ArticleSummary) => {
                       const key = a.author?.id || 'unknown';
                       if (!acc[key]) acc[key] = { name: a.author?.name || '—', count: 0, views: 0 };
                       acc[key].count++;

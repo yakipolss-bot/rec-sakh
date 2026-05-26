@@ -380,7 +380,7 @@ class AdminService {
       ticketUrl: ev.ticketUrl as string,
       status: ev.status as string,
       category: ev.category as { id: string; name: string },
-      organizer: ev.organizer as { id: string; name: string },
+      organizer: ev.organizer as { id: string; name: string } | undefined,
       _count: ev._count as { subscribers: number },
       createdAt: ev.createdAt as string,
     }));
@@ -405,7 +405,7 @@ class AdminService {
       ticketUrl: ev.ticketUrl,
       status: ev.status,
       category: ev.category,
-      organizer: ev.organizer,
+      organizer: ev.organizer as { id: string; name: string } | undefined,
       _count: ev._count,
       createdAt: ev.createdAt,
     };

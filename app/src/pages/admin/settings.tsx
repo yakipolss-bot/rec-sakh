@@ -43,7 +43,7 @@ export default function AdminSettings() {
       ]);
       const map: Record<string, unknown> = {};
       settingsItems.forEach((item: { key: string; value: unknown }) => { map[item.key] = item.value; });
-      const logEntries: ServerLog[] = (auditData.data ?? []).map((log: Record<string, unknown>) => ({
+      const logEntries: ServerLog[] = (auditData.data ?? []).map((log: any) => ({
         id: String(log.id ?? ''),
         level: 'info',
         message: `${String(log.action ?? '')}: ${String(log.target ?? '')}`,
@@ -53,7 +53,7 @@ export default function AdminSettings() {
     },
   });
 
-  const settings = settingsData?.settings ?? {};
+  const settings = (settingsData?.settings ?? {}) as Record<string, string>;
   const logEntries = settingsData?.logEntries ?? [];
 
   const toggleCity = (city: string) => {

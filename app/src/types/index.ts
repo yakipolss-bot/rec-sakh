@@ -2,18 +2,18 @@ export interface NewsArticle {
   id: string;
   slug: string;
   title: string;
-  lead: string;
+  lead: string | null;
   content: string;
-  category: Category;
-  author: Author;
-  publishedAt: string;
+  category: Category | null;
+  author: Author | null;
+  publishedAt: string | null;
   updatedAt: string;
   mainImageUrl: string | null;
   viewsCount: number;
   commentsCount: number;
-  readingTimeMinutes: number;
+  readingTimeMinutes: number | null;
   tags: string[];
-  city: string;
+  city: string | null;
   isUrgent?: boolean;
   isPremium?: boolean;
   hasVideo?: boolean;
@@ -23,8 +23,9 @@ export interface NewsArticle {
 export interface Author {
   id: string;
   name: string;
-  avatar?: string;
-  role: string;
+  avatar?: string | null;
+  avatarUrl?: string | null;
+  role?: string;
 }
 
 export interface CommentAuthor {
@@ -37,7 +38,7 @@ export interface Category {
   id: string;
   slug: string;
   name: string;
-  description: string;
+  description?: string | null;
 }
 
 export interface Comment {
@@ -100,7 +101,7 @@ export interface Event {
   image: string;
 }
 
-export type ThemeMode = 'morning' | 'day' | 'evening' | 'focus' | 'night' | 'auto';
+export type ThemeMode = 'morning' | 'day' | 'evening' | 'focus' | 'night' | 'auto' | 'light' | 'dark';
 
 export interface UserProfile {
   id: string;

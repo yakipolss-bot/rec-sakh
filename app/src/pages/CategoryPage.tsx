@@ -84,7 +84,7 @@ const cardVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const },
   },
 };
 
@@ -151,7 +151,7 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
 
   const popularInCategory = useMemo(() => {
     return [...baseArticles]
-      .sort((a, b) => (b.views || 0) - (a.views || 0))
+      .sort((a, b) => (b.viewsCount ?? 0) - (a.viewsCount ?? 0))
       .slice(0, 5);
   }, [baseArticles]);
 
@@ -235,7 +235,7 @@ export default function CategoryPage({ slug: propSlug }: { slug?: string }) {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
           className="mb-8"
         >
           <div className="flex items-start justify-between gap-4 flex-wrap">

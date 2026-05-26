@@ -52,7 +52,7 @@ function Toolbar({ editor }: { editor: import('@tiptap/react').Editor }) {
   };
   const addEmbed = () => {
     const src = window.prompt('URL видео (YouTube, Vimeo etc.):');
-    if (src) editor.chain().focus().setIframe({ src }).run();
+    if (src) editor.chain().focus().insertContent({ type: 'iframe', attrs: { src } }).run();
   };
 
   return (
