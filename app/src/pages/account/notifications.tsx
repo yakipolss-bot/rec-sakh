@@ -31,7 +31,7 @@ export default function AccountNotifications() {
       setItems(res.data || []);
       setUnreadCount(count);
     } catch {
-      // silent
+      toast.error('Ошибка загрузки уведомлений');
     } finally {
       setLoading(false);
     }

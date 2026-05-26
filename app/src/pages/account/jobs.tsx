@@ -22,7 +22,7 @@ export default function AccountJobs() {
           setJobs(res.data || []);
         }
       } catch {
-        // silent
+        toast.error('Ошибка загрузки вакансий');
       } finally {
         if (!cancelled) setLoading(false);
       }

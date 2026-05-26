@@ -4,6 +4,7 @@ import { Calendar, MapPin, Clock } from 'lucide-react';
 import eventsService from '@/services/events.service';
 import EmptyState from '@/components/EmptyState';
 import type { Event } from '@/models/events/Event';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -28,7 +29,7 @@ export default function AccountEvents() {
           setEvents(res.data || []);
         }
       } catch {
-        // silent
+        toast.error('Ошибка загрузки событий');
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Database, ListOrdered, Search, Image,
   ShieldAlert, RefreshCw, Trash2, Thermometer,
-  Zap, Clock, CheckCircle, XCircle, Download,
+  CheckCircle, Zap, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminService } from '@/services';
@@ -20,29 +20,6 @@ const tabs = [
   { id: 'security', label: 'Безопасность', icon: ShieldAlert },
   { id: 'updates', label: 'Обновления', icon: RefreshCw },
 ];
-
-const queueTasks = [
-  { type: 'Рассылка новостей', status: 'processing', date: '5 мин назад' },
-  { type: 'Генерация sitemap', status: 'pending', date: '15 мин назад' },
-  { type: 'Оптимизация изображений', status: 'pending', date: '1 час назад' },
-  { type: 'Экспорт статистики', status: 'failed', date: '2 часа назад' },
-  { type: 'Очистка временных файлов', status: 'completed', date: '3 часа назад' },
-  { type: 'Индексация поиска', status: 'pending', date: '3 часа назад' },
-];
-
-const statusIcon: Record<string, typeof CheckCircle> = {
-  processing: Zap,
-  pending: Clock,
-  failed: XCircle,
-  completed: CheckCircle,
-};
-
-const statusClass: Record<string, string> = {
-  processing: 'text-[var(--accent-ocean)]',
-  pending: 'text-[var(--text-muted)]',
-  failed: 'text-[var(--accent-sunset)]',
-  completed: 'text-[var(--accent-ocean)]',
-};
 
 export default function AdminSystem() {
   const { section } = useParams();
@@ -132,52 +109,12 @@ export default function AdminSystem() {
 
         {activeTab === 'queue' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="flex gap-4 mb-4">
-              <div className="flex items-center gap-2 font-mono text-xs text-[var(--text-muted)]">
-                <span className="inline-block w-2 h-2 rounded-full bg-[var(--accent-ocean)]" /> В обработке: 3
+            <div className="sakh-card p-6">
+              <div className="sakh-empty">
+                <ListOrdered size={48} className="sakh-empty__icon" />
+                <h3 className="sakh-empty__title">Нет активных задач</h3>
+                <p className="sakh-empty__description">Фоновые задачи и очередь обработки появятся здесь.</p>
               </div>
-              <div className="flex items-center gap-2 font-mono text-xs text-[var(--text-muted)]">
-                <span className="inline-block w-2 h-2 rounded-full bg-[var(--text-muted)]" /> Ожидает: 3
-              </div>
-              <div className="flex items-center gap-2 font-mono text-xs text-[var(--accent-sunset)]">
-                <span className="inline-block w-2 h-2 rounded-full bg-[var(--accent-sunset)]" /> Ошибки: 1
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border-color)]">
-                    <th className="text-left py-3 px-3 font-mono text-xs uppercase tracking-wider text-[var(--text-muted)]">Тип задачи</th>
-                    <th className="text-left py-3 px-3 font-mono text-xs uppercase tracking-wider text-[var(--text-muted)]">Статус</th>
-                    <th className="text-left py-3 px-3 font-mono text-xs uppercase tracking-wider text-[var(--text-muted)]">Дата</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {queueTasks.map((task, i) => {
-                    const StatusIcon = statusIcon[task.status];
-                    return (
-                      <motion.tr
-                        key={`${task.type}-${i}`}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.04 }}
-                        className="border-b border-[var(--border-subtle)]"
-                      >
-                        <td className="py-3 px-3 font-mono text-xs text-[var(--text-secondary)]">{task.type}</td>
-                        <td className="py-3 px-3">
-                          <span className="flex items-center gap-1.5">
-                            <StatusIcon size={12} className={statusClass[task.status]} />
-                            <span className={`font-mono text-xs ${statusClass[task.status]}`}>
-                              {task.status === 'processing' ? 'В обработке' : task.status === 'pending' ? 'Ожидает' : task.status === 'failed' ? 'Ошибка' : 'Завершён'}
-                            </span>
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 font-mono text-xs text-[var(--text-muted)]">{task.date}</td>
-                      </motion.tr>
-                    );
-                  })}
-                </tbody>
-              </table>
             </div>
           </motion.div>
         )}

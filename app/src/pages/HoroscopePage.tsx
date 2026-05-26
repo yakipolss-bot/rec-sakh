@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
 
 const ZODIAC_SIGNS = [
@@ -19,24 +19,31 @@ const ZODIAC_SIGNS = [
   { id: 'pisces', name: 'Рыбы', date: '19 фев — 20 мар', emoji: '♓' },
 ];
 
-const horoscopes: Record<string, string> = {
-  aries: 'Сегодня звёзды советуют вам быть решительными. Не бойтесь брать на себя ответственность и проявлять инициативу. В личных отношениях возможны приятные сюрпризы. Хороший день для начала новых проектов.',
-  taurus: 'День благоприятен для финансовых дел. Обратите внимание на новые возможности для заработка. В общении с близкими будьте терпеливы и внимательны к их потребностям.',
-  gemini: 'Ваша коммуникабельность сегодня поможет решить многие вопросы. Не упускайте возможность завести новые знакомства. Вечером возможны романтические события.',
-  cancer: 'Прислушайтесь к своей интуиции — она подскажет верное решение. День подходит для домашних дел и заботы о близких. Избегайте конфликтов на работе.',
-  leo: 'Энергия сегодня бьёт ключом! Направьте её в продуктивное русло. Хороший день для занятий спортом и творчеством. Вечером возможны неожиданные встречи.',
-  virgo: 'День требует внимания к деталям. Успех придёт через тщательное планирование. В личных отношениях возможны важные разговоры. Не откладывайте решение насущных вопросов.',
-  libra: 'Звёзды рекомендуют найти баланс между работой и отдыхом. Хороший день для творчества и самовыражения. Возможны приятные новости от друзей.',
-  scorpio: 'Ваша страсть и энергия помогут преодолеть любые препятствия. День благоприятен для решения сложных задач. Вечером уделите время себе.',
-  sagittarius: 'Открытость новому опыту принесёт удачу. Хороший день для путешествий и обучения. В финансовых вопросах проявляйте осторожность.',
-  capricorn: 'День подходит для карьерных дел и амбициозных планов. Ваша настойчивость будет вознаграждена. Не забывайте об отдыхе.',
-  aquarius: 'Ваша креативность сегодня на высоте. Предлагайте смелые идеи — они найдут поддержку. Вечером возможны интересные знакомства.',
-  pisces: 'Интуиция сегодня особенно сильна. Доверяйте своим предчувствиям. День благоприятен для творчества и духовных практик. Избегайте суеты.',
-};
+function useHoroscope(signId: string | null) {
+  const [data, setData] = useState<{ horoscope: string; date: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!signId) { setData(null); return; }
+    let cancelled = false;
+    setLoading(true);
+    fetch(`https://newastro.vercel.app/${signId}`)
+      .then(r => r.json())
+      .then(res => { if (!cancelled) setData(res); })
+      .catch(() => { if (!cancelled) setData(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [signId]);
+
+  return { data, loading };
+}
 
 export default function HoroscopePage() {
   const [selected, setSelected] = useState<string | null>(null);
+  const { data: horoscope, loading } = useHoroscope(selected);
   const sign = ZODIAC_SIGNS.find(s => s.id === selected);
+
+  const todayStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <div className="pt-20 pb-8">
@@ -58,7 +65,7 @@ export default function HoroscopePage() {
           className="mb-8"
         >
           <h1 className="sakh-heading mb-2">Гороскоп на сегодня</h1>
-          <p className="sakh-body">16 мая 2026</p>
+          <p className="sakh-body">{todayStr}</p>
         </motion.div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
@@ -94,9 +101,16 @@ export default function HoroscopePage() {
                   <p className="sakh-caption">{sign.date}</p>
                 </div>
               </div>
-              <p className="sakh-body leading-relaxed">
-                {horoscopes[sign.id]}
-              </p>
+              {loading ? (
+                <div className="flex items-center gap-2 py-4">
+                  <Loader2 size={16} className="animate-spin text-[var(--accent-ocean)]" />
+                  <span className="sakh-meta">Загрузка гороскопа...</span>
+                </div>
+              ) : horoscope ? (
+                <p className="sakh-body leading-relaxed">{horoscope.horoscope}</p>
+              ) : (
+                <p className="sakh-meta">Не удалось загрузить гороскоп</p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

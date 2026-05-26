@@ -35,7 +35,7 @@ export default function AccountComments() {
         const body = data.data || data || [];
         setComments(Array.isArray(body) ? body : []);
       } catch {
-        // silent
+        toast.error('Ошибка загрузки комментариев');
       } finally {
         if (!cancelled) setLoading(false);
       }

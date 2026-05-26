@@ -5,6 +5,7 @@ import newsService from '@/services/news.service';
 import { useFavorites } from '@/hooks/useFavorites';
 import NewsCard from '@/components/NewsCard';
 import EmptyState from '@/components/EmptyState';
+import { toast } from 'sonner';
 import type { NewsArticle } from '@/types';
 
 type TabId = 'news' | 'photos' | 'directory';
@@ -32,7 +33,7 @@ export default function AccountFavorites() {
         const res = await newsService.getNews({ perPage: 50, sort: 'createdAt' });
         if (!cancelled) setAllNews(res.data || []);
       } catch {
-        // silent
+        toast.error('Ошибка загрузки избранного');
       } finally {
         if (!cancelled) setLoading(false);
       }

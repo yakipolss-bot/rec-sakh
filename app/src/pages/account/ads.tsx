@@ -25,7 +25,7 @@ export default function AccountAds() {
           setAds(items);
         }
       } catch {
-        // silent
+        toast.error('Ошибка загрузки объявлений');
       } finally {
         if (!cancelled) setLoading(false);
       }

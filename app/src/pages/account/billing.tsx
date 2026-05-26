@@ -43,7 +43,7 @@ export default function AccountBilling() {
           setTariffs(tfs);
         }
       } catch {
-        // silent
+        toast.error('Ошибка загрузки данных биллинга');
       } finally {
         if (!cancelled) setLoading(false);
       }

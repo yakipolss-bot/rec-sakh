@@ -25,6 +25,7 @@ import CategoryPage from '../../src/pages/CategoryPage';
 import SearchPage from '../../src/pages/SearchPage';
 import AccountPage from '../../src/pages/AccountPage';
 import AuthPage from '../../src/pages/AuthPage';
+import StaticPage from '../../src/pages/StaticPage';
 import AccountLayout from '../../src/components/AccountLayout';
 import AccountDashboard from '../../src/pages/account/index';
 import AccountProfile from '../../src/pages/account/profile';
@@ -110,6 +111,7 @@ function AnimatedRoutes() {
           <Route path="/directory" element={<DirectoryPage />} />
           <Route path="/media" element={<MediaPage />} />
           <Route path="/realty" element={<RealtyPage />} />
+          <Route path="/page/:slug" element={<StaticPage />} />
           <Route path="/account-old" element={<AccountPage />} />
 
           <Route path="/account" element={<ProtectedRoute><AccountLayout /></ProtectedRoute>}>

@@ -38,7 +38,7 @@ export default function AccountSubscriptions() {
         const data = await categoriesService.getCategories();
         if (!cancelled) setCategories(data);
       } catch {
-        // silent
+        toast.error('Ошибка загрузки рубрик');
       } finally {
         if (!cancelled) setCategoriesLoading(false);
       }
@@ -54,7 +54,7 @@ export default function AccountSubscriptions() {
         const data = await tagsService.getTags();
         if (!cancelled) setTags(data);
       } catch {
-        // silent
+        toast.error('Ошибка загрузки тегов');
       } finally {
         if (!cancelled) setTagsLoading(false);
       }
@@ -145,7 +145,7 @@ export default function AccountSubscriptions() {
     return (
       <div className="sakh-card p-4 text-center">
         <p className="text-[var(--accent-sunset)]">Ошибка загрузки подписок</p>
-        <button onClick={() => window.location.reload()} className="sakh-btn sakh-btn--sm mt-4">
+        <button onClick={() => refetch?.()} className="sakh-btn sakh-btn--sm mt-4">
           Перезагрузить
         </button>
       </div>

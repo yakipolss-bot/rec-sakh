@@ -411,9 +411,9 @@ export default function AuthPage() {
                     <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="sakh-checkbox mt-0.5" />
                     <span className="text-xs leading-relaxed text-[var(--text-secondary)]">
                       Я согласен с{' '}
-                      <Link to="#" className="sakh-link text-xs">пользовательским соглашением</Link>
+                      <Link to="/page/terms" className="sakh-link text-xs">пользовательским соглашением</Link>
                       {' '}и{' '}
-                      <Link to="#" className="sakh-link text-xs">политикой конфиденциальности</Link>
+                      <Link to="/page/privacy" className="sakh-link text-xs">политикой конфиденциальности</Link>
                     </span>
                   </label>
                   {errors.agreed && <p className="text-xs text-[var(--accent-sunset)] mt-1 font-mono">{errors.agreed}</p>}

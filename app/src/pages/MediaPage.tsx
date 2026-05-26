@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Image, Video, Radio, Play, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Image, Video, Radio, Loader2 } from 'lucide-react';
 import SEOHead from '@/components/SEOHead';
+import adminService from '@/services/admin.service';
+import type { MediaFile } from '@/models/admin/MediaFile';
 
 type MediaTab = 'photos' | 'videos' | 'live';
 
@@ -12,27 +14,28 @@ const TABS: { value: MediaTab; label: string; icon: React.ReactNode }[] = [
   { value: 'live', label: 'Прямые эфиры', icon: <Radio size={14} /> },
 ];
 
-const mockPhotos = Array.from({ length: 12 }, (_, i) => ({
-  id: `p${i + 1}`,
-  src: '/images/news-city.jpg',
-  title: `Фото ${i + 1}: Городские зарисовки`,
-}));
-
-const mockVideos = Array.from({ length: 6 }, (_, i) => ({
-  id: `v${i + 1}`,
-  title: `Видео ${i + 1}: Репортаж с места событий`,
-  duration: `${Math.floor(Math.random() * 10) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
-}));
-
 export default function MediaPage() {
   const [tab, setTab] = useState<MediaTab>('photos');
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const openLightbox = (i: number) => {
-    setLightboxIndex(i);
-    setLightboxOpen(true);
-  };
+  useEffect(() => {
+    let cancelled = false;
+    async function fetch() {
+      try {
+        const files = await adminService.getMediaList();
+        if (!cancelled) setMediaFiles(files);
+      } catch {
+        if (!cancelled) setMediaFiles([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
+
+  const photos = mediaFiles.filter(f => /\.(jpg|jpeg|png|webp|gif)$/i.test(f.filename));
 
   return (
     <div className="pt-20 pb-8">
@@ -80,25 +83,42 @@ export default function MediaPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
             >
-              {mockPhotos.map((photo, i) => (
-                <button
-                  key={photo.id}
-                  onClick={() => openLightbox(i)}
-                  className="sakh-card group overflow-hidden aspect-square cursor-pointer"
-                >
-                  <img
-                    src={photo.src}
-                    alt={photo.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                    <Image size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 size={20} className="animate-spin text-[var(--accent-ocean)]" />
+                </div>
+              ) : photos.length === 0 ? (
+                <div className="sakh-card p-6">
+                  <div className="sakh-empty">
+                    <Image size={48} className="sakh-empty__icon" />
+                    <h3 className="sakh-empty__title">Фотографии пока не добавлены</h3>
+                    <p className="sakh-empty__description">Фотогалерея пополняется материалами наших корреспондентов.</p>
                   </div>
-                </button>
-              ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {photos.map((photo, i) => (
+                    <a
+                      key={photo.filename}
+                      href={photo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="sakh-card group overflow-hidden aspect-square"
+                    >
+                      <img
+                        src={photo.url}
+                        alt={photo.filename}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                        <Image size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -109,23 +129,14 @@ export default function MediaPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
             >
-              {mockVideos.map((video) => (
-                <div key={video.id} className="sakh-card group cursor-pointer">
-                  <div className="relative aspect-video bg-[var(--bg-primary)] flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-[var(--accent-ocean)]/20 flex items-center justify-center group-hover:bg-[var(--accent-ocean)]/40 transition-colors">
-                      <Play size={24} className="text-[var(--accent-ocean)] ml-1" />
-                    </div>
-                    <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs font-mono px-1.5 py-0.5">
-                      {video.duration}
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <h3 className="text-sm font-medium text-[var(--text-primary)] line-clamp-2">{video.title}</h3>
-                  </div>
+              <div className="sakh-card p-6">
+                <div className="sakh-empty">
+                  <Video size={48} className="sakh-empty__icon" />
+                  <h3 className="sakh-empty__title">Видео пока не добавлены</h3>
+                  <p className="sakh-empty__description">Видеоматериалы появятся после публикации.</p>
                 </div>
-              ))}
+              </div>
             </motion.div>
           )}
 
@@ -142,50 +153,6 @@ export default function MediaPage() {
                   <Radio size={48} className="sakh-empty__icon" />
                   <h3 className="sakh-empty__title">Прямых эфиров сейчас нет</h3>
                   <p className="sakh-empty__description">Когда начнётся трансляция, она появится здесь.</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {lightboxOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="sakh-modal-overlay"
-              onClick={() => setLightboxOpen(false)}
-            >
-              <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => setLightboxOpen(false)}
-                  className="absolute -top-10 right-0 text-white hover:text-[var(--accent-ocean)] transition-colors"
-                >
-                  <X size={24} />
-                </button>
-                <div className="relative">
-                  <img
-                    src={mockPhotos[lightboxIndex]?.src}
-                    alt={mockPhotos[lightboxIndex]?.title}
-                    className="w-full aspect-video object-cover"
-                  />
-                  <button
-                    onClick={() => setLightboxIndex((lightboxIndex - 1 + mockPhotos.length) % mockPhotos.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 text-white rounded transition-colors"
-                  >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <button
-                    onClick={() => setLightboxIndex((lightboxIndex + 1) % mockPhotos.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 text-white rounded transition-colors"
-                  >
-                    <ChevronRight size={24} />
-                  </button>
-                </div>
-                <div className="bg-[var(--bg-secondary)] p-3 border-t border-[var(--border-color)]">
-                  <p className="sakh-body text-sm">{mockPhotos[lightboxIndex]?.title}</p>
-                  <p className="sakh-caption mt-1">{lightboxIndex + 1} / {mockPhotos.length}</p>
                 </div>
               </div>
             </motion.div>

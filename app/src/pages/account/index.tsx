@@ -20,7 +20,7 @@ const activityIcons: Record<string, React.ReactNode> = {
 };
 
 export default function AccountDashboard() {
-  const { user, isLoading: userLoading, error: userError } = useUser();
+  const { user, isLoading: userLoading, error: userError, refetch: refetchUser } = useUser();
   const { activity } = useUserActivity();
   const { subscriptions } = useUserSubscriptions();
 
@@ -28,7 +28,7 @@ export default function AccountDashboard() {
     return (
       <div className="sakh-card p-4 text-center">
         <p className="text-[var(--accent-sunset)]">Ошибка загрузки профиля</p>
-        <button onClick={() => window.location.reload()} className="sakh-btn sakh-btn--sm mt-4">
+        <button onClick={() => refetchUser?.()} className="sakh-btn sakh-btn--sm mt-4">
           Перезагрузить
         </button>
       </div>
