@@ -515,7 +515,7 @@ export default function Navbar() {
                           Личный кабинет
                         </Link>
                       )}
-                      {isAuthenticated && (user?.role === 'editor' || user?.role === 'chief_editor' || user?.role === 'admin' || user?.role === 'superadmin') && (
+                      {isAuthenticated && (user?.role === 'journalist' || user?.role === 'proofreader' || user?.role === 'editor' || user?.role === 'chief_editor' || user?.role === 'moderator' || user?.role === 'admin' || user?.role === 'superadmin') && (
                         <>
                           <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
                           <Link
@@ -528,7 +528,7 @@ export default function Navbar() {
                           </Link>
                         </>
                       )}
-                      {isAuthenticated && (user?.role === 'admin' || user?.role === 'superadmin') && (
+                      {isAuthenticated && (user?.role === 'chief_editor' || user?.role === 'moderator' || user?.role === 'admin' || user?.role === 'superadmin') && (
                         <Link
                           to="/admin"
                           onClick={() => setUserMenuOpen(false)}

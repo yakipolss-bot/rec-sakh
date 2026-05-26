@@ -448,8 +448,14 @@
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
+  gap: 24px;
   width: 100%;
+}
+
+@media (max-width: 640px) {
+  .bento-grid {
+    gap: 16px;
+  }
 }
 
 .bento-item {

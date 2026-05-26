@@ -32,6 +32,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <CityProvider>
           <SEOHead />
           <ScrollProgress />
+          <div className="sakh-noise" />
           <Navbar />
           <main className="min-h-screen">
             <ErrorBoundary>{children}</ErrorBoundary>
