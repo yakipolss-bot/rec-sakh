@@ -224,6 +224,11 @@ class AdminService {
     return data?.data || data;
   }
 
+  async getSearchAnalytics(): Promise<unknown> {
+    const { data } = await apiClient.get('/admin/analytics/search');
+    return data?.data || data;
+  }
+
   // ── Content ──
 
   async bulkNewsOperation(action: string, ids: string[], value?: string): Promise<unknown> {
@@ -253,6 +258,10 @@ class AdminService {
   async getRoles(): Promise<string[]> {
     const { data } = await apiClient.get('/admin/roles');
     return data?.data || data || [];
+  }
+
+  async createRole(role: string, label: string, permissions: boolean[]): Promise<void> {
+    await apiClient.post('/admin/roles', { role, label, permissions });
   }
 
   // ── System ──

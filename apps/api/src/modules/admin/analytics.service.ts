@@ -223,6 +223,37 @@ export class AnalyticsService {
     };
   }
 
+  async getSearchAnalytics() {
+    const last30d = new Date(Date.now() - 30 * 86_400_000);
+
+    const popularQueries = await this.prisma.auditLog.groupBy({
+      by: ['entityId'],
+      where: {
+        action: 'search',
+        entityId: { not: null },
+        createdAt: { gte: last30d },
+      },
+      _count: { entityId: true },
+      orderBy: { _count: { entityId: 'desc' } },
+      take: 20,
+    });
+
+    const totalSearches = await this.prisma.auditLog.count({
+      where: { action: 'search', createdAt: { gte: last30d } },
+    });
+
+    return {
+      period: { from: last30d, to: new Date() },
+      totalSearches,
+      popularQueries: popularQueries
+        .filter((q) => q.entityId)
+        .map((q) => ({
+          query: q.entityId as string,
+          count: q._count.entityId,
+        })),
+    };
+  }
+
   // ====== Вспомогательные методы ======
 
   private groupByDate(

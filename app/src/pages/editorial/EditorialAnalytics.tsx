@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Users, Activity,
+  Users, Activity, Search,
   Eye, Clock, MousePointer, Loader2,
 } from 'lucide-react';
 import { adminService } from '@/services';
@@ -23,12 +23,11 @@ interface AnalyticsRealtime {
   recentActivity: unknown[];
 }
 
-import { toast } from 'sonner';
-
 type Tab = 'traffic' | 'content' | 'authors' | 'search' | 'online';
 
 interface TopCategory { id: number; name: string; views: number }
 interface ArticleSummary { id: number; title: string; viewsCount: number; author?: { id: string; name: string } }
+interface SearchAnalytics { totalSearches: number; popularQueries: { query: string; count: number }[] }
 
 const tabs: { value: Tab; label: string }[] = [
   { value: 'traffic', label: 'Трафик' },
@@ -60,6 +59,11 @@ export default function EditorialAnalytics() {
   const { data: realtime } = useQuery({
     queryKey: ['editorial', 'analytics-realtime'],
     queryFn: () => adminService.getRealtimeAnalytics().catch(() => null) as Promise<AnalyticsRealtime | null>,
+    refetchInterval: 30000,
+  });
+  const { data: searchData } = useQuery({
+    queryKey: ['editorial', 'analytics-search'],
+    queryFn: () => adminService.getSearchAnalytics().catch(() => null) as Promise<SearchAnalytics | null>,
     refetchInterval: 30000,
   });
 
@@ -164,11 +168,7 @@ export default function EditorialAnalytics() {
           </div>
         );
       case 'search':
-        return (
-          <div className="sakh-card p-4 text-center">
-            <p className="text-sm text-[var(--text-muted)]">Поисковая аналитика — в разработке</p>
-          </div>
-        );
+        return <SearchAnalyticsTab data={searchData as SearchAnalytics | null} />;
       case 'online':
         return (
           <div className="sakh-card p-6 text-center">
@@ -217,6 +217,87 @@ export default function EditorialAnalytics() {
       >
         {renderTabContent()}
       </motion.div>
+    </div>
+  );
+}
+
+function SearchAnalyticsTab({ data }: { data: SearchAnalytics | null }) {
+  if (!data) {
+    return (
+      <div className="sakh-card p-4 text-center">
+        <p className="text-sm text-[var(--text-muted)]">Нет данных о поисковых запросах</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="sakh-card p-4"
+        >
+          <Search size={18} className="text-[var(--accent-ocean)] mb-2" />
+          <p className="text-xl font-bold font-mono text-[var(--text-primary)]">
+            {data.totalSearches.toLocaleString('ru-RU')}
+          </p>
+          <p className="sakh-meta">Поисков за 30 дней</p>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="sakh-card p-4"
+        >
+          <Search size={18} className="text-[var(--accent-ocean)] mb-2" />
+          <p className="text-xl font-bold font-mono text-[var(--text-primary)]">
+            {data.popularQueries.length}
+          </p>
+          <p className="sakh-meta">Уникальных запросов</p>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="sakh-card p-4"
+        >
+          <Search size={18} className="text-[var(--accent-ocean)] mb-2" />
+          <p className="text-xl font-bold font-mono text-[var(--text-primary)]">
+            {data.popularQueries.length > 0
+              ? Math.round(data.totalSearches / data.popularQueries.length)
+              : 0}
+          </p>
+          <p className="sakh-meta">Ср. запросов на уникальный</p>
+        </motion.div>
+      </div>
+
+      <div className="sakh-card p-4">
+        <h3 className="sakh-caption text-[var(--text-secondary)] mb-4">Популярные запросы</h3>
+        {data.popularQueries.length > 0 ? (
+          <div className="space-y-1">
+            {data.popularQueries.map((item, i) => (
+              <motion.div
+                key={item.query}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="flex items-center gap-3 py-2 px-3 hover:bg-[var(--bg-surface)] transition-colors"
+              >
+                <span className="sakh-meta sakh-meta--accent font-bold w-6 font-mono text-xs">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="flex-1 text-sm text-[var(--text-primary)] truncate">{item.query}</span>
+                <span className="font-mono text-xs text-[var(--text-muted)]">{item.count}</span>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--text-muted)] text-center py-4">
+            Поисковые запросы не найдены. Данные появятся после того, как пользователи начнут искать.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

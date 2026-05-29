@@ -75,6 +75,7 @@ import EditorialSeo from '../../src/pages/editorial/EditorialSeo';
 import EditorialAds from '../../src/pages/editorial/EditorialAds';
 import EditorialEvents from '../../src/pages/editorial/EditorialEvents';
 import EditorialNewsletters from '../../src/pages/editorial/EditorialNewsletters';
+import EditorialStaticPageEdit from '../../src/pages/editorial/EditorialStaticPageEdit';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -132,6 +133,7 @@ function AnimatedRoutes() {
 
           <Route path="/editorial" element={<ProtectedRoute allowedRoles={['journalist', 'proofreader', 'editor', 'chief_editor', 'moderator', 'admin', 'superadmin']}><EditorialLayout /></ProtectedRoute>}>
             <Route index element={<EditorialDashboard />} />
+            <Route path="pages/:slug" element={<EditorialStaticPageEdit />} />
             <Route path="news" element={<EditorialNews />}>
               <Route index element={<EditorialNewsList />} />
               <Route path="create" element={<EditorialNewsCreate />} />

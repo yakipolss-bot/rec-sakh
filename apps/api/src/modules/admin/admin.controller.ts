@@ -263,6 +263,13 @@ export class AdminController {
     return this.analyticsService.getRealtime();
   }
 
+  @Get('analytics/search')
+  @Roles('admin', 'superadmin', 'chief_editor')
+  @ApiOperation({ summary: 'Поисковая аналитика' })
+  async getSearchAnalytics() {
+    return this.analyticsService.getSearchAnalytics();
+  }
+
   // ====== Role Management ======
 
   @Get('roles')
@@ -270,6 +277,20 @@ export class AdminController {
   @ApiOperation({ summary: 'Список ролей' })
   async getRoles() {
     return Object.values(UserRole);
+  }
+
+  @Post('roles')
+  @Roles('superadmin')
+  @ApiOperation({ summary: 'Создать роль' })
+  async createRole(
+    @Body() dto: { role: string; label: string; permissions: boolean[] },
+  ) {
+    await this.settingsService.set(
+      `role:${dto.role}`,
+      { label: dto.label, permissions: dto.permissions },
+      'system',
+    );
+    return { message: `Role "${dto.role}" created` };
   }
 
   @Patch('users/:id/role')

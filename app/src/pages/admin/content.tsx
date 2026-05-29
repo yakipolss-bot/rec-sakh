@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -67,12 +68,19 @@ const statusStyle: Record<string, string> = {
 };
 
 export default function AdminContent() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState(0);
   const [selectedRubric, setSelectedRubric] = useState('');
   const [selectedAction, setSelectedAction] = useState('');
   const [bannerList, setBannerList] = useState(banners);
   const [menuList, setMenuList] = useState(menuItems);
-  const [widgetList] = useState(widgets);
+  const [widgetList, setWidgetList] = useState<typeof widgets>(() =>
+    JSON.parse(localStorage.getItem('sakhcom_widgets') || JSON.stringify(widgets))
+  );
+  const syncWidgets = (next: typeof widgets) => {
+    setWidgetList(next);
+    localStorage.setItem('sakhcom_widgets', JSON.stringify(next));
+  };
   const [bulkLog, setBulkLog] = useState<string[]>([]);
 
   const toggleBanner = (id: string) => {
@@ -201,10 +209,10 @@ export default function AdminContent() {
                   </td>
                   <td className="py-3 px-3">
                     <div className="flex items-center gap-1">
-                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Редактировать" onClick={() => toast.info('Редактор страниц — в разработке')}>
+                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Редактировать" onClick={() => navigate(`/editorial/pages${p.url}`)}>
                         <Edit size={14} />
                       </button>
-                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Просмотр" onClick={() => toast.info('Просмотр страниц — в разработке')}>
+                      <button className="sakh-btn sakh-btn--ghost sakh-btn--sm" title="Просмотр" onClick={() => navigate(p.url)}>
                         <Eye size={14} />
                       </button>
                     </div>
@@ -322,7 +330,7 @@ export default function AdminContent() {
                 <div className="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
                   <span className={`sakh-tag ${statusStyle[w.status]}`}>{statusLabels[w.status]}</span>
                   <button
-                    onClick={() => toast.info('Управление виджетами — в разработке')}
+                    onClick={() => syncWidgets(widgetList.map(w2 => w2.id === w.id ? { ...w2, status: w2.status === 'active' ? 'inactive' as const : 'active' as const } : w2))}
                     className={`w-10 h-5 rounded-full transition-colors relative ${
                       w.status === 'active' ? 'bg-[var(--accent-ocean)]' : 'bg-[var(--bg-surface)]'
                     }`}
